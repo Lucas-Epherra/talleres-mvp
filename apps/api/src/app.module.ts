@@ -1,16 +1,16 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { CustomersModule } from './modules/customers/customers.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 /**
  * Root application module.
  *
- * Registers global infrastructure modules and the initial health-check
- * controller used during the setup phase.
+ * Registers global infrastructure modules and feature modules.
  */
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, CustomersModule],
   controllers: [AppController],
   providers: [AppService],
 })
