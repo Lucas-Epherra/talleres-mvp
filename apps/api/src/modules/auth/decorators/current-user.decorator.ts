@@ -1,0 +1,13 @@
+import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import { AuthenticatedRequest } from '../types/authenticated-request.type';
+
+/**
+ * Extracts the authenticated user from the request.
+ */
+export const CurrentUser = createParamDecorator(
+  (_data: unknown, context: ExecutionContext) => {
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+
+    return request.user;
+  },
+);

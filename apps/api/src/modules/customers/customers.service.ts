@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { DEMO_WORKSHOP_ID } from '../../common/constants/demo-workshop.constant';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -9,20 +8,20 @@ import { UpdateCustomerDto } from './dto/update-customer.dto';
  * Handles customer persistence and lookup operations.
  *
  * Every query is scoped by workshopId to keep the backend compatible with a
- * future multi-tenant SaaS model.
+ * multi-tenant SaaS model.
  */
 @Injectable()
 export class CustomersService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Returns customers for the current workshop.
+   * Returns customers for the provided workshop.
    *
    * Search matches customer name, phone or email.
    */
-  async findAll(search?: string) {
+  async findAll(workshopId: string, search?: string) {
     const where: Prisma.CustomerWhereInput = {
-      workshopId: DEMO_WORKSHOP_ID,
+      workshopId,
       ...(search
         ? {
             OR: [
@@ -65,13 +64,13 @@ export class CustomersService {
   }
 
   /**
-   * Returns one customer if it belongs to the current workshop.
+   * Returns one customer if it belongs to the provided workshop.
    */
-  async findOne(id: string) {
+  async findOne(workshopId: string, id: string) {
     const customer = await this.prisma.customer.findFirst({
       where: {
         id,
-        workshopId: DEMO_WORKSHOP_ID,
+        workshopId,
       },
       include: {
         vehicles: {
@@ -90,12 +89,12 @@ export class CustomersService {
   }
 
   /**
-   * Creates a customer inside the current workshop.
+   * Creates a customer inside the provided workshop.
    */
-  async create(dto: CreateCustomerDto) {
+  async create(workshopId: string, dto: CreateCustomerDto) {
     return this.prisma.customer.create({
       data: {
-        workshopId: DEMO_WORKSHOP_ID,
+        workshopId,
         fullName: dto.fullName,
         phone: dto.phone,
         email: dto.email,
@@ -106,10 +105,10 @@ export class CustomersService {
   }
 
   /**
-   * Updates a customer if it belongs to the current workshop.
+   * Updates a customer if it belongs to the provided workshop.
    */
-  async update(id: string, dto: UpdateCustomerDto) {
-    await this.findOne(id);
+  async update(workshopId: string, id: string, dto: UpdateCustomerDto) {
+    await this.findOne(workshopId, id);
 
     return this.prisma.customer.update({
       where: {
