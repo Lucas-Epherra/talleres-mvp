@@ -116,6 +116,7 @@ model WorkOrder {
   diagnosis      String?
   workDone       String?        @map("work_done")
   partsUsed      String?        @map("parts_used")
+  entryMileage   Int?           @map("entry_mileage")
   laborCost      Decimal?       @map("labor_cost") @db.Decimal(12, 2)
   partsCost      Decimal?       @map("parts_cost") @db.Decimal(12, 2)
   estimatedTotal Decimal?       @map("estimated_total") @db.Decimal(12, 2)
