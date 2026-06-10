@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum WorkshopRole {
+  OWNER
+  ADMIN
+  OPERATOR
+}
+
+enum WorkOrderStatus {
+  PENDING
+  IN_PROGRESS
+  READY
+  DELIVERED
+}
+
+model Workshop {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  members    WorkshopMember[]
+  customers  Customer[]
+  vehicles   Vehicle[]
+  workOrders WorkOrder[]
+
+  @@map("workshops")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  memberships WorkshopMember[]
+
+  @@map("users")
+}
+
+model WorkshopMember {
+  id         String       @id @default(uuid())
+  workshopId String      @map("workshop_id")
+  userId     String      @map("user_id")
+  role       WorkshopRole @default(OPERATOR)
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
+
+  workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workshopId, userId])
+  @@index([workshopId])
+  @@index([userId])
+  @@map("workshop_members")
+}
+
+model Customer {
+  id         String   @id @default(uuid())
+  workshopId String  @map("workshop_id")
+  fullName   String  @map("full_name")
+  phone      String
+  email      String?
+  address    String?
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  workshop Workshop  @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  vehicles Vehicle[]
+
+  @@index([workshopId])
+  @@index([phone])
+  @@map("customers")
+}
+
+model Vehicle {
+  id           String   @id @default(uuid())
+  workshopId   String  @map("workshop_id")
+  customerId   String  @map("customer_id")
+  licensePlate String  @map("license_plate")
+  brand        String
+  model        String
+  year         Int?
+  mileage      Int?
+  notes        String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  workshop   Workshop    @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  customer   Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  workOrders WorkOrder[]
+
+  @@unique([workshopId, licensePlate])
+  @@index([workshopId])
+  @@index([customerId])
+  @@map("vehicles")
+}
+
+model WorkOrder {
+  id             String          @id @default(uuid())
+  workshopId     String         @map("workshop_id")
+  vehicleId      String         @map("vehicle_id")
+  orderNumber    Int            @map("order_number")
+  reportedIssue  String         @map("reported_issue")
+  diagnosis      String?
+  workDone       String?        @map("work_done")
+  partsUsed      String?        @map("parts_used")
+  laborCost      Decimal?       @map("labor_cost") @db.Decimal(12, 2)
+  partsCost      Decimal?       @map("parts_cost") @db.Decimal(12, 2)
+  estimatedTotal Decimal?       @map("estimated_total") @db.Decimal(12, 2)
+  finalTotal     Decimal?       @map("final_total") @db.Decimal(12, 2)
+  status         WorkOrderStatus @default(PENDING)
+  entryDate      DateTime       @default(now()) @map("entry_date")
+  deliveryDate   DateTime?      @map("delivery_date")
+  notes          String?
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  vehicle  Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@unique([workshopId, orderNumber])
+  @@index([workshopId])
+  @@index([vehicleId])
+  @@index([status])
+  @@map("work_orders")
+}

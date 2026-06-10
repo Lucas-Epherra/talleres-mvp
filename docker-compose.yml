@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: talleres_mvp_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: talleres_user
+      POSTGRES_PASSWORD: talleres_password
+      POSTGRES_DB: talleres_mvp
+    ports:
+      - "5432:5432"
+    volumes:
+      - talleres_mvp_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U talleres_user -d talleres_mvp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  talleres_mvp_pgdata:
