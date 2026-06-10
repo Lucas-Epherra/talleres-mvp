@@ -3,6 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CustomersModule } from './modules/customers/customers.module';
 import { VehiclesModule } from './modules/vehicles/vehicles.module';
+import { WorkOrdersModule } from './modules/work-orders/work-orders.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 /**
@@ -11,7 +12,7 @@ import { PrismaModule } from './prisma/prisma.module';
  * Registers global infrastructure modules and feature modules.
  */
 @Module({
-  imports: [PrismaModule, CustomersModule, VehiclesModule],
+  imports: [PrismaModule, CustomersModule, VehiclesModule, WorkOrdersModule],
   controllers: [AppController],
   providers: [AppService],
 })
