@@ -62,6 +62,14 @@ export default async function PrivateLayout({
               </li>
               <li>
                 <Link
+                  href="/customers"
+                  className="block rounded-xl px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 hover:text-white"
+                >
+                  Clientes
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/vehicles"
                   className="block rounded-xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white"
                 >
