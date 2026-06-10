@@ -44,10 +44,22 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
           </p>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3 lg:min-w-115">
-          <Metric label="Estado actual" value={formatWorkOrderStatus(currentStatus)} />
-          <Metric label="Órdenes activas" value={summary.activeWorkOrders} />
-          <Metric label="Historial" value={summary.deliveredWorkOrders} />
+        <div className="flex flex-col gap-4 lg:min-w-115">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Metric
+              label="Estado actual"
+              value={formatWorkOrderStatus(currentStatus)}
+            />
+            <Metric label="Órdenes activas" value={summary.activeWorkOrders} />
+            <Metric label="Historial" value={summary.deliveredWorkOrders} />
+          </div>
+
+          <Link
+            href={`/work-orders/new?vehicleId=${vehicle.id}`}
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400"
+          >
+            Nueva orden de trabajo
+          </Link>
         </div>
       </div>
 
@@ -67,7 +79,10 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
 
         {customer.address || customer.notes ? (
           <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <InfoItem label="Dirección" value={customer.address ?? "Sin dirección"} />
+            <InfoItem
+              label="Dirección"
+              value={customer.address ?? "Sin dirección"}
+            />
             <InfoItem label="Notas" value={customer.notes ?? "Sin notas"} />
           </div>
         ) : null}
