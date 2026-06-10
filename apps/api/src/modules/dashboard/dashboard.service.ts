@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { WorkOrderStatus } from '@prisma/client';
-import { DEMO_WORKSHOP_ID } from '../../common/constants/demo-workshop.constant';
 import { PrismaService } from '../../prisma/prisma.service';
 
 /**
@@ -16,7 +15,7 @@ export class DashboardService {
   /**
    * Returns the operational summary used by the dashboard screen.
    */
-  async getSummary() {
+  async getSummary(workshopId: string) {
     const [
       totalCustomers,
       totalVehicles,
@@ -27,22 +26,22 @@ export class DashboardService {
     ] = await Promise.all([
       this.prisma.customer.count({
         where: {
-          workshopId: DEMO_WORKSHOP_ID,
+          workshopId,
         },
       }),
       this.prisma.vehicle.count({
         where: {
-          workshopId: DEMO_WORKSHOP_ID,
+          workshopId,
         },
       }),
       this.prisma.workOrder.count({
         where: {
-          workshopId: DEMO_WORKSHOP_ID,
+          workshopId,
         },
       }),
       this.prisma.workOrder.findMany({
         where: {
-          workshopId: DEMO_WORKSHOP_ID,
+          workshopId,
           status: {
             in: [
               WorkOrderStatus.PENDING,
@@ -59,7 +58,7 @@ export class DashboardService {
       this.prisma.workOrder.groupBy({
         by: ['status'],
         where: {
-          workshopId: DEMO_WORKSHOP_ID,
+          workshopId,
         },
         _count: {
           status: true,
@@ -67,7 +66,7 @@ export class DashboardService {
       }),
       this.prisma.workOrder.findMany({
         where: {
-          workshopId: DEMO_WORKSHOP_ID,
+          workshopId,
         },
         orderBy: {
           createdAt: 'desc',
