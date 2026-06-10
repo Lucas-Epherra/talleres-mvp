@@ -4,7 +4,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, WorkOrderStatus } from '@prisma/client';
-import { DEMO_WORKSHOP_ID } from '../../common/constants/demo-workshop.constant';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
@@ -20,13 +19,13 @@ export class VehiclesService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Returns vehicles for the current workshop.
+   * Returns vehicles for the authenticated user's workshop.
    *
    * Search matches license plate, brand, model, customer name or customer phone.
    */
-  async findAll(search?: string) {
+  async findAll(workshopId: string, search?: string) {
     const where: Prisma.VehicleWhereInput = {
-      workshopId: DEMO_WORKSHOP_ID,
+      workshopId,
       ...(search
         ? {
             OR: [
@@ -93,13 +92,13 @@ export class VehiclesService {
   }
 
   /**
-   * Returns one vehicle if it belongs to the current workshop.
+   * Returns one vehicle if it belongs to the authenticated user's workshop.
    */
-  async findOne(id: string) {
+  async findOne(workshopId: string, id: string) {
     const vehicle = await this.prisma.vehicle.findFirst({
       where: {
         id,
-        workshopId: DEMO_WORKSHOP_ID,
+        workshopId,
       },
       include: {
         customer: {
@@ -134,11 +133,11 @@ export class VehiclesService {
    * frontend, including customer data, active work orders, historical work
    * orders and a compact summary.
    */
-  async findProfile(id: string) {
+  async findProfile(workshopId: string, id: string) {
     const vehicle = await this.prisma.vehicle.findFirst({
       where: {
         id,
-        workshopId: DEMO_WORKSHOP_ID,
+        workshopId,
       },
       include: {
         customer: {
@@ -226,13 +225,13 @@ export class VehiclesService {
   /**
    * Creates a vehicle associated with an existing customer from the same workshop.
    */
-  async create(dto: CreateVehicleDto) {
-    await this.ensureCustomerBelongsToWorkshop(dto.customerId);
-    await this.ensureLicensePlateIsAvailable(dto.licensePlate);
+  async create(workshopId: string, dto: CreateVehicleDto) {
+    await this.ensureCustomerBelongsToWorkshop(workshopId, dto.customerId);
+    await this.ensureLicensePlateIsAvailable(workshopId, dto.licensePlate);
 
     return this.prisma.vehicle.create({
       data: {
-        workshopId: DEMO_WORKSHOP_ID,
+        workshopId,
         customerId: dto.customerId,
         licensePlate: this.normalizeLicensePlate(dto.licensePlate),
         brand: dto.brand,
@@ -255,20 +254,25 @@ export class VehiclesService {
   }
 
   /**
-   * Updates a vehicle if it belongs to the current workshop.
+   * Updates a vehicle if it belongs to the authenticated user's workshop.
    */
-  async update(id: string, dto: UpdateVehicleDto) {
-    const currentVehicle = await this.findOne(id);
+  async update(workshopId: string, id: string, dto: UpdateVehicleDto) {
+    const currentVehicle = await this.findOne(workshopId, id);
 
     if (dto.customerId) {
-      await this.ensureCustomerBelongsToWorkshop(dto.customerId);
+      await this.ensureCustomerBelongsToWorkshop(workshopId, dto.customerId);
     }
 
     if (
       dto.licensePlate &&
-      this.normalizeLicensePlate(dto.licensePlate) !== currentVehicle.licensePlate
+      this.normalizeLicensePlate(dto.licensePlate) !==
+        currentVehicle.licensePlate
     ) {
-      await this.ensureLicensePlateIsAvailable(dto.licensePlate, id);
+      await this.ensureLicensePlateIsAvailable(
+        workshopId,
+        dto.licensePlate,
+        id,
+      );
     }
 
     return this.prisma.vehicle.update({
@@ -300,13 +304,16 @@ export class VehiclesService {
   }
 
   /**
-   * Ensures the customer exists inside the current workshop.
+   * Ensures the customer exists inside the authenticated user's workshop.
    */
-  private async ensureCustomerBelongsToWorkshop(customerId: string): Promise<void> {
+  private async ensureCustomerBelongsToWorkshop(
+    workshopId: string,
+    customerId: string,
+  ): Promise<void> {
     const customer = await this.prisma.customer.findFirst({
       where: {
         id: customerId,
-        workshopId: DEMO_WORKSHOP_ID,
+        workshopId,
       },
       select: {
         id: true,
@@ -322,6 +329,7 @@ export class VehiclesService {
    * Prevents duplicated license plates inside the same workshop.
    */
   private async ensureLicensePlateIsAvailable(
+    workshopId: string,
     licensePlate: string,
     currentVehicleId?: string,
   ): Promise<void> {
@@ -329,7 +337,7 @@ export class VehiclesService {
 
     const existingVehicle = await this.prisma.vehicle.findFirst({
       where: {
-        workshopId: DEMO_WORKSHOP_ID,
+        workshopId,
         licensePlate: normalizedLicensePlate,
         ...(currentVehicleId
           ? {
