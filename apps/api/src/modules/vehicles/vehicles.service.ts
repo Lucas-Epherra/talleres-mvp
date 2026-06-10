@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, WorkOrderStatus } from '@prisma/client';
 import { DEMO_WORKSHOP_ID } from '../../common/constants/demo-workshop.constant';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
@@ -125,6 +125,102 @@ export class VehiclesService {
     }
 
     return vehicle;
+  }
+
+  /**
+   * Returns the complete operational vehicle profile.
+   *
+   * This endpoint is designed to feed the future vehicle profile page in the
+   * frontend, including customer data, active work orders, historical work
+   * orders and a compact summary.
+   */
+  async findProfile(id: string) {
+    const vehicle = await this.prisma.vehicle.findFirst({
+      where: {
+        id,
+        workshopId: DEMO_WORKSHOP_ID,
+      },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            fullName: true,
+            phone: true,
+            email: true,
+            address: true,
+            notes: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+        workOrders: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+          select: {
+            id: true,
+            orderNumber: true,
+            reportedIssue: true,
+            diagnosis: true,
+            workDone: true,
+            partsUsed: true,
+            entryMileage: true,
+            laborCost: true,
+            partsCost: true,
+            estimatedTotal: true,
+            finalTotal: true,
+            status: true,
+            entryDate: true,
+            deliveryDate: true,
+            notes: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+      },
+    });
+
+    if (!vehicle) {
+      throw new NotFoundException('Vehicle not found.');
+    }
+
+    const activeWorkOrders = vehicle.workOrders.filter(
+      (workOrder) => workOrder.status !== WorkOrderStatus.DELIVERED,
+    );
+
+    const history = vehicle.workOrders.filter(
+      (workOrder) => workOrder.status === WorkOrderStatus.DELIVERED,
+    );
+
+    const latestWorkOrder = vehicle.workOrders[0] ?? null;
+    const latestActiveWorkOrder = activeWorkOrders[0] ?? null;
+
+    return {
+      vehicle: {
+        id: vehicle.id,
+        workshopId: vehicle.workshopId,
+        customerId: vehicle.customerId,
+        licensePlate: vehicle.licensePlate,
+        brand: vehicle.brand,
+        model: vehicle.model,
+        year: vehicle.year,
+        mileage: vehicle.mileage,
+        notes: vehicle.notes,
+        createdAt: vehicle.createdAt,
+        updatedAt: vehicle.updatedAt,
+      },
+      customer: vehicle.customer,
+      activeWorkOrders,
+      history,
+      currentStatus: latestActiveWorkOrder?.status ?? 'NO_ACTIVE_WORK_ORDER',
+      summary: {
+        totalWorkOrders: vehicle.workOrders.length,
+        activeWorkOrders: activeWorkOrders.length,
+        deliveredWorkOrders: history.length,
+        latestWorkOrder,
+        latestActiveWorkOrder,
+      },
+    };
   }
 
   /**

@@ -19,6 +19,16 @@ export class VehiclesController {
   }
 
   /**
+   * Returns the complete operational vehicle profile.
+   *
+   * This route feeds the future "Ficha del vehículo" screen.
+   */
+  @Get(':id/profile')
+  findProfile(@Param('id') id: string) {
+    return this.vehiclesService.findProfile(id);
+  }
+
+  /**
    * Returns one vehicle by id.
    */
   @Get(':id')
