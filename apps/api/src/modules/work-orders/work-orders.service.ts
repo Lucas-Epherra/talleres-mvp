@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, WorkOrderStatus } from '@prisma/client';
-import { DEMO_WORKSHOP_ID } from '../../common/constants/demo-workshop.constant';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { UpdateWorkOrderStatusDto } from './dto/update-work-order-status.dto';
@@ -17,13 +16,17 @@ export class WorkOrdersService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Returns work orders for the current workshop.
+   * Returns work orders for the authenticated user's workshop.
    *
    * Search matches issue, diagnosis, vehicle data and customer data.
    */
-  async findAll(search?: string, status?: WorkOrderStatus) {
+  async findAll(
+    workshopId: string,
+    search?: string,
+    status?: WorkOrderStatus,
+  ) {
     const where: Prisma.WorkOrderWhereInput = {
-      workshopId: DEMO_WORKSHOP_ID,
+      workshopId,
       ...(status ? { status } : {}),
       ...(search
         ? {
@@ -99,13 +102,13 @@ export class WorkOrdersService {
   }
 
   /**
-   * Returns one work order if it belongs to the current workshop.
+   * Returns one work order if it belongs to the authenticated user's workshop.
    */
-  async findOne(id: string) {
+  async findOne(workshopId: string, id: string) {
     const workOrder = await this.prisma.workOrder.findFirst({
       where: {
         id,
-        workshopId: DEMO_WORKSHOP_ID,
+        workshopId,
       },
       include: this.getDefaultInclude(),
     });
@@ -118,17 +121,21 @@ export class WorkOrdersService {
   }
 
   /**
-   * Creates a work order for a vehicle from the current workshop.
+   * Creates a work order for a vehicle from the authenticated user's workshop.
    *
    * The order number is generated per workshop.
    */
-  async create(dto: CreateWorkOrderDto) {
-    const vehicle = await this.ensureVehicleBelongsToWorkshop(dto.vehicleId);
-    const orderNumber = await this.getNextOrderNumber();
+  async create(workshopId: string, dto: CreateWorkOrderDto) {
+    const vehicle = await this.ensureVehicleBelongsToWorkshop(
+      workshopId,
+      dto.vehicleId,
+    );
+
+    const orderNumber = await this.getNextOrderNumber(workshopId);
 
     const workOrder = await this.prisma.workOrder.create({
       data: {
-        workshopId: DEMO_WORKSHOP_ID,
+        workshopId,
         vehicleId: vehicle.id,
         orderNumber,
         reportedIssue: dto.reportedIssue,
@@ -146,17 +153,21 @@ export class WorkOrdersService {
     });
 
     if (dto.entryMileage !== undefined) {
-      await this.updateVehicleMileageIfNeeded(vehicle.id, dto.entryMileage);
+      await this.updateVehicleMileageIfNeeded(
+        workshopId,
+        vehicle.id,
+        dto.entryMileage,
+      );
     }
 
     return workOrder;
   }
 
   /**
-   * Updates a work order if it belongs to the current workshop.
+   * Updates a work order if it belongs to the authenticated user's workshop.
    */
-  async update(id: string, dto: UpdateWorkOrderDto) {
-    const currentWorkOrder = await this.findOne(id);
+  async update(workshopId: string, id: string, dto: UpdateWorkOrderDto) {
+    const currentWorkOrder = await this.findOne(workshopId, id);
 
     const updatedWorkOrder = await this.prisma.workOrder.update({
       where: {
@@ -182,6 +193,7 @@ export class WorkOrdersService {
 
     if (dto.entryMileage !== undefined) {
       await this.updateVehicleMileageIfNeeded(
+        workshopId,
         currentWorkOrder.vehicleId,
         dto.entryMileage,
       );
@@ -191,10 +203,14 @@ export class WorkOrdersService {
   }
 
   /**
-   * Updates only the status of a work order.
+   * Updates only the status of a work order if it belongs to the authenticated user's workshop.
    */
-  async updateStatus(id: string, dto: UpdateWorkOrderStatusDto) {
-    await this.findOne(id);
+  async updateStatus(
+    workshopId: string,
+    id: string,
+    dto: UpdateWorkOrderStatusDto,
+  ) {
+    await this.findOne(workshopId, id);
 
     return this.prisma.workOrder.update({
       where: {
@@ -210,13 +226,16 @@ export class WorkOrdersService {
   }
 
   /**
-   * Ensures a vehicle exists in the current workshop before creating a work order.
+   * Ensures a vehicle exists in the authenticated user's workshop before creating a work order.
    */
-  private async ensureVehicleBelongsToWorkshop(vehicleId: string) {
+  private async ensureVehicleBelongsToWorkshop(
+    workshopId: string,
+    vehicleId: string,
+  ) {
     const vehicle = await this.prisma.vehicle.findFirst({
       where: {
         id: vehicleId,
-        workshopId: DEMO_WORKSHOP_ID,
+        workshopId,
       },
       select: {
         id: true,
@@ -232,12 +251,12 @@ export class WorkOrdersService {
   }
 
   /**
-   * Generates the next order number for the current workshop.
+   * Generates the next order number for the authenticated user's workshop.
    */
-  private async getNextOrderNumber(): Promise<number> {
+  private async getNextOrderNumber(workshopId: string): Promise<number> {
     const lastWorkOrder = await this.prisma.workOrder.findFirst({
       where: {
-        workshopId: DEMO_WORKSHOP_ID,
+        workshopId,
       },
       orderBy: {
         orderNumber: 'desc',
@@ -255,13 +274,14 @@ export class WorkOrdersService {
    * last known mileage.
    */
   private async updateVehicleMileageIfNeeded(
+    workshopId: string,
     vehicleId: string,
     entryMileage: number,
   ): Promise<void> {
     const vehicle = await this.prisma.vehicle.findFirst({
       where: {
         id: vehicleId,
-        workshopId: DEMO_WORKSHOP_ID,
+        workshopId,
       },
       select: {
         id: true,
