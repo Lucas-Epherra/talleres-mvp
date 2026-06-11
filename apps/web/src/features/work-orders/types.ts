@@ -14,6 +14,10 @@ export type CreateWorkOrderInput = {
   notes?: string;
 };
 
+export type UpdateWorkOrderStatusInput = {
+  status: WorkOrderStatus;
+};
+
 export type WorkOrder = {
   id: string;
   workshopId: string;

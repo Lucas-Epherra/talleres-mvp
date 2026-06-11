@@ -1,5 +1,9 @@
 import { apiFetch } from "../../lib/api";
-import type { CreateWorkOrderInput, WorkOrder } from "./types";
+import type {
+  CreateWorkOrderInput,
+  UpdateWorkOrderStatusInput,
+  WorkOrder,
+} from "./types";
 
 /**
  * Creates a work order inside the authenticated workshop.
@@ -12,6 +16,22 @@ export function createWorkOrder(
 ): Promise<WorkOrder> {
   return apiFetch<WorkOrder>("/work-orders", {
     method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+/**
+ * Updates the status of a work order inside the authenticated workshop.
+ *
+ * The backend validates ownership through the authenticated workshop context,
+ * so this mutation only sends the next status.
+ */
+export function updateWorkOrderStatus(
+  workOrderId: string,
+  input: UpdateWorkOrderStatusInput,
+): Promise<WorkOrder> {
+  return apiFetch<WorkOrder>(`/work-orders/${workOrderId}/status`, {
+    method: "PATCH",
     body: JSON.stringify(input),
   });
 }

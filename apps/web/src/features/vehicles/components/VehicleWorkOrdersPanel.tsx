@@ -4,6 +4,7 @@ import {
   formatMoney,
   formatWorkOrderStatus,
 } from "../../../lib/format";
+import { UpdateWorkOrderStatusForm } from "../../work-orders/components/UpdateWorkOrderStatusForm";
 import type { VehicleProfileWorkOrder } from "../types";
 
 type VehicleWorkOrdersPanelProps = {
@@ -39,6 +40,7 @@ export function VehicleWorkOrdersPanel({
                     <p className="text-sm font-semibold text-orange-300">
                       Orden #{workOrder.orderNumber}
                     </p>
+
                     <h3 className="mt-2 text-lg font-semibold text-white">
                       {workOrder.reportedIssue}
                     </h3>
@@ -49,16 +51,23 @@ export function VehicleWorkOrdersPanel({
                       <span className="text-slate-500">Diagnóstico:</span>{" "}
                       {workOrder.diagnosis ?? "Pendiente"}
                     </p>
+
                     <p>
-                      <span className="text-slate-500">Trabajo realizado:</span>{" "}
+                      <span className="text-slate-500">
+                        Trabajo realizado:
+                      </span>{" "}
                       {workOrder.workDone ?? "Pendiente"}
                     </p>
+
                     <p>
                       <span className="text-slate-500">Repuestos:</span>{" "}
                       {workOrder.partsUsed ?? "Sin cargar"}
                     </p>
+
                     <p>
-                      <span className="text-slate-500">Kilometraje ingreso:</span>{" "}
+                      <span className="text-slate-500">
+                        Kilometraje ingreso:
+                      </span>{" "}
                       {formatMileage(workOrder.entryMileage)}
                     </p>
                   </div>
@@ -68,12 +77,28 @@ export function VehicleWorkOrdersPanel({
                       {workOrder.notes}
                     </p>
                   ) : null}
+
+                  {workOrder.status !== "DELIVERED" ? (
+                    <UpdateWorkOrderStatusForm
+                      workOrderId={workOrder.id}
+                      currentStatus={workOrder.status}
+                    />
+                  ) : null}
                 </div>
 
                 <dl className="grid shrink-0 gap-3 sm:grid-cols-2 lg:w-90">
-                  <Detail label="Estado" value={formatWorkOrderStatus(workOrder.status)} />
-                  <Detail label="Ingreso" value={formatDate(workOrder.entryDate)} />
-                  <Detail label="Entrega" value={formatDate(workOrder.deliveryDate)} />
+                  <Detail
+                    label="Estado"
+                    value={formatWorkOrderStatus(workOrder.status)}
+                  />
+                  <Detail
+                    label="Ingreso"
+                    value={formatDate(workOrder.entryDate)}
+                  />
+                  <Detail
+                    label="Entrega"
+                    value={formatDate(workOrder.deliveryDate)}
+                  />
                   <Detail
                     label="Estimado"
                     value={formatMoney(workOrder.estimatedTotal)}
