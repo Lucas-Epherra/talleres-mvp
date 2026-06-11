@@ -22,14 +22,16 @@ export default async function DashboardPage() {
   const summary = await getDashboardSummary();
 
   return (
-    <section className="space-y-8">
-      <header className="rounded-3xl border border-slate-800 bg-slate-900/70 p-8">
+    <section className="space-y-6 sm:space-y-8">
+      <header className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 sm:p-8">
         <p className="text-sm font-semibold uppercase tracking-[0.24em] text-orange-300">
           Resumen operativo
         </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
           Dashboard del taller
         </h1>
+
         <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
           Vista general de clientes, vehículos y órdenes de trabajo del taller
           autenticado.
@@ -104,9 +106,9 @@ export default async function DashboardPage() {
 
       <section
         aria-labelledby="latest-work-orders-heading"
-        className="rounded-3xl border border-slate-800 bg-slate-900/70"
+        className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/70"
       >
-        <div className="flex flex-col gap-3 border-b border-slate-800 p-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 border-b border-slate-800 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div>
             <h2
               id="latest-work-orders-heading"
@@ -121,88 +123,96 @@ export default async function DashboardPage() {
 
           <Link
             href="/work-orders"
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300"
+            className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300 sm:w-auto"
           >
             Ver órdenes
           </Link>
         </div>
 
         {summary.latestWorkOrders.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-230 text-left">
-              <thead className="border-b border-slate-800 text-xs uppercase tracking-[0.16em] text-slate-500">
-                <tr>
-                  <th scope="col" className="px-6 py-4 font-semibold">
-                    Orden
-                  </th>
-                  <th scope="col" className="px-6 py-4 font-semibold">
-                    Vehículo
-                  </th>
-                  <th scope="col" className="px-6 py-4 font-semibold">
-                    Cliente
-                  </th>
-                  <th scope="col" className="px-6 py-4 font-semibold">
-                    Estado
-                  </th>
-                  <th scope="col" className="px-6 py-4 font-semibold">
-                    Ingreso
-                  </th>
-                  <th scope="col" className="px-6 py-4 font-semibold">
-                    Estimado
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800">
-                {summary.latestWorkOrders.map((workOrder) => (
-                  <tr key={workOrder.id} className="align-top">
-                    <td className="px-6 py-5">
-                      <p className="font-semibold text-white">
-                        #{workOrder.orderNumber}
-                      </p>
-                      <p className="mt-1 line-clamp-2 max-w-xs text-sm text-slate-400">
-                        {workOrder.reportedIssue}
-                      </p>
-                    </td>
+          <>
+            <div className="grid gap-4 p-5 xl:hidden">
+              {summary.latestWorkOrders.map((workOrder) => (
+                <LatestWorkOrderCard key={workOrder.id} workOrder={workOrder} />
+              ))}
+            </div>
 
-                    <td className="px-6 py-5">
-                      <p className="font-semibold text-white">
-                        {workOrder.vehicle.licensePlate}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-400">
-                        {workOrder.vehicle.brand} {workOrder.vehicle.model}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {formatMileage(workOrder.vehicle.mileage)}
-                      </p>
-                    </td>
-
-                    <td className="px-6 py-5">
-                      <p className="font-medium text-slate-100">
-                        {workOrder.vehicle.customer.fullName}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-400">
-                        {workOrder.vehicle.customer.phone ?? "Sin teléfono"}
-                      </p>
-                    </td>
-
-                    <td className="px-6 py-5">
-                      <span className="inline-flex rounded-full border border-slate-700 px-3 py-1 text-xs font-semibold text-slate-200">
-                        {formatWorkOrderStatus(workOrder.status)}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-5 text-sm text-slate-300">
-                      {formatDate(workOrder.entryDate)}
-                    </td>
-
-                    <td className="px-6 py-5 text-sm font-medium text-slate-100">
-                      {formatMoney(workOrder.estimatedTotal)}
-                    </td>
+            <div className="hidden xl:block">
+              <table className="w-full text-left">
+                <thead className="border-b border-slate-800 text-xs uppercase tracking-[0.16em] text-slate-500">
+                  <tr>
+                    <th scope="col" className="px-6 py-4 font-semibold">
+                      Orden
+                    </th>
+                    <th scope="col" className="px-6 py-4 font-semibold">
+                      Vehículo
+                    </th>
+                    <th scope="col" className="px-6 py-4 font-semibold">
+                      Cliente
+                    </th>
+                    <th scope="col" className="px-6 py-4 font-semibold">
+                      Estado
+                    </th>
+                    <th scope="col" className="px-6 py-4 font-semibold">
+                      Ingreso
+                    </th>
+                    <th scope="col" className="px-6 py-4 font-semibold">
+                      Estimado
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  {summary.latestWorkOrders.map((workOrder) => (
+                    <tr key={workOrder.id} className="align-top">
+                      <td className="px-6 py-5">
+                        <p className="font-semibold text-white">
+                          #{workOrder.orderNumber}
+                        </p>
+                        <p className="mt-1 max-w-xs text-sm leading-6 text-slate-400">
+                          {workOrder.reportedIssue}
+                        </p>
+                      </td>
+
+                      <td className="px-6 py-5">
+                        <p className="font-semibold text-white">
+                          {workOrder.vehicle.licensePlate}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-400">
+                          {workOrder.vehicle.brand} {workOrder.vehicle.model}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {formatMileage(workOrder.vehicle.mileage)}
+                        </p>
+                      </td>
+
+                      <td className="px-6 py-5">
+                        <p className="font-medium text-slate-100">
+                          {workOrder.vehicle.customer.fullName}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-400">
+                          {workOrder.vehicle.customer.phone ?? "Sin teléfono"}
+                        </p>
+                      </td>
+
+                      <td className="px-6 py-5">
+                        <span className="inline-flex rounded-full border border-slate-700 px-3 py-1 text-xs font-semibold text-slate-200">
+                          {formatWorkOrderStatus(workOrder.status)}
+                        </span>
+                      </td>
+
+                      <td className="px-6 py-5 text-sm text-slate-300">
+                        {formatDate(workOrder.entryDate)}
+                      </td>
+
+                      <td className="px-6 py-5 text-sm font-medium text-slate-100">
+                        {formatMoney(workOrder.estimatedTotal)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         ) : (
           <div className="p-6">
             <p className="rounded-2xl border border-dashed border-slate-700 p-6 text-sm text-slate-400">
@@ -237,5 +247,84 @@ function DashboardMetricCard({
       </p>
       <p className="mt-2 text-sm leading-5 text-slate-500">{description}</p>
     </article>
+  );
+}
+
+type LatestWorkOrder = Awaited<
+  ReturnType<typeof getDashboardSummary>
+>["latestWorkOrders"][number];
+
+type LatestWorkOrderCardProps = {
+  workOrder: LatestWorkOrder;
+};
+
+/**
+ * Mobile and tablet representation of a recent work order.
+ *
+ * It replaces the desktop table to avoid horizontal scrolling on narrow screens.
+ */
+function LatestWorkOrderCard({ workOrder }: LatestWorkOrderCardProps) {
+  return (
+    <article className="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-orange-300">
+            Orden #{workOrder.orderNumber}
+          </p>
+
+          <h3 className="mt-2 text-base font-semibold leading-6 text-white">
+            {workOrder.reportedIssue}
+          </h3>
+        </div>
+
+        <span className="inline-flex w-fit rounded-full border border-slate-700 px-3 py-1 text-xs font-semibold text-slate-200">
+          {formatWorkOrderStatus(workOrder.status)}
+        </span>
+      </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <SmallDetail
+          label="Vehículo"
+          value={`${workOrder.vehicle.licensePlate} · ${workOrder.vehicle.brand} ${workOrder.vehicle.model}`}
+        />
+        <SmallDetail
+          label="Cliente"
+          value={workOrder.vehicle.customer.fullName}
+        />
+        <SmallDetail label="Ingreso" value={formatDate(workOrder.entryDate)} />
+        <SmallDetail
+          label="Estimado"
+          value={formatMoney(workOrder.estimatedTotal)}
+        />
+      </div>
+
+      <Link
+        href={`/vehicles/${workOrder.vehicle.id}`}
+        className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300 sm:w-auto"
+      >
+        Ver ficha del vehículo
+      </Link>
+    </article>
+  );
+}
+
+type SmallDetailProps = {
+  label: string;
+  value: string;
+};
+
+/**
+ * Compact label/value block for dashboard order cards.
+ */
+function SmallDetail({ label, value }: SmallDetailProps) {
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-3">
+      <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
+        {label}
+      </p>
+      <p className="mt-2 wrap-break-word text-sm font-semibold text-slate-100">
+        {value}
+      </p>
+    </div>
   );
 }

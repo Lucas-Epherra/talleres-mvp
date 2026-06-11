@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { getCurrentUser } from "../../features/auth/auth.server";
 import { LogoutButton } from "../../features/auth/components/LogoutButton";
-import { PrivateNavLink } from "./_components/PrivateNavLink";
+import { PrivateNavigation } from "./_components/PrivateNavigation";
 
 /**
  * Private application layout.
@@ -23,13 +23,13 @@ export default async function PrivateLayout({
   }
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen overflow-x-hidden bg-slate-950">
       <header className="border-b border-slate-800 bg-slate-950/95">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
-          <div className="space-y-1">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-6">
+          <div className="min-w-0 space-y-1">
             <Link
               href="/dashboard"
-              className="text-lg font-semibold tracking-tight text-white"
+              className="block truncate text-lg font-semibold tracking-tight text-white"
             >
               Talleres MVP
             </Link>
@@ -39,7 +39,7 @@ export default async function PrivateLayout({
             </p>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex shrink-0 items-center gap-3 sm:gap-4">
             <div className="hidden text-right sm:block">
               <p className="text-sm font-medium text-slate-100">{user.name}</p>
               <p className="text-xs text-slate-400">{user.role}</p>
@@ -50,30 +50,12 @@ export default async function PrivateLayout({
         </div>
       </header>
 
-      <div className="mx-auto grid w-full max-w-7xl gap-6 px-6 py-8 lg:grid-cols-[240px_1fr]">
-        <aside className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
-          <nav aria-label="Navegación principal">
-            <ul className="space-y-1">
-              <li>
-                <PrivateNavLink href="/dashboard">Dashboard</PrivateNavLink>
-              </li>
-
-              <li>
-                <PrivateNavLink href="/customers">Clientes</PrivateNavLink>
-              </li>
-
-              <li>
-                <PrivateNavLink href="/vehicles">Vehículos</PrivateNavLink>
-              </li>
-
-              <li>
-                <PrivateNavLink href="/work-orders">Órdenes</PrivateNavLink>
-              </li>
-            </ul>
-          </nav>
+      <div className="mx-auto grid w-full max-w-7xl gap-5 px-5 py-6 sm:px-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-6 lg:py-8">
+        <aside className="min-w-0 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70 p-3 lg:p-4">
+          <PrivateNavigation />
         </aside>
 
-        <main>{children}</main>
+        <main className="min-w-0 overflow-hidden">{children}</main>
       </div>
     </div>
   );

@@ -56,14 +56,14 @@ export default async function WorkOrdersPage({
 
   return (
     <section className="space-y-6">
-      <div className="rounded-3xl border border-slate-800 bg-slate-900/70 p-8">
+      <div className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 sm:p-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-orange-300">
               Órdenes
             </p>
 
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
               Órdenes de trabajo
             </h1>
 
@@ -75,13 +75,13 @@ export default async function WorkOrdersPage({
 
           <Link
             href="/vehicles"
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400"
+            className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400 sm:w-auto"
           >
             Crear desde vehículo
           </Link>
         </div>
 
-        <dl className="mt-8 grid gap-3 sm:grid-cols-3">
+        <dl className="mt-6 grid gap-3 sm:mt-8 sm:grid-cols-3">
           <SummaryItem label="Resultados" value={workOrders.length} />
           <SummaryItem label="Activas" value={activeCount} />
           <SummaryItem label="Entregadas" value={deliveredCount} />
@@ -131,7 +131,7 @@ type EmptyStateProps = {
  */
 function EmptyState({ hasFilters }: EmptyStateProps) {
   return (
-    <div className="rounded-3xl border border-dashed border-slate-700 bg-slate-900/40 p-8">
+    <div className="rounded-3xl border border-dashed border-slate-700 bg-slate-900/40 p-6 sm:p-8">
       <h2 className="text-lg font-semibold text-white">
         {hasFilters
           ? "No se encontraron órdenes"

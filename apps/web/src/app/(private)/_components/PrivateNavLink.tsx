@@ -2,29 +2,35 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import type { MouseEventHandler, ReactNode } from "react";
 
 type PrivateNavLinkProps = {
   href: string;
   children: ReactNode;
+  onClick?: MouseEventHandler<HTMLAnchorElement>;
 };
 
 /**
- * Sidebar navigation link with active route detection.
+ * Private navigation link with active route detection.
  *
  * This is intentionally a leaf Client Component because active route detection
  * depends on usePathname(). The private layout can remain server-rendered.
  */
-export function PrivateNavLink({ href, children }: PrivateNavLinkProps) {
+export function PrivateNavLink({
+  href,
+  children,
+  onClick,
+}: PrivateNavLinkProps) {
   const pathname = usePathname();
   const isActive = isActivePath(pathname, href);
 
   return (
     <Link
       href={href}
+      onClick={onClick}
       aria-current={isActive ? "page" : undefined}
       className={buildClassName(
-        "block rounded-xl px-4 py-3 text-sm font-semibold transition",
+        "flex h-11 w-full items-center justify-start rounded-xl px-4 text-sm font-semibold transition",
         isActive
           ? "bg-orange-500 text-white"
           : "text-slate-200 hover:bg-slate-800 hover:text-white",

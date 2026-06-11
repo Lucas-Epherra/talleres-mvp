@@ -25,14 +25,16 @@ export default async function VehiclesPage({ searchParams }: VehiclesPageProps) 
   const vehicles = await getVehicles({ search });
 
   return (
-    <section className="space-y-8">
-      <header className="rounded-3xl border border-slate-800 bg-slate-900/70 p-8">
+    <section className="space-y-6 sm:space-y-8">
+      <header className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 sm:p-8">
         <p className="text-sm font-semibold uppercase tracking-[0.24em] text-orange-300">
           Vehículos
         </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
           Fichas del taller
         </h1>
+
         <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
           Buscá por patente, marca, modelo, cliente o teléfono. Cada vehículo
           centraliza cliente, órdenes activas e historial.
@@ -48,7 +50,7 @@ export default async function VehiclesPage({ searchParams }: VehiclesPageProps) 
             type="search"
             defaultValue={search}
             placeholder="Buscar por patente, cliente o teléfono..."
-            className="h-11 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20"
+            className="h-11 min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20"
           />
           <button
             type="submit"
@@ -61,10 +63,13 @@ export default async function VehiclesPage({ searchParams }: VehiclesPageProps) 
 
       <section aria-labelledby="vehicles-results-heading" className="space-y-4">
         <div className="flex items-center justify-between gap-4">
-          <h2 id="vehicles-results-heading" className="text-lg font-semibold text-white">
+          <h2
+            id="vehicles-results-heading"
+            className="text-lg font-semibold text-white"
+          >
             Resultados
           </h2>
-          <p className="text-sm text-slate-400">
+          <p className="shrink-0 text-sm text-slate-400">
             {vehicles.length} vehículo{vehicles.length === 1 ? "" : "s"}
           </p>
         </div>
@@ -76,7 +81,7 @@ export default async function VehiclesPage({ searchParams }: VehiclesPageProps) 
             ))}
           </div>
         ) : (
-          <div className="rounded-3xl border border-dashed border-slate-700 bg-slate-900/50 p-8">
+          <div className="rounded-3xl border border-dashed border-slate-700 bg-slate-900/50 p-6 sm:p-8">
             <h2 className="text-lg font-semibold text-white">
               No se encontraron vehículos
             </h2>
