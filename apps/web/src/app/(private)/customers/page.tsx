@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { EmptyState } from "../../../components/ui/EmptyState";
 import { getCustomers } from "../../../features/customers/customers.server";
 
 export const metadata: Metadata = {
@@ -95,15 +96,23 @@ export default async function CustomersPage() {
             ))}
           </div>
         ) : (
-          <div className="rounded-3xl border border-dashed border-slate-700 bg-slate-900/50 p-6 sm:p-8">
-            <h2 className="text-lg font-semibold text-white">
-              Todavía no hay clientes
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-400">
-              Creá el primer cliente para poder asociarle vehículos y órdenes
-              de trabajo.
-            </p>
-          </div>
+          <EmptyState
+            eyebrow="Primer paso"
+            title="Todavía no hay clientes cargados"
+            description="Creá el primer cliente para poder asociarle vehículos, abrir fichas y registrar órdenes de trabajo."
+            actions={[
+              {
+                label: "Crear cliente",
+                href: "/customers/new",
+                variant: "primary",
+              },
+              {
+                label: "Ver vehículos",
+                href: "/vehicles",
+                variant: "secondary",
+              },
+            ]}
+          />
         )}
       </section>
     </section>

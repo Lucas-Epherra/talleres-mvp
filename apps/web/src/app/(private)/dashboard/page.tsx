@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { EmptyState } from "../../../components/ui/EmptyState";
 import { getDashboardSummary } from "../../../features/dashboard/dashboard.server";
 import {
   formatDate,
@@ -226,10 +227,24 @@ export default async function DashboardPage() {
             </div>
           </>
         ) : (
-          <div className="p-6">
-            <p className="rounded-2xl border border-dashed border-slate-700 p-6 text-sm text-slate-400">
-              Todavía no hay órdenes de trabajo registradas.
-            </p>
+          <div className="p-5 sm:p-6">
+            <EmptyState
+              eyebrow="Sin movimientos"
+              title="Todavía no hay órdenes recientes"
+              description="Cuando el taller empiece a registrar órdenes, los últimos movimientos van a aparecer acá. El flujo recomendado es crear la orden desde la ficha del vehículo."
+              actions={[
+                {
+                  label: "Ir a vehículos",
+                  href: "/vehicles",
+                  variant: "primary",
+                },
+                {
+                  label: "Ver órdenes",
+                  href: "/work-orders",
+                  variant: "secondary",
+                },
+              ]}
+            />
           </div>
         )}
       </section>

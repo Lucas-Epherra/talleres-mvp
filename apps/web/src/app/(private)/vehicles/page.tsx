@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { EmptyState } from "../../../components/ui/EmptyState";
 import { normalizeSearchParam } from "../../../lib/format";
 import { VehicleCard } from "../../../features/vehicles/components/VehicleCard";
 import { getVehicles } from "../../../features/vehicles/vehicles.server";
@@ -23,22 +25,34 @@ export default async function VehiclesPage({ searchParams }: VehiclesPageProps) 
   const resolvedSearchParams = await searchParams;
   const search = normalizeSearchParam(resolvedSearchParams.search);
   const vehicles = await getVehicles({ search });
+  const hasSearch = Boolean(search);
 
   return (
     <section className="space-y-6 sm:space-y-8">
       <header className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 sm:p-8">
-        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-orange-300">
-          Vehículos
-        </p>
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-orange-300">
+              Vehículos
+            </p>
 
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-          Fichas del taller
-        </h1>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+              Fichas del taller
+            </h1>
 
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
-          Buscá por patente, marca, modelo, cliente o teléfono. Cada vehículo
-          centraliza cliente, órdenes activas e historial.
-        </p>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
+              Buscá por patente, marca, modelo, cliente o teléfono. Cada
+              vehículo centraliza cliente, órdenes activas e historial.
+            </p>
+          </div>
+
+          <Link
+            href="/vehicles/new"
+            className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400 sm:w-auto"
+          >
+            Nuevo vehículo
+          </Link>
+        </div>
 
         <form className="mt-6 flex flex-col gap-3 sm:flex-row" role="search">
           <label htmlFor="search" className="sr-only">
@@ -58,6 +72,15 @@ export default async function VehiclesPage({ searchParams }: VehiclesPageProps) 
           >
             Buscar
           </button>
+
+          {hasSearch ? (
+            <Link
+              href="/vehicles"
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-700 px-5 text-sm font-semibold text-slate-100 transition hover:border-slate-500 hover:bg-slate-900"
+            >
+              Limpiar
+            </Link>
+          ) : null}
         </form>
       </header>
 
@@ -81,15 +104,46 @@ export default async function VehiclesPage({ searchParams }: VehiclesPageProps) 
             ))}
           </div>
         ) : (
-          <div className="rounded-3xl border border-dashed border-slate-700 bg-slate-900/50 p-6 sm:p-8">
-            <h2 className="text-lg font-semibold text-white">
-              No se encontraron vehículos
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-400">
-              Probá buscar por patente, nombre del cliente o teléfono. Si el
-              vehículo todavía no existe, el próximo bloque será crear el alta.
-            </p>
-          </div>
+          <EmptyState
+            eyebrow={hasSearch ? "Sin resultados" : "Primer vehículo"}
+            title={
+              hasSearch
+                ? "No se encontraron vehículos"
+                : "Todavía no hay vehículos cargados"
+            }
+            description={
+              hasSearch
+                ? "Probá limpiar la búsqueda o buscar por otra patente, cliente, marca, modelo o teléfono."
+                : "Cargá el primer vehículo para empezar a construir su ficha, asociar cliente y registrar órdenes de trabajo."
+            }
+            actions={
+              hasSearch
+                ? [
+                    {
+                      label: "Limpiar búsqueda",
+                      href: "/vehicles",
+                      variant: "primary",
+                    },
+                    {
+                      label: "Nuevo vehículo",
+                      href: "/vehicles/new",
+                      variant: "secondary",
+                    },
+                  ]
+                : [
+                    {
+                      label: "Crear vehículo",
+                      href: "/vehicles/new",
+                      variant: "primary",
+                    },
+                    {
+                      label: "Crear cliente",
+                      href: "/customers/new",
+                      variant: "secondary",
+                    },
+                  ]
+            }
+          />
         )}
       </section>
     </section>

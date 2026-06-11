@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { EmptyState } from "../../../components/ui/EmptyState";
 import {
   normalizeSearchParam,
   type WorkOrderStatus,
@@ -97,7 +98,46 @@ export default async function WorkOrdersPage({
           ))}
         </div>
       ) : (
-        <EmptyState hasFilters={hasFilters} />
+        <EmptyState
+          eyebrow={hasFilters ? "Sin resultados" : "Primera orden"}
+          title={
+            hasFilters
+              ? "No se encontraron órdenes"
+              : "Todavía no hay órdenes de trabajo"
+          }
+          description={
+            hasFilters
+              ? "Probá limpiar los filtros o buscar por otra patente, cliente, vehículo o diagnóstico."
+              : "Para mantener el flujo principal del MVP, creá la primera orden desde la ficha de un vehículo."
+          }
+          actions={
+            hasFilters
+              ? [
+                  {
+                    label: "Limpiar filtros",
+                    href: "/work-orders",
+                    variant: "primary",
+                  },
+                  {
+                    label: "Crear desde vehículo",
+                    href: "/vehicles",
+                    variant: "secondary",
+                  },
+                ]
+              : [
+                  {
+                    label: "Ir a vehículos",
+                    href: "/vehicles",
+                    variant: "primary",
+                  },
+                  {
+                    label: "Crear cliente",
+                    href: "/customers/new",
+                    variant: "secondary",
+                  },
+                ]
+          }
+        />
       )}
     </section>
   );
@@ -118,49 +158,6 @@ function SummaryItem({ label, value }: SummaryItemProps) {
         {label}
       </dt>
       <dd className="mt-2 text-2xl font-semibold text-white">{value}</dd>
-    </div>
-  );
-}
-
-type EmptyStateProps = {
-  hasFilters: boolean;
-};
-
-/**
- * Empty state for the work orders list.
- */
-function EmptyState({ hasFilters }: EmptyStateProps) {
-  return (
-    <div className="rounded-3xl border border-dashed border-slate-700 bg-slate-900/40 p-6 sm:p-8">
-      <h2 className="text-lg font-semibold text-white">
-        {hasFilters
-          ? "No se encontraron órdenes"
-          : "Todavía no hay órdenes de trabajo"}
-      </h2>
-
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-        {hasFilters
-          ? "Probá limpiar los filtros o buscar por otra patente, cliente, vehículo o diagnóstico."
-          : "Para mantener el flujo principal del MVP, creá la primera orden desde la ficha de un vehículo."}
-      </p>
-
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-        {hasFilters ? (
-          <Link
-            href="/work-orders"
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-700 px-5 text-sm font-semibold text-slate-100 transition hover:border-slate-500 hover:bg-slate-900"
-          >
-            Limpiar filtros
-          </Link>
-        ) : null}
-
-        <Link
-          href="/vehicles"
-          className="inline-flex h-11 items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400"
-        >
-          Ir a vehículos
-        </Link>
-      </div>
     </div>
   );
 }
