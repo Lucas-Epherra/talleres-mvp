@@ -17,3 +17,11 @@ export type CreateCustomerInput = {
   address?: string;
   notes?: string;
 };
+
+export type UpdateCustomerInput = {
+  fullName?: string;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  notes?: string | null;
+};

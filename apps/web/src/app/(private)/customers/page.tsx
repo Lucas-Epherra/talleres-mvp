@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { getCustomers } from "../../../features/customers/customers.server";
+import type { Customer } from "../../../features/customers/types";
 
 export const metadata: Metadata = {
   title: "Clientes",
@@ -85,12 +86,28 @@ export default async function CustomersPage() {
                     ) : null}
                   </div>
 
-                  <Link
-                    href={`/vehicles/new?customerId=${customer.id}`}
-                    className="inline-flex h-10 w-full shrink-0 items-center justify-center rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300 sm:w-auto"
-                  >
-                    Cargar vehículo
-                  </Link>
+                  <div className="flex shrink-0 flex-col gap-3 sm:items-end">
+                    <Link
+                      href={`/customers/${customer.id}/edit`}
+                      className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-orange-500 px-4 text-sm font-semibold text-white transition hover:bg-orange-400 sm:w-auto"
+                    >
+                      Editar cliente
+                    </Link>
+
+                    <Link
+                      href={buildCustomerVehiclesHref(customer)}
+                      className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300 sm:w-auto"
+                    >
+                      Ver vehículos
+                    </Link>
+
+                    <Link
+                      href={`/vehicles/new?customerId=${customer.id}`}
+                      className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300 sm:w-auto"
+                    >
+                      Cargar vehículo
+                    </Link>
+                  </div>
                 </div>
               </article>
             ))}
@@ -117,4 +134,21 @@ export default async function CustomersPage() {
       </section>
     </section>
   );
+}
+
+/**
+ * Builds the vehicles list URL filtered by customer data.
+ *
+ * The vehicles screen currently supports a generic search query, not a strict
+ * customerId filter. This keeps the UI useful without expanding backend scope.
+ */
+/**
+ * Builds the vehicles list URL filtered by customer name.
+ *
+ * The vehicles screen currently supports a generic search query, not a strict
+ * customerId filter. Searching by customer name keeps the shortcut readable and
+ * predictable for the user.
+ */
+function buildCustomerVehiclesHref(customer: Customer): string {
+  return `/vehicles?search=${encodeURIComponent(customer.fullName)}`;
 }
