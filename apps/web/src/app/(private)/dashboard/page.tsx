@@ -49,21 +49,25 @@ export default async function DashboardPage() {
             label="Clientes"
             value={summary.totals.customers}
             description="Clientes registrados"
+            href="/customers"
           />
           <DashboardMetricCard
             label="Vehículos"
             value={summary.totals.vehicles}
             description="Vehículos asociados"
+            href="/vehicles"
           />
           <DashboardMetricCard
             label="Órdenes"
             value={summary.totals.workOrders}
             description="Órdenes históricas"
+            href="/work-orders"
           />
           <DashboardMetricCard
             label="En taller"
             value={summary.totals.vehiclesInWorkshop}
             description="Vehículos con trabajo activo"
+            href="/work-orders"
           />
         </div>
       </section>
@@ -81,26 +85,31 @@ export default async function DashboardPage() {
             label="Activas"
             value={summary.workOrders.active}
             description="Pendientes, en progreso o listas"
+            href="/work-orders"
           />
           <DashboardMetricCard
             label="Pendientes"
             value={summary.workOrders.pending}
             description="Aún sin iniciar"
+            href="/work-orders?status=PENDING"
           />
           <DashboardMetricCard
             label="En progreso"
             value={summary.workOrders.inProgress}
             description="Trabajo en curso"
+            href="/work-orders?status=IN_PROGRESS"
           />
           <DashboardMetricCard
             label="Listas"
             value={summary.workOrders.ready}
             description="Preparadas para entregar"
+            href="/work-orders?status=READY"
           />
           <DashboardMetricCard
             label="Entregadas"
             value={summary.workOrders.delivered}
             description="Historial cerrado"
+            href="/work-orders?status=DELIVERED"
           />
         </div>
       </section>
@@ -256,23 +265,52 @@ type DashboardMetricCardProps = {
   label: string;
   value: number;
   description: string;
+  href?: string;
 };
 
 /**
  * Small reusable metric card for dashboard summary values.
+ *
+ * When href is provided, the card becomes a navigable dashboard shortcut while
+ * preserving the same visual structure as non-interactive metric cards.
  */
 function DashboardMetricCard({
   label,
   value,
   description,
+  href,
 }: DashboardMetricCardProps) {
-  return (
-    <article className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+  const content = (
+    <>
       <p className="text-sm text-slate-400">{label}</p>
       <p className="mt-3 text-3xl font-semibold tracking-tight text-white">
         {value}
       </p>
       <p className="mt-2 text-sm leading-5 text-slate-500">{description}</p>
+
+      {href ? (
+        <p className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-orange-300">
+          Abrir
+        </p>
+      ) : null}
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        aria-label={`Abrir ${label.toLowerCase()}`}
+        className="group rounded-2xl border border-slate-800 bg-slate-900/70 p-5 transition hover:border-orange-400/70 hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-400/40"
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <article className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+      {content}
     </article>
   );
 }
