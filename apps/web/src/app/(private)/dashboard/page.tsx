@@ -159,6 +159,9 @@ export default async function DashboardPage() {
                     <th scope="col" className="px-6 py-4 font-semibold">
                       Estimado
                     </th>
+                    <th scope="col" className="px-6 py-4 font-semibold">
+                      Acción
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
@@ -206,6 +209,15 @@ export default async function DashboardPage() {
 
                       <td className="px-6 py-5 text-sm font-medium text-slate-100">
                         {formatMoney(workOrder.estimatedTotal)}
+                      </td>
+
+                      <td className="px-6 py-5">
+                        <Link
+                          href={`/work-orders/${workOrder.id}`}
+                          className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-700 px-3 text-xs font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300"
+                        >
+                          Ver orden
+                        </Link>
                       </td>
                     </tr>
                   ))}
@@ -272,7 +284,7 @@ function LatestWorkOrderCard({ workOrder }: LatestWorkOrderCardProps) {
             Orden #{workOrder.orderNumber}
           </p>
 
-          <h3 className="mt-2 text-base font-semibold leading-6 text-white">
+          <h3 className="mt-2 wrap-break-word text-base font-semibold leading-6 text-white">
             {workOrder.reportedIssue}
           </h3>
         </div>
@@ -298,12 +310,21 @@ function LatestWorkOrderCard({ workOrder }: LatestWorkOrderCardProps) {
         />
       </div>
 
-      <Link
-        href={`/vehicles/${workOrder.vehicle.id}`}
-        className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300 sm:w-auto"
-      >
-        Ver ficha del vehículo
-      </Link>
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+        <Link
+          href={`/work-orders/${workOrder.id}`}
+          className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-orange-500 px-4 text-sm font-semibold text-white transition hover:bg-orange-400 sm:w-auto"
+        >
+          Ver orden
+        </Link>
+
+        <Link
+          href={`/vehicles/${workOrder.vehicle.id}`}
+          className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300 sm:w-auto"
+        >
+          Ver ficha
+        </Link>
+      </div>
     </article>
   );
 }

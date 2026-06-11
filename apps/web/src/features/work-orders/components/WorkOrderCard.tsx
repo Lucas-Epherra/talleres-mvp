@@ -26,11 +26,11 @@ export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
             Orden #{workOrder.orderNumber}
           </p>
 
-          <h2 className="mt-2 wrap-break-word text-lg font-semibold tracking-tight text-white sm:text-xl">
+          <h2 className="mt-2 wrap-break-words text-lg font-semibold tracking-tight text-white sm:text-xl">
             {workOrder.reportedIssue}
           </h2>
 
-          <p className="mt-3 wrap-break-word text-sm leading-6 text-slate-400">
+          <p className="mt-3 wrap-break-words text-sm leading-6 text-slate-400">
             {workOrder.diagnosis ?? "Diagnóstico pendiente"}
           </p>
         </div>
@@ -54,11 +54,11 @@ export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
             Vehículo
           </h3>
 
-          <p className="mt-3 wrap-break-word text-lg font-semibold text-white">
+          <p className="mt-3 wrap-break-words text-lg font-semibold text-white">
             {vehicle.licensePlate}
           </p>
 
-          <p className="mt-1 wrap-break-word text-sm text-slate-400">
+          <p className="mt-1 wrap-break-words text-sm text-slate-400">
             {vehicle.brand} {vehicle.model}
             {vehicle.year ? ` · ${vehicle.year}` : ""}
           </p>
@@ -67,12 +67,21 @@ export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
             Último km: {formatMileage(vehicle.mileage)}
           </p>
 
-          <Link
-            href={`/vehicles/${vehicle.id}`}
-            className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300 sm:w-auto"
-          >
-            Ver ficha
-          </Link>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <Link
+              href={`/work-orders/${workOrder.id}`}
+              className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-orange-500 px-4 text-sm font-semibold text-white transition hover:bg-orange-400 sm:w-auto"
+            >
+              Ver orden
+            </Link>
+
+            <Link
+              href={`/vehicles/${vehicle.id}`}
+              className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300 sm:w-auto"
+            >
+              Ver ficha
+            </Link>
+          </div>
         </section>
 
         <section
@@ -86,15 +95,15 @@ export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
             Cliente
           </h3>
 
-          <p className="mt-3 wrap-break-word text-sm font-semibold text-white">
+          <p className="mt-3 wrap-break-words text-sm font-semibold text-white">
             {customer.fullName}
           </p>
 
-          <p className="mt-2 wrap-break-word text-sm text-slate-400">
+          <p className="mt-2 wrap-break-words text-sm text-slate-400">
             {customer.phone ?? "Sin teléfono"}
           </p>
 
-          <p className="mt-1 wrap-break-word text-sm text-slate-400">
+          <p className="mt-1 wrap-break-words text-sm text-slate-400">
             {customer.email ?? "Sin email"}
           </p>
         </section>
@@ -122,7 +131,7 @@ export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
       </div>
 
       {workOrder.notes ? (
-        <p className="mt-5 wrap-break-word rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-sm leading-6 text-slate-400">
+        <p className="mt-5 wrap-break-words rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-sm leading-6 text-slate-400">
           {workOrder.notes}
         </p>
       ) : null}
@@ -144,7 +153,7 @@ function Detail({ label, value }: DetailProps) {
       <dt className="text-xs uppercase tracking-[0.14em] text-slate-500">
         {label}
       </dt>
-      <dd className="mt-2 wrap-break-word text-sm font-semibold text-slate-100">
+      <dd className="mt-2 wrap-break-words text-sm font-semibold text-slate-100">
         {value}
       </dd>
     </div>

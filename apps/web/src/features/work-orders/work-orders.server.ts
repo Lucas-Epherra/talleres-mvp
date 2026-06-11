@@ -32,3 +32,12 @@ export function getWorkOrders({
 
   return apiServerFetch<WorkOrder[]>(path);
 }
+
+/**
+ * Fetches one work order by id for the authenticated workshop.
+ *
+ * The backend validates ownership through the authenticated workshop context.
+ */
+export function getWorkOrder(workOrderId: string): Promise<WorkOrder> {
+  return apiServerFetch<WorkOrder>(`/work-orders/${workOrderId}`);
+}
