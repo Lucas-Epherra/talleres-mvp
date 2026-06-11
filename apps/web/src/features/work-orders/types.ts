@@ -18,6 +18,23 @@ export type UpdateWorkOrderStatusInput = {
   status: WorkOrderStatus;
 };
 
+export type WorkOrderCustomer = {
+  id: string;
+  fullName: string;
+  phone: string | null;
+  email: string | null;
+};
+
+export type WorkOrderVehicle = {
+  id: string;
+  licensePlate: string;
+  brand: string;
+  model: string;
+  year: number | null;
+  mileage: number | null;
+  customer: WorkOrderCustomer;
+};
+
 export type WorkOrder = {
   id: string;
   workshopId: string;
@@ -38,4 +55,5 @@ export type WorkOrder = {
   notes: string | null;
   createdAt: string;
   updatedAt: string;
+  vehicle: WorkOrderVehicle;
 };

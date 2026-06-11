@@ -1,37 +1,177 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import {
+  normalizeSearchParam,
+  type WorkOrderStatus,
+} from "../../../lib/format";
+import { WorkOrderCard } from "../../../features/work-orders/components/WorkOrderCard";
+import { WorkOrdersFilters } from "../../../features/work-orders/components/WorkOrdersFilters";
+import { getWorkOrders } from "../../../features/work-orders/work-orders.server";
 
 export const metadata: Metadata = {
   title: "Órdenes de trabajo",
 };
 
+type WorkOrdersPageProps = {
+  searchParams: Promise<{
+    search?: string | string[];
+    status?: string | string[];
+  }>;
+};
+
+const WORK_ORDER_STATUSES: WorkOrderStatus[] = [
+  "PENDING",
+  "IN_PROGRESS",
+  "READY",
+  "DELIVERED",
+];
+
 /**
- * Work orders placeholder page.
+ * Work orders list page.
  *
- * The real list will be implemented after the vehicle-first creation flow.
+ * This route fetches data server-side and forwards the httpOnly cookie through
+ * apiServerFetch, keeping auth tokens out of the browser runtime.
  */
-export default function WorkOrdersPage() {
+export default async function WorkOrdersPage({
+  searchParams,
+}: WorkOrdersPageProps) {
+  const resolvedSearchParams = await searchParams;
+  const search = normalizeSearchParam(resolvedSearchParams.search);
+  const status = getValidWorkOrderStatus(
+    normalizeSearchParam(resolvedSearchParams.status),
+  );
+
+  const workOrders = await getWorkOrders({
+    search,
+    status,
+  });
+
+  const activeCount = workOrders.filter(
+    (workOrder) => workOrder.status !== "DELIVERED",
+  ).length;
+  const deliveredCount = workOrders.filter(
+    (workOrder) => workOrder.status === "DELIVERED",
+  ).length;
+  const hasFilters = Boolean(search || status);
+
   return (
-    <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-8">
-      <p className="text-sm font-semibold uppercase tracking-[0.24em] text-orange-300">
-        Órdenes
-      </p>
+    <section className="space-y-6">
+      <div className="rounded-3xl border border-slate-800 bg-slate-900/70 p-8">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-orange-300">
+              Órdenes
+            </p>
 
-      <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
-        Órdenes de trabajo
-      </h1>
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+              Órdenes de trabajo
+            </h1>
 
-      <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
-        El listado real de órdenes queda para el próximo bloque. Por ahora, el
-        flujo correcto del MVP es crear una orden desde la ficha de un vehículo.
-      </p>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
+              Vista operativa para consultar órdenes por estado, cliente,
+              patente, vehículo o diagnóstico.
+            </p>
+          </div>
 
-      <Link
-        href="/vehicles"
-        className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400"
-      >
-        Ir a vehículos
-      </Link>
+          <Link
+            href="/vehicles"
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400"
+          >
+            Crear desde vehículo
+          </Link>
+        </div>
+
+        <dl className="mt-8 grid gap-3 sm:grid-cols-3">
+          <SummaryItem label="Resultados" value={workOrders.length} />
+          <SummaryItem label="Activas" value={activeCount} />
+          <SummaryItem label="Entregadas" value={deliveredCount} />
+        </dl>
+      </div>
+
+      <WorkOrdersFilters currentSearch={search} currentStatus={status} />
+
+      {workOrders.length > 0 ? (
+        <div className="space-y-4">
+          {workOrders.map((workOrder) => (
+            <WorkOrderCard key={workOrder.id} workOrder={workOrder} />
+          ))}
+        </div>
+      ) : (
+        <EmptyState hasFilters={hasFilters} />
+      )}
     </section>
   );
+}
+
+type SummaryItemProps = {
+  label: string;
+  value: number;
+};
+
+/**
+ * Summary metric for the filtered work orders result set.
+ */
+function SummaryItem({ label, value }: SummaryItemProps) {
+  return (
+    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+      <dt className="text-xs uppercase tracking-[0.14em] text-slate-500">
+        {label}
+      </dt>
+      <dd className="mt-2 text-2xl font-semibold text-white">{value}</dd>
+    </div>
+  );
+}
+
+type EmptyStateProps = {
+  hasFilters: boolean;
+};
+
+/**
+ * Empty state for the work orders list.
+ */
+function EmptyState({ hasFilters }: EmptyStateProps) {
+  return (
+    <div className="rounded-3xl border border-dashed border-slate-700 bg-slate-900/40 p-8">
+      <h2 className="text-lg font-semibold text-white">
+        {hasFilters
+          ? "No se encontraron órdenes"
+          : "Todavía no hay órdenes de trabajo"}
+      </h2>
+
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+        {hasFilters
+          ? "Probá limpiar los filtros o buscar por otra patente, cliente, vehículo o diagnóstico."
+          : "Para mantener el flujo principal del MVP, creá la primera orden desde la ficha de un vehículo."}
+      </p>
+
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        {hasFilters ? (
+          <Link
+            href="/work-orders"
+            className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-700 px-5 text-sm font-semibold text-slate-100 transition hover:border-slate-500 hover:bg-slate-900"
+          >
+            Limpiar filtros
+          </Link>
+        ) : null}
+
+        <Link
+          href="/vehicles"
+          className="inline-flex h-11 items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400"
+        >
+          Ir a vehículos
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Returns a valid work order status from a query param value.
+ */
+function getValidWorkOrderStatus(value: string): WorkOrderStatus | undefined {
+  if (WORK_ORDER_STATUSES.includes(value as WorkOrderStatus)) {
+    return value as WorkOrderStatus;
+  }
+
+  return undefined;
 }
