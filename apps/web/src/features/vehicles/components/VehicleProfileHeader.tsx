@@ -1,8 +1,5 @@
 import Link from "next/link";
-import {
-  formatMileage,
-  formatWorkOrderStatus,
-} from "../../../lib/format";
+import { formatMileage, formatWorkOrderStatus } from "../../../lib/format";
 import type { VehicleProfile } from "../types";
 
 type VehicleProfileHeaderProps = {
@@ -54,12 +51,21 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
             <Metric label="Historial" value={summary.deliveredWorkOrders} />
           </div>
 
-          <Link
-            href={`/work-orders/new?vehicleId=${vehicle.id}`}
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400"
-          >
-            Nueva orden de trabajo
-          </Link>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Link
+              href={`/work-orders/new?vehicleId=${vehicle.id}`}
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400"
+            >
+              Nueva orden
+            </Link>
+
+            <Link
+              href={`/vehicles/${vehicle.id}/edit`}
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-700 px-5 text-sm font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300"
+            >
+              Editar vehículo
+            </Link>
+          </div>
         </div>
       </div>
 

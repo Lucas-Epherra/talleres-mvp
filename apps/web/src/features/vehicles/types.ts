@@ -25,6 +25,15 @@ export type VehicleListItem = {
   };
 };
 
+export type UpdateVehicleInput = {
+  licensePlate?: string;
+  brand?: string;
+  model?: string;
+  year?: number | null;
+  mileage?: number | null;
+  notes?: string | null;
+};
+
 export type VehicleProfileCustomer = VehicleCustomer & {
   address: string | null;
   notes: string | null;
