@@ -1,13 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { type FormEvent, type ReactNode, useState } from "react";
 import { ApiError } from "../../../lib/api";
 import type { Customer } from "../../customers/types";
 import { createVehicle } from "../vehicles.client";
 
 type CreateVehicleFormProps = {
   customers: Customer[];
+  defaultCustomerId?: string;
 };
 
 type FormStatus = "idle" | "loading" | "error";
@@ -21,9 +22,13 @@ type CreateVehicleFormState = {
  * Interactive vehicle creation form.
  *
  * Requires an existing customer because vehicles are always associated with a
- * customer in the MVP domain model.
+ * customer in the MVP domain model. When defaultCustomerId is provided, the
+ * customer select is preselected but remains editable.
  */
-export function CreateVehicleForm({ customers }: CreateVehicleFormProps) {
+export function CreateVehicleForm({
+  customers,
+  defaultCustomerId,
+}: CreateVehicleFormProps) {
   const router = useRouter();
 
   const [state, setState] = useState<CreateVehicleFormState>({
@@ -120,6 +125,7 @@ export function CreateVehicleForm({ customers }: CreateVehicleFormProps) {
         <select
           id="customerId"
           name="customerId"
+          defaultValue={defaultCustomerId ?? ""}
           disabled={isLoading}
           required
           className="h-11 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
@@ -236,7 +242,7 @@ export function CreateVehicleForm({ customers }: CreateVehicleFormProps) {
 }
 
 type FieldProps = {
-  children: React.ReactNode;
+  children: ReactNode;
 };
 
 /**
@@ -248,7 +254,7 @@ function Field({ children }: FieldProps) {
 
 type LabelProps = {
   htmlFor: string;
-  children: React.ReactNode;
+  children: ReactNode;
 };
 
 /**
@@ -296,10 +302,16 @@ function Input({
   );
 }
 
+/**
+ * Reads and trims a string value from form data.
+ */
 function getStringValue(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
 }
 
+/**
+ * Reads an optional string from form data.
+ */
 function getOptionalStringValue(
   formData: FormData,
   key: string,
@@ -309,6 +321,9 @@ function getOptionalStringValue(
   return value.length > 0 ? value : undefined;
 }
 
+/**
+ * Reads an optional number from form data.
+ */
 function getOptionalNumberValue(
   formData: FormData,
   key: string,
