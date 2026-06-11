@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { getCurrentUser } from "../../features/auth/auth.server";
 import { LogoutButton } from "../../features/auth/components/LogoutButton";
+import { PrivateNavLink } from "./_components/PrivateNavLink";
 
 /**
  * Private application layout.
@@ -32,6 +33,7 @@ export default async function PrivateLayout({
             >
               Talleres MVP
             </Link>
+
             <p className="text-xs text-slate-400">
               Panel operativo del taller
             </p>
@@ -53,36 +55,19 @@ export default async function PrivateLayout({
           <nav aria-label="Navegación principal">
             <ul className="space-y-1">
               <li>
-                <Link
-                  href="/dashboard"
-                  className="block rounded-xl px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 hover:text-white"
-                >
-                  Dashboard
-                </Link>
+                <PrivateNavLink href="/dashboard">Dashboard</PrivateNavLink>
               </li>
+
               <li>
-                <Link
-                  href="/customers"
-                  className="block rounded-xl px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 hover:text-white"
-                >
-                  Clientes
-                </Link>
+                <PrivateNavLink href="/customers">Clientes</PrivateNavLink>
               </li>
+
               <li>
-                <Link
-                  href="/vehicles"
-                  className="block rounded-xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white"
-                >
-                  Vehículos
-                </Link>
+                <PrivateNavLink href="/vehicles">Vehículos</PrivateNavLink>
               </li>
+
               <li>
-                <Link
-                  href="/work-orders"
-                  className="block rounded-xl px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 hover:text-white"
-                >
-                  Órdenes
-                </Link>
+                <PrivateNavLink href="/work-orders">Órdenes</PrivateNavLink>
               </li>
             </ul>
           </nav>
