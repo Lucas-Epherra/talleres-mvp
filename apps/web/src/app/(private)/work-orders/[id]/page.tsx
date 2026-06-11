@@ -69,10 +69,17 @@ export default async function WorkOrderDetailPage({
           </div>
         </div>
 
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <Link
+            href={`/work-orders/${workOrder.id}/edit`}
+            className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400 sm:w-auto"
+          >
+            Editar orden
+          </Link>
+
           <Link
             href={`/vehicles/${vehicle.id}`}
-            className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400 sm:w-auto"
+            className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-slate-700 px-5 text-sm font-semibold text-slate-100 transition hover:border-slate-500 hover:bg-slate-900 sm:w-auto"
           >
             Ver ficha del vehículo
           </Link>
@@ -106,19 +113,25 @@ export default async function WorkOrderDetailPage({
               />
               <TextDetail
                 label="Diagnóstico"
-                value={workOrder.diagnosis ?? "Diagnóstico pendiente"}
+                value={getReadableText(
+                  workOrder.diagnosis,
+                  "Diagnóstico pendiente",
+                )}
               />
               <TextDetail
                 label="Trabajo realizado"
-                value={workOrder.workDone ?? "Trabajo pendiente"}
+                value={getReadableText(workOrder.workDone, "Trabajo pendiente")}
               />
               <TextDetail
                 label="Repuestos usados"
-                value={workOrder.partsUsed ?? "Sin repuestos cargados"}
+                value={getReadableText(
+                  workOrder.partsUsed,
+                  "Sin repuestos cargados",
+                )}
               />
               <TextDetail
                 label="Notas"
-                value={workOrder.notes ?? "Sin notas internas"}
+                value={getReadableText(workOrder.notes, "Sin notas internas")}
               />
             </div>
           </section>
@@ -269,6 +282,17 @@ async function getWorkOrderOrNotFound(workOrderId: string): Promise<WorkOrder> {
   }
 }
 
+/**
+ * Converts nullable or empty API text into a readable fallback.
+ */
+function getReadableText(value: string | null, fallback: string): string {
+  if (!value || value.trim().length === 0) {
+    return fallback;
+  }
+
+  return value;
+}
+
 type TextDetailProps = {
   label: string;
   value: string;
@@ -309,4 +333,4 @@ function Metric({ label, value }: MetricProps) {
       </dd>
     </div>
   );
-} 
+}

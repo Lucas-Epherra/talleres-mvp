@@ -14,6 +14,19 @@ export type CreateWorkOrderInput = {
   notes?: string;
 };
 
+export type UpdateWorkOrderInput = {
+  reportedIssue?: string;
+  diagnosis?: string | null;
+  workDone?: string | null;
+  partsUsed?: string | null;
+  entryMileage?: number | null;
+  laborCost?: number | null;
+  partsCost?: number | null;
+  estimatedTotal?: number | null;
+  finalTotal?: number | null;
+  notes?: string | null;
+};
+
 export type UpdateWorkOrderStatusInput = {
   status: WorkOrderStatus;
 };

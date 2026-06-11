@@ -1,6 +1,7 @@
 import { apiFetch } from "../../lib/api";
 import type {
   CreateWorkOrderInput,
+  UpdateWorkOrderInput,
   UpdateWorkOrderStatusInput,
   WorkOrder,
 } from "./types";
@@ -16,6 +17,22 @@ export function createWorkOrder(
 ): Promise<WorkOrder> {
   return apiFetch<WorkOrder>("/work-orders", {
     method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+/**
+ * Updates editable operational fields of a work order.
+ *
+ * Status changes are intentionally handled by updateWorkOrderStatus to keep
+ * this mutation focused on diagnosis, work performed, mileage, costs and notes.
+ */
+export function updateWorkOrder(
+  workOrderId: string,
+  input: UpdateWorkOrderInput,
+): Promise<WorkOrder> {
+  return apiFetch<WorkOrder>(`/work-orders/${workOrderId}`, {
+    method: "PATCH",
     body: JSON.stringify(input),
   });
 }
