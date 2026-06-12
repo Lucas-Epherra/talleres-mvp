@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { formatMileage, formatWorkOrderStatus } from "../../../lib/format";
 import type { VehicleProfile } from "../types";
+import {
+  DetailSheet,
+  DetailSheetRow,
+} from "../../../components/ui/DetailSheet";
+
 
 type VehicleProfileHeaderProps = {
   profile: VehicleProfile;
@@ -68,61 +73,46 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
           </div>
         </div>
       </div>
-
-<section
-  aria-labelledby="vehicle-data-heading"
-  className="mt-8 rounded-2xl border border-slate-800 bg-slate-950/70"
->
-  <div className="border-b border-slate-800 p-5">
-    <h2
-      id="vehicle-data-heading"
-      className="text-sm font-semibold text-white"
-    >
-      Datos del vehículo
-    </h2>
-  </div>
-
-  <dl className="divide-y divide-slate-800">
-    <SheetRow label="Patente" value={vehicle.licensePlate} />
-    <SheetRow label="Marca" value={vehicle.brand} />
-    <SheetRow label="Modelo" value={vehicle.model} />
-    <SheetRow
-      label="Año"
-      value={vehicle.year ? vehicle.year.toString() : "Sin cargar"}
-    />
-    <SheetRow label="Kilometraje" value={formatMileage(vehicle.mileage)} />
-    <SheetRow label="Notas" value={vehicle.notes ?? "Sin notas"} />
-  </dl>
-</section>
-
-      <section
-        aria-labelledby="customer-heading"
-        className="mt-8 rounded-2xl border border-slate-800 bg-slate-950/70"
+      <DetailSheet
+        headingId="vehicle-data-heading"
+        title="Datos del vehículo"
+        className="mt-8"
+        titleSize="sm"
       >
-        <div className="flex flex-col gap-3 border-b border-slate-800 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <h2 id="customer-heading" className="text-sm font-semibold text-white">
-            Cliente asociado
-          </h2>
+        <DetailSheetRow label="Patente" value={vehicle.licensePlate} />
+        <DetailSheetRow label="Marca" value={vehicle.brand} />
+        <DetailSheetRow label="Modelo" value={vehicle.model} />
+        <DetailSheetRow
+          label="Año"
+          value={vehicle.year ? vehicle.year.toString() : "Sin cargar"}
+        />
+        <DetailSheetRow label="Kilometraje" value={formatMileage(vehicle.mileage)} />
+        <DetailSheetRow label="Notas" value={vehicle.notes ?? "Sin notas"} />
+      </DetailSheet>
 
+      <DetailSheet
+        headingId="customer-heading"
+        title="Cliente asociado"
+        className="mt-8"
+        titleSize="sm"
+        action={
           <Link
             href={`/customers/${vehicle.customerId}`}
             className="text-xs font-semibold uppercase tracking-[0.14em] text-orange-300 transition hover:text-orange-200"
           >
             Ver cliente
           </Link>
-        </div>
-
-        <dl className="divide-y divide-slate-800">
-          <SheetRow label="Nombre" value={customer.fullName} />
-          <SheetRow label="Teléfono" value={customer.phone ?? "Sin teléfono"} />
-          <SheetRow label="Email" value={customer.email ?? "Sin email"} />
-          <SheetRow
-            label="Dirección"
-            value={customer.address ?? "Sin dirección"}
-          />
-          <SheetRow label="Notas" value={customer.notes ?? "Sin notas"} />
-        </dl>
-      </section>
+        }
+      >
+        <DetailSheetRow label="Nombre" value={customer.fullName} />
+        <DetailSheetRow label="Teléfono" value={customer.phone ?? "Sin teléfono"} />
+        <DetailSheetRow label="Email" value={customer.email ?? "Sin email"} />
+        <DetailSheetRow
+          label="Dirección"
+          value={customer.address ?? "Sin dirección"}
+        />
+        <DetailSheetRow label="Notas" value={customer.notes ?? "Sin notas"} />
+      </DetailSheet>
     </header>
   );
 }
@@ -141,27 +131,5 @@ function Metric({ label, value }: MetricProps) {
       <p className="text-xs text-slate-500">{label}</p>
       <p className="mt-2 text-lg font-semibold text-white">{value}</p>
     </article>
-  );
-}
-
-type SheetRowProps = {
-  label: string;
-  value: string;
-};
-
-/**
- * Spreadsheet-like row for customer metadata inside the vehicle profile.
- */
-function SheetRow({ label, value }: SheetRowProps) {
-  return (
-    <div className="grid md:grid-cols-[12rem_1fr]">
-      <dt className="border-slate-800 bg-slate-900/60 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 md:border-r">
-        {label}
-      </dt>
-
-      <dd className="wrap-break-word px-4 py-3 text-sm font-medium leading-6 text-slate-100">
-        {value}
-      </dd>
-    </div>
   );
 }

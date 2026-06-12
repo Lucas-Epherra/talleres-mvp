@@ -11,6 +11,10 @@ import type { VehicleListItem } from "../../../../features/vehicles/types";
 import { WorkOrderCard } from "../../../../features/work-orders/components/WorkOrderCard";
 import { getWorkOrders } from "../../../../features/work-orders/work-orders.server";
 import type { WorkOrder } from "../../../../features/work-orders/types";
+import {
+  DetailSheet,
+  DetailSheetRow,
+} from "../../../../components/ui/DetailSheet";
 
 type CustomerDetailPageProps = {
   params: Promise<{
@@ -96,31 +100,27 @@ export default async function CustomerDetailPage({
         </div>
       </header>
 
-      <section
-        aria-labelledby="customer-data-heading"
-        className="rounded-3xl border border-slate-800 bg-slate-900/70"
-      >
-        <div className="flex flex-col gap-3 border-b border-slate-800 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-          <h2 id="customer-data-heading" className="text-lg font-semibold text-white">
-            Datos del cliente
-          </h2>
-
+      <DetailSheet
+        headingId="customer-data-heading"
+        title="Datos del cliente"
+        action={
           <Link
             href={`/customers/${customer.id}/edit`}
             className="text-xs font-semibold uppercase tracking-[0.14em] text-orange-300 transition hover:text-orange-200"
           >
             Editar datos
           </Link>
-        </div>
-
-        <dl className="divide-y divide-slate-800">
-          <SheetRow label="Nombre" value={customer.fullName} />
-          <SheetRow label="Teléfono" value={customer.phone ?? "Sin teléfono"} />
-          <SheetRow label="Email" value={customer.email ?? "Sin email"} />
-          <SheetRow label="Dirección" value={customer.address ?? "Sin dirección"} />
-          <SheetRow label="Notas" value={customer.notes ?? "Sin notas"} />
-        </dl>
-      </section>
+        }
+      >
+        <DetailSheetRow label="Nombre" value={customer.fullName} />
+        <DetailSheetRow label="Teléfono" value={customer.phone ?? "Sin teléfono"} />
+        <DetailSheetRow label="Email" value={customer.email ?? "Sin email"} />
+        <DetailSheetRow
+          label="Dirección"
+          value={customer.address ?? "Sin dirección"}
+        />
+        <DetailSheetRow label="Notas" value={customer.notes ?? "Sin notas"} />
+      </DetailSheet>
 
       <section
         aria-labelledby="customer-summary-heading"
@@ -349,27 +349,6 @@ function getDeliveredWorkOrders(workOrders: WorkOrder[]): WorkOrder[] {
   return workOrders.filter((workOrder) => workOrder.status === "DELIVERED");
 }
 
-type SheetRowProps = {
-  label: string;
-  value: string;
-};
-
-/**
- * Spreadsheet-like row for customer metadata inside the customer profile.
- */
-function SheetRow({ label, value }: SheetRowProps) {
-  return (
-    <div className="grid md:grid-cols-[12rem_1fr]">
-      <dt className="border-slate-800 bg-slate-950/60 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 md:border-r">
-        {label}
-      </dt>
-
-      <dd className="wrap-break-word px-4 py-3 text-sm font-medium leading-6 text-slate-100">
-        {value}
-      </dd>
-    </div>
-  );
-}
 
 type SummaryMetricProps = {
   label: string;

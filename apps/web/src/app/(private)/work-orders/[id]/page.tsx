@@ -11,6 +11,10 @@ import {
 import { UpdateWorkOrderStatusForm } from "../../../../features/work-orders/components/UpdateWorkOrderStatusForm";
 import { getWorkOrder } from "../../../../features/work-orders/work-orders.server";
 import type { WorkOrder } from "../../../../features/work-orders/types";
+import {
+  DetailSheet,
+  DetailSheetRow,
+} from "../../../../components/ui/DetailSheet";
 
 type WorkOrderDetailPageProps = {
   params: Promise<{
@@ -202,65 +206,45 @@ export default async function WorkOrderDetailPage({
         </div>
 
         <aside className="space-y-6">
-  <section
-    aria-labelledby="work-order-vehicle-heading"
-    className="rounded-3xl border border-slate-800 bg-slate-900/70"
-  >
-    <div className="flex flex-col gap-3 border-b border-slate-800 p-5 sm:flex-row sm:items-center sm:justify-between">
-      <h2
-        id="work-order-vehicle-heading"
-        className="text-lg font-semibold text-white"
-      >
-        Vehículo
-      </h2>
+          <DetailSheet
+            headingId="work-order-vehicle-heading"
+            title="Vehículo"
+            action={
+              <Link
+                href={`/vehicles/${vehicle.id}`}
+                className="text-xs font-semibold uppercase tracking-[0.14em] text-orange-300 transition hover:text-orange-200"
+              >
+                Abrir ficha
+              </Link>
+            }
+          >
+            <DetailSheetRow label="Patente" value={vehicle.licensePlate} />
+            <DetailSheetRow label="Marca" value={vehicle.brand} />
+            <DetailSheetRow label="Modelo" value={vehicle.model} />
+            <DetailSheetRow
+              label="Año"
+              value={vehicle.year ? vehicle.year.toString() : "Sin cargar"}
+            />
+            <DetailSheetRow label="Kilometraje" value={formatMileage(vehicle.mileage)} />
+          </DetailSheet>
 
-      <Link
-        href={`/vehicles/${vehicle.id}`}
-        className="text-xs font-semibold uppercase tracking-[0.14em] text-orange-300 transition hover:text-orange-200"
-      >
-        Abrir ficha
-      </Link>
-    </div>
-
-    <dl className="divide-y divide-slate-800">
-      <SheetRow label="Patente" value={vehicle.licensePlate} />
-      <SheetRow label="Marca" value={vehicle.brand} />
-      <SheetRow label="Modelo" value={vehicle.model} />
-      <SheetRow
-        label="Año"
-        value={vehicle.year ? vehicle.year.toString() : "Sin cargar"}
-      />
-      <SheetRow label="Kilometraje" value={formatMileage(vehicle.mileage)} />
-    </dl>
-  </section>
-
-  <section
-    aria-labelledby="work-order-customer-heading"
-    className="rounded-3xl border border-slate-800 bg-slate-900/70"
-  >
-    <div className="flex flex-col gap-3 border-b border-slate-800 p-5 sm:flex-row sm:items-center sm:justify-between">
-      <h2
-        id="work-order-customer-heading"
-        className="text-lg font-semibold text-white"
-      >
-        Cliente
-      </h2>
-
-      <Link
-        href={`/customers/${customer.id}`}
-        className="text-xs font-semibold uppercase tracking-[0.14em] text-orange-300 transition hover:text-orange-200"
-      >
-        Ver cliente
-      </Link>
-    </div>
-
-    <dl className="divide-y divide-slate-800">
-      <SheetRow label="Nombre" value={customer.fullName} />
-      <SheetRow label="Teléfono" value={customer.phone ?? "Sin teléfono"} />
-      <SheetRow label="Email" value={customer.email ?? "Sin email"} />
-    </dl>
-  </section>
-</aside>
+          <DetailSheet
+            headingId="work-order-customer-heading"
+            title="Cliente"
+            action={
+              <Link
+                href={`/customers/${customer.id}`}
+                className="text-xs font-semibold uppercase tracking-[0.14em] text-orange-300 transition hover:text-orange-200"
+              >
+                Ver cliente
+              </Link>
+            }
+          >
+            <DetailSheetRow label="Nombre" value={customer.fullName} />
+            <DetailSheetRow label="Teléfono" value={customer.phone ?? "Sin teléfono"} />
+            <DetailSheetRow label="Email" value={customer.email ?? "Sin email"} />
+          </DetailSheet>
+        </aside>
       </div>
     </section>
   );
@@ -328,27 +312,6 @@ function Metric({ label, value }: MetricProps) {
         {label}
       </dt>
       <dd className="mt-2 wrap-break-words text-sm font-semibold text-slate-100">
-        {value}
-      </dd>
-    </div>
-  );
-}
-type SheetRowProps = {
-  label: string;
-  value: string;
-};
-
-/**
- * Spreadsheet-like row for compact detail metadata.
- */
-function SheetRow({ label, value }: SheetRowProps) {
-  return (
-    <div className="grid md:grid-cols-[9rem_1fr]">
-      <dt className="border-slate-800 bg-slate-950/60 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 md:border-r">
-        {label}
-      </dt>
-
-      <dd className="wrap-break-words px-4 py-3 text-sm font-medium leading-6 text-slate-100">
         {value}
       </dd>
     </div>
