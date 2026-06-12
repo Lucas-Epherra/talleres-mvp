@@ -2,11 +2,26 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, useId, useMemo, useState } from "react";
 import { ApiError } from "../../../lib/api";
 import { formatMileage } from "../../../lib/format";
 import { updateWorkOrder } from "../work-orders.client";
 import type { UpdateWorkOrderInput, WorkOrder } from "../types";
+import { WorkOrderNotesEditor } from "./WorkOrderNotesEditor";
+import { WorkOrderPartsEditor } from "./WorkOrderPartsEditor";
+import {
+  apiMoneyToInputString,
+  formatCurrency,
+  getWorkOrderPartsTotal,
+  parseMoneyInputValue,
+  parseWorkOrderNotes,
+  parseWorkOrderParts,
+  serializeWorkOrderNotes,
+  serializeWorkOrderParts,
+  validateWorkOrderParts,
+  type WorkOrderNoteDraft,
+  type WorkOrderPartDraft,
+} from "../utils/work-order-form";
 
 type EditWorkOrderFormProps = {
   workOrder: WorkOrder;
@@ -16,7 +31,8 @@ type EditWorkOrderFormProps = {
  * Form used to edit operational information from an existing work order.
  *
  * This is a leaf Client Component because it owns form submission, mutation
- * state, error handling and client-side navigation after a successful PATCH.
+ * state, error handling, dynamic parts/notes and client-side navigation after
+ * a successful PATCH.
  */
 export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
   const router = useRouter();
@@ -24,6 +40,20 @@ export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [laborCost, setLaborCost] = useState(() =>
+    apiMoneyToInputString(workOrder.laborCost),
+  );
+  const [parts, setParts] = useState<WorkOrderPartDraft[]>(() =>
+    parseWorkOrderParts(workOrder.partsUsed, workOrder.partsCost),
+  );
+  const [notes, setNotes] = useState<WorkOrderNoteDraft[]>(() =>
+    parseWorkOrderNotes(workOrder.notes),
+  );
+
+  const partsCost = useMemo(() => getWorkOrderPartsTotal(parts), [parts]);
+  const parsedLaborCost = parseMoneyInputValue(laborCost);
+  const hasAnyCost = parsedLaborCost !== null || partsCost > 0;
+  const calculatedTotal = (parsedLaborCost ?? 0) + partsCost;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -34,23 +64,32 @@ export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
 
     const formData = new FormData(event.currentTarget);
     const reportedIssue = getRequiredString(formData, "reportedIssue");
+    const partsValidationMessage = validateWorkOrderParts(parts);
 
     if (!reportedIssue) {
       setErrorMessage("El problema reportado es obligatorio.");
       return;
     }
 
+    if (partsValidationMessage) {
+      setErrorMessage(partsValidationMessage);
+      return;
+    }
+
+    const serializedParts = serializeWorkOrderParts(parts);
+    const serializedNotes = serializeWorkOrderNotes(notes);
+
     const input: UpdateWorkOrderInput = {
       reportedIssue,
       diagnosis: getNullableString(formData, "diagnosis"),
       workDone: getNullableString(formData, "workDone"),
-      partsUsed: getNullableString(formData, "partsUsed"),
+      partsUsed: serializedParts,
       entryMileage: getNullableNumber(formData, "entryMileage"),
-      laborCost: getNullableNumber(formData, "laborCost"),
-      partsCost: getNullableNumber(formData, "partsCost"),
-      estimatedTotal: getNullableNumber(formData, "estimatedTotal"),
-      finalTotal: getNullableNumber(formData, "finalTotal"),
-      notes: getNullableString(formData, "notes"),
+      laborCost: parsedLaborCost,
+      partsCost: partsCost > 0 ? partsCost : null,
+      estimatedTotal: hasAnyCost ? calculatedTotal : null,
+      finalTotal: hasAnyCost ? calculatedTotal : null,
+      notes: serializedNotes,
     };
 
     try {
@@ -205,25 +244,10 @@ export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
               />
             </div>
           </div>
-
-          <div>
-            <label
-              htmlFor="partsUsed"
-              className="text-sm font-medium text-slate-300"
-            >
-              Repuestos usados
-            </label>
-            <textarea
-              id="partsUsed"
-              name="partsUsed"
-              rows={3}
-              defaultValue={workOrder.partsUsed ?? ""}
-              placeholder="Ej: Pastillas delanteras, líquido de freno, bujes."
-              className="mt-2 w-full resize-y rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-orange-400"
-            />
-          </div>
         </div>
       </section>
+
+      <WorkOrderPartsEditor parts={parts} onChange={setParts} />
 
       <section
         aria-labelledby="edit-work-order-costs-heading"
@@ -236,63 +260,22 @@ export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
           Costos
         </h2>
 
-        <div className="mt-6 grid gap-5 md:grid-cols-2">
+        <div className="mt-6 grid gap-5 md:grid-cols-3">
           <MoneyInput
             id="laborCost"
-            name="laborCost"
             label="Costo mano de obra"
+            value={laborCost}
+            onChange={setLaborCost}
             placeholder="45000"
-            defaultValue={toInputValue(workOrder.laborCost)}
           />
-          <MoneyInput
-            id="partsCost"
-            name="partsCost"
-            label="Costo repuestos"
-            placeholder="80000"
-            defaultValue={toInputValue(workOrder.partsCost)}
-          />
-          <MoneyInput
-            id="estimatedTotal"
-            name="estimatedTotal"
-            label="Total estimado"
-            placeholder="125000"
-            defaultValue={toInputValue(workOrder.estimatedTotal)}
-          />
-          <MoneyInput
-            id="finalTotal"
-            name="finalTotal"
-            label="Total final"
-            placeholder="125000"
-            defaultValue={toInputValue(workOrder.finalTotal)}
-          />
+
+          <ReadOnlyMoney label="Costo repuestos" value={partsCost} />
+
+          <ReadOnlyMoney label="Total automático" value={calculatedTotal} />
         </div>
       </section>
 
-      <section
-        aria-labelledby="edit-work-order-notes-heading"
-        className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6"
-      >
-        <h2
-          id="edit-work-order-notes-heading"
-          className="text-lg font-semibold text-white"
-        >
-          Notas internas
-        </h2>
-
-        <div className="mt-6">
-          <label htmlFor="notes" className="text-sm font-medium text-slate-300">
-            Notas
-          </label>
-          <textarea
-            id="notes"
-            name="notes"
-            rows={4}
-            defaultValue={workOrder.notes ?? ""}
-            placeholder="Observaciones internas del taller."
-            className="mt-2 w-full resize-y rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-orange-400"
-          />
-        </div>
-      </section>
+      <WorkOrderNotesEditor notes={notes} onChange={setNotes} />
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <Link
@@ -337,37 +320,65 @@ function ReadOnlyDetail({ label, value }: ReadOnlyDetailProps) {
 
 type MoneyInputProps = {
   id: string;
-  name: string;
   label: string;
+  value: string;
+  onChange: (value: string) => void;
   placeholder: string;
-  defaultValue?: string | number;
 };
 
 /**
- * Numeric money input used by the edit work order form.
+ * Controlled money input used by work order forms.
+ *
+ * It uses the same visual container as read-only cost summaries so the costs
+ * section keeps a consistent sheet/card rhythm.
  */
 function MoneyInput({
   id,
-  name,
   label,
+  value,
+  onChange,
   placeholder,
-  defaultValue,
 }: MoneyInputProps) {
   return (
-    <div>
-      <label htmlFor={id} className="text-sm font-medium text-slate-300">
+    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+      <label
+        htmlFor={id}
+        className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500"
+      >
         {label}
       </label>
+
       <input
         id={id}
-        name={name}
         type="number"
         min="0"
         step="0.01"
-        defaultValue={defaultValue}
+        inputMode="decimal"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="mt-2 h-11 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-orange-400"
+        className="mt-3 h-10 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 text-sm font-semibold text-white outline-none transition placeholder:font-normal placeholder:text-slate-600 focus:border-orange-400"
       />
+    </div>
+  );
+}
+type ReadOnlyMoneyProps = {
+  label: string;
+  value: number;
+};
+
+/**
+ * Read-only money summary used for derived totals.
+ */
+function ReadOnlyMoney({ label, value }: ReadOnlyMoneyProps) {
+  return (
+    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+        {label}
+      </p>
+      <p className="mt-2 text-sm font-semibold text-slate-100">
+        {formatCurrency(value)}
+      </p>
     </div>
   );
 }
@@ -400,9 +411,6 @@ function getRequiredString(formData: FormData, key: string): string {
 
 /**
  * Reads an editable optional string from form data.
- *
- * Empty strings become null so the user can clear previously saved optional
- * content from nullable work order fields.
  */
 function getNullableString(formData: FormData, key: string): string | null {
   const value = getRequiredString(formData, key);
@@ -412,10 +420,6 @@ function getNullableString(formData: FormData, key: string): string | null {
 
 /**
  * Reads an editable optional number from form data.
- *
- * Empty values become null so the user can clear previously saved optional
- * numeric fields. Invalid values are also treated as null because browser
- * number inputs already provide the primary validation layer.
  */
 function getNullableNumber(formData: FormData, key: string): number | null {
   const value = getRequiredString(formData, key);

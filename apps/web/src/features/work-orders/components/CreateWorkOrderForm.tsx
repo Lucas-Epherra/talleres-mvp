@@ -1,25 +1,63 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useMemo, useState } from "react";
 import { ApiError } from "../../../lib/api";
 import { createWorkOrder } from "../work-orders.client";
 import type { CreateWorkOrderInput } from "../types";
+import { WorkOrderNotesEditor } from "./WorkOrderNotesEditor";
+import { WorkOrderPartsEditor } from "./WorkOrderPartsEditor";
+import {
+  createEmptyWorkOrderNote,
+  createEmptyWorkOrderPart,
+  formatCurrency,
+  getWorkOrderPartsTotal,
+  parseMoneyInputValue,
+  serializeWorkOrderNotes,
+  serializeWorkOrderParts,
+  validateWorkOrderParts,
+  type WorkOrderNoteDraft,
+  type WorkOrderPartDraft,
+} from "../utils/work-order-form";
+
+type CreateWorkOrderVehicleContext = {
+  id: string;
+  licensePlate: string;
+  brand: string;
+  model: string;
+  customerName: string;
+  customerPhone: string | null;
+};
 
 type CreateWorkOrderFormProps = {
-  vehicleId: string;
+  vehicle: CreateWorkOrderVehicleContext;
 };
 
 /**
  * Form used to create a work order from a vehicle profile.
  *
  * This is intentionally a leaf Client Component because it owns form state,
- * submit handling, loading state and client-side navigation after mutation.
+ * submit handling, loading state, dynamic parts/notes and client-side
+ * navigation after mutation.
  */
-export function CreateWorkOrderForm({ vehicleId }: CreateWorkOrderFormProps) {
+export function CreateWorkOrderForm({ vehicle }: CreateWorkOrderFormProps) {
   const router = useRouter();
+  const vehicleId = vehicle.id;
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [laborCost, setLaborCost] = useState("");
+  const [parts, setParts] = useState<WorkOrderPartDraft[]>([
+    createEmptyWorkOrderPart(),
+  ]);
+  const [notes, setNotes] = useState<WorkOrderNoteDraft[]>([
+    createEmptyWorkOrderNote(),
+  ]);
+
+  const partsCost = useMemo(() => getWorkOrderPartsTotal(parts), [parts]);
+  const parsedLaborCost = parseMoneyInputValue(laborCost);
+  const hasAnyCost = parsedLaborCost !== null || partsCost > 0;
+  const calculatedTotal = (parsedLaborCost ?? 0) + partsCost;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -30,24 +68,38 @@ export function CreateWorkOrderForm({ vehicleId }: CreateWorkOrderFormProps) {
 
     const formData = new FormData(event.currentTarget);
     const reportedIssue = getRequiredString(formData, "reportedIssue");
+    const partsValidationMessage = validateWorkOrderParts(parts);
 
     if (!reportedIssue) {
       setErrorMessage("El problema reportado es obligatorio.");
       return;
     }
 
+    if (laborCost.trim().length > 0 && parsedLaborCost === null) {
+      setErrorMessage("El costo de mano de obra debe ser un número válido.");
+      return;
+    }
+
+    if (partsValidationMessage) {
+      setErrorMessage(partsValidationMessage);
+      return;
+    }
+
+    const serializedParts = serializeWorkOrderParts(parts);
+    const serializedNotes = serializeWorkOrderNotes(notes);
+
     const input: CreateWorkOrderInput = {
       vehicleId,
       reportedIssue,
       diagnosis: getOptionalString(formData, "diagnosis"),
       workDone: getOptionalString(formData, "workDone"),
-      partsUsed: getOptionalString(formData, "partsUsed"),
+      partsUsed: serializedParts ?? undefined,
       entryMileage: getOptionalNumber(formData, "entryMileage"),
-      laborCost: getOptionalNumber(formData, "laborCost"),
-      partsCost: getOptionalNumber(formData, "partsCost"),
-      estimatedTotal: getOptionalNumber(formData, "estimatedTotal"),
-      finalTotal: getOptionalNumber(formData, "finalTotal"),
-      notes: getOptionalString(formData, "notes"),
+      laborCost: parsedLaborCost ?? undefined,
+      partsCost: partsCost > 0 ? partsCost : undefined,
+      estimatedTotal: hasAnyCost ? calculatedTotal : undefined,
+      finalTotal: hasAnyCost ? calculatedTotal : undefined,
+      notes: serializedNotes ?? undefined,
     };
 
     try {
@@ -94,23 +146,22 @@ export function CreateWorkOrderForm({ vehicleId }: CreateWorkOrderFormProps) {
 
         <p className="mt-2 text-sm leading-6 text-slate-400">
           Esta orden se asociará automáticamente al vehículo desde el que
-          iniciaste el flujo.
+          iniciaste la orden.
         </p>
 
-        <div className="mt-5">
-          <label
-            htmlFor="vehicleId"
-            className="text-sm font-medium text-slate-300"
-          >
-            ID del vehículo
-          </label>
-          <input
-            id="vehicleId"
-            name="vehicleId"
-            type="text"
-            value={vehicleId}
-            readOnly
-            className="mt-2 h-11 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-300 outline-none"
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <ReadOnlyDetail label="Patente" value={vehicle.licensePlate} />
+
+          <ReadOnlyDetail
+            label="Vehículo"
+            value={`${vehicle.brand} ${vehicle.model}`}
+          />
+
+          <ReadOnlyDetail label="Cliente" value={vehicle.customerName} />
+
+          <ReadOnlyDetail
+            label="Teléfono"
+            value={vehicle.customerPhone ?? "Sin teléfono"}
           />
         </div>
       </section>
@@ -195,24 +246,10 @@ export function CreateWorkOrderForm({ vehicleId }: CreateWorkOrderFormProps) {
               />
             </div>
           </div>
-
-          <div>
-            <label
-              htmlFor="partsUsed"
-              className="text-sm font-medium text-slate-300"
-            >
-              Repuestos usados
-            </label>
-            <textarea
-              id="partsUsed"
-              name="partsUsed"
-              rows={3}
-              placeholder="Ej: Pastillas delanteras, líquido de freno, bujes."
-              className="mt-2 w-full resize-y rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-orange-400"
-            />
-          </div>
         </div>
       </section>
+
+      <WorkOrderPartsEditor parts={parts} onChange={setParts} />
 
       <section
         aria-labelledby="work-order-costs-heading"
@@ -225,58 +262,22 @@ export function CreateWorkOrderForm({ vehicleId }: CreateWorkOrderFormProps) {
           Costos
         </h2>
 
-        <div className="mt-6 grid gap-5 md:grid-cols-2">
+        <div className="mt-6 grid gap-5 md:grid-cols-3">
           <MoneyInput
             id="laborCost"
-            name="laborCost"
             label="Costo mano de obra"
+            value={laborCost}
+            onChange={setLaborCost}
             placeholder="45000"
           />
-          <MoneyInput
-            id="partsCost"
-            name="partsCost"
-            label="Costo repuestos"
-            placeholder="80000"
-          />
-          <MoneyInput
-            id="estimatedTotal"
-            name="estimatedTotal"
-            label="Total estimado"
-            placeholder="125000"
-          />
-          <MoneyInput
-            id="finalTotal"
-            name="finalTotal"
-            label="Total final"
-            placeholder="125000"
-          />
+
+          <ReadOnlyMoney label="Costo repuestos" value={partsCost} />
+
+          <ReadOnlyMoney label="Total automático" value={calculatedTotal} />
         </div>
       </section>
 
-      <section
-        aria-labelledby="work-order-notes-heading"
-        className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6"
-      >
-        <h2
-          id="work-order-notes-heading"
-          className="text-lg font-semibold text-white"
-        >
-          Notas internas
-        </h2>
-
-        <div className="mt-6">
-          <label htmlFor="notes" className="text-sm font-medium text-slate-300">
-            Notas
-          </label>
-          <textarea
-            id="notes"
-            name="notes"
-            rows={4}
-            placeholder="Observaciones internas del taller."
-            className="mt-2 w-full resize-y rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-orange-400"
-          />
-        </div>
-      </section>
+      <WorkOrderNotesEditor notes={notes} onChange={setNotes} />
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <button
@@ -299,31 +300,89 @@ export function CreateWorkOrderForm({ vehicleId }: CreateWorkOrderFormProps) {
   );
 }
 
+type ReadOnlyDetailProps = {
+  label: string;
+  value: string;
+};
+
+/**
+ * Compact read-only detail used to show selected vehicle context before
+ * creating a work order.
+ */
+function ReadOnlyDetail({ label, value }: ReadOnlyDetailProps) {
+  return (
+    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+        {label}
+      </p>
+      <p className="mt-2 wrap-break-words text-sm font-semibold text-slate-100">
+        {value}
+      </p>
+    </div>
+  );
+}
+
 type MoneyInputProps = {
   id: string;
-  name: string;
   label: string;
+  value: string;
+  onChange: (value: string) => void;
   placeholder: string;
 };
 
 /**
- * Numeric money input used by the create work order form.
+ * Controlled money input used by work order forms.
+ *
+ * It uses the same visual container as read-only cost summaries so the costs
+ * section keeps a consistent sheet/card rhythm.
  */
-function MoneyInput({ id, name, label, placeholder }: MoneyInputProps) {
+function MoneyInput({
+  id,
+  label,
+  value,
+  onChange,
+  placeholder,
+}: MoneyInputProps) {
   return (
-    <div>
-      <label htmlFor={id} className="text-sm font-medium text-slate-300">
+    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+      <label
+        htmlFor={id}
+        className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500"
+      >
         {label}
       </label>
+
       <input
         id={id}
-        name={name}
         type="number"
         min="0"
         step="0.01"
+        inputMode="decimal"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="mt-2 h-11 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-orange-400"
+        className="mt-3 h-10 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 text-sm font-semibold text-white outline-none transition placeholder:font-normal placeholder:text-slate-600 focus:border-orange-400"
       />
+    </div>
+  );
+}
+type ReadOnlyMoneyProps = {
+  label: string;
+  value: number;
+};
+
+/**
+ * Read-only money summary used for derived totals.
+ */
+function ReadOnlyMoney({ label, value }: ReadOnlyMoneyProps) {
+  return (
+    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+        {label}
+      </p>
+      <p className="mt-2 text-sm font-semibold text-slate-100">
+        {formatCurrency(value)}
+      </p>
     </div>
   );
 }
@@ -343,9 +402,6 @@ function getRequiredString(formData: FormData, key: string): string {
 
 /**
  * Reads an optional string from form data.
- *
- * Empty strings are converted to undefined so JSON.stringify omits them from
- * the request payload.
  */
 function getOptionalString(
   formData: FormData,
@@ -358,9 +414,6 @@ function getOptionalString(
 
 /**
  * Reads an optional number from form data.
- *
- * Empty values are omitted from the request payload. Invalid numeric values are
- * also omitted because browser number inputs already handle the main validation.
  */
 function getOptionalNumber(
   formData: FormData,

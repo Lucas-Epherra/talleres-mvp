@@ -146,10 +146,7 @@ export default async function WorkOrderDetailPage({
               label="Repuestos"
               value={formatMoney(workOrder.partsCost)}
             />
-            <DetailSheetRow
-              label="Total estimado"
-              value={formatMoney(workOrder.estimatedTotal)}
-            />
+            
             <DetailSheetRow
               label="Total final"
               value={formatMoney(workOrder.finalTotal)}

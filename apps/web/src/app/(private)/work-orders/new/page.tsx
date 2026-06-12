@@ -1,6 +1,10 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { ApiError } from "../../../../lib/api";
 import { CreateWorkOrderForm } from "../../../../features/work-orders/components/CreateWorkOrderForm";
+import { getVehicleProfile } from "../../../../features/vehicles/vehicles.server";
+import type { VehicleProfile } from "../../../../features/vehicles/types";
 
 export const metadata: Metadata = {
   title: "Nueva orden de trabajo",
@@ -15,8 +19,11 @@ type NewWorkOrderPageProps = {
 /**
  * New work order page.
  *
- * This first MVP flow expects vehicleId from the vehicle profile:
+ * This MVP flow expects vehicleId from the vehicle profile:
  * /work-orders/new?vehicleId=VEHICLE_ID
+ *
+ * The technical vehicle id is used only to fetch and submit data. The UI shows
+ * human-readable vehicle and customer context.
  */
 export default async function NewWorkOrderPage({
   searchParams,
@@ -50,11 +57,13 @@ export default async function NewWorkOrderPage({
     );
   }
 
+  const vehicleProfile = await getVehicleProfileOrNotFound(vehicleId);
+
   return (
     <section>
       <div className="rounded-3xl border border-slate-800 bg-slate-900/70 p-8">
         <Link
-          href={`/vehicles/${vehicleId}`}
+          href={`/vehicles/${vehicleProfile.vehicle.id}`}
           className="text-sm font-medium text-orange-300 transition hover:text-orange-200"
         >
           ← Volver a la ficha del vehículo
@@ -74,9 +83,36 @@ export default async function NewWorkOrderPage({
         </p>
       </div>
 
-      <CreateWorkOrderForm vehicleId={vehicleId} />
+      <CreateWorkOrderForm
+        vehicle={{
+          id: vehicleProfile.vehicle.id,
+          licensePlate: vehicleProfile.vehicle.licensePlate,
+          brand: vehicleProfile.vehicle.brand,
+          model: vehicleProfile.vehicle.model,
+          customerName: vehicleProfile.customer.fullName,
+          customerPhone: vehicleProfile.customer.phone,
+        }}
+      />
     </section>
   );
+}
+
+/**
+ * Fetches the selected vehicle profile and converts backend 404 responses into
+ * Next notFound.
+ */
+async function getVehicleProfileOrNotFound(
+  vehicleId: string,
+): Promise<VehicleProfile> {
+  try {
+    return await getVehicleProfile(vehicleId);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      notFound();
+    }
+
+    throw error;
+  }
 }
 
 /**
