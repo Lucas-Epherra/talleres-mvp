@@ -8,6 +8,9 @@ import type { Customer } from "../../../../features/customers/types";
 import { VehicleCard } from "../../../../features/vehicles/components/VehicleCard";
 import { getVehicles } from "../../../../features/vehicles/vehicles.server";
 import type { VehicleListItem } from "../../../../features/vehicles/types";
+import { WorkOrderCard } from "../../../../features/work-orders/components/WorkOrderCard";
+import { getWorkOrders } from "../../../../features/work-orders/work-orders.server";
+import type { WorkOrder } from "../../../../features/work-orders/types";
 
 type CustomerDetailPageProps = {
   params: Promise<{
@@ -22,20 +25,24 @@ export const metadata: Metadata = {
 /**
  * Customer detail page.
  *
- * Shows customer contact data and the exact list of vehicles associated with
- * that customer by id, avoiding text-search based navigation.
+ * Shows customer contact data, associated vehicles, active work orders and
+ * historical delivered work orders for the selected customer.
  */
 export default async function CustomerDetailPage({
   params,
 }: CustomerDetailPageProps) {
   const { id } = await params;
 
-  const [customer, vehicles] = await Promise.all([
+  const [customer, vehicles, workOrders] = await Promise.all([
     resolveCustomer(id),
     getVehicles(),
+    getWorkOrders(),
   ]);
 
   const associatedVehicles = getCustomerVehicles(vehicles, customer.id);
+  const customerWorkOrders = getCustomerWorkOrders(workOrders, customer.id);
+  const activeWorkOrders = getActiveWorkOrders(customerWorkOrders);
+  const deliveredWorkOrders = getDeliveredWorkOrders(customerWorkOrders);
 
   return (
     <section className="space-y-6 sm:space-y-8">
@@ -58,8 +65,8 @@ export default async function CustomerDetailPage({
             </h1>
 
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
-              Vista básica del cliente, datos de contacto y vehículos asociados
-              dentro del taller.
+              Vista operativa del cliente, datos de contacto, vehículos
+              asociados, órdenes activas e historial de trabajos.
             </p>
           </div>
 
@@ -85,7 +92,10 @@ export default async function CustomerDetailPage({
         aria-labelledby="customer-data-heading"
         className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 sm:p-8"
       >
-        <h2 id="customer-data-heading" className="text-lg font-semibold text-white">
+        <h2
+          id="customer-data-heading"
+          className="text-lg font-semibold text-white"
+        >
           Datos del cliente
         </h2>
 
@@ -99,6 +109,14 @@ export default async function CustomerDetailPage({
           <InfoItem
             label="Vehículos asociados"
             value={associatedVehicles.length.toString()}
+          />
+          <InfoItem
+            label="Órdenes activas"
+            value={activeWorkOrders.length.toString()}
+          />
+          <InfoItem
+            label="Historial"
+            value={deliveredWorkOrders.length.toString()}
           />
         </dl>
 
@@ -114,10 +132,7 @@ export default async function CustomerDetailPage({
         ) : null}
       </section>
 
-      <section
-        aria-labelledby="customer-vehicles-heading"
-        className="space-y-4"
-      >
+      <section aria-labelledby="customer-vehicles-heading" className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2
@@ -163,6 +178,106 @@ export default async function CustomerDetailPage({
           />
         )}
       </section>
+
+      <section
+        aria-labelledby="customer-active-work-orders-heading"
+        className="space-y-4"
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2
+              id="customer-active-work-orders-heading"
+              className="text-lg font-semibold text-white"
+            >
+              Órdenes activas
+            </h2>
+            <p className="mt-1 text-sm text-slate-400">
+              Trabajos pendientes, en progreso o listos para entregar.
+            </p>
+          </div>
+
+          <p className="text-sm text-slate-400">
+            {activeWorkOrders.length} orden
+            {activeWorkOrders.length === 1 ? "" : "es"}
+          </p>
+        </div>
+
+        {activeWorkOrders.length > 0 ? (
+          <div className="grid gap-4">
+            {activeWorkOrders.map((workOrder) => (
+              <WorkOrderCard key={workOrder.id} workOrder={workOrder} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            eyebrow="Sin órdenes activas"
+            title="Este cliente no tiene trabajos activos"
+            description="Cuando se cree una orden desde la ficha de alguno de sus vehículos, va a aparecer en esta sección."
+            actions={[
+              {
+                label: "Cargar vehículo",
+                href: `/vehicles/new?customerId=${customer.id}`,
+                variant: "primary",
+              },
+              {
+                label: "Volver a clientes",
+                href: "/customers",
+                variant: "secondary",
+              },
+            ]}
+          />
+        )}
+      </section>
+
+      <section
+        aria-labelledby="customer-history-heading"
+        className="space-y-4"
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2
+              id="customer-history-heading"
+              className="text-lg font-semibold text-white"
+            >
+              Historial del cliente
+            </h2>
+            <p className="mt-1 text-sm text-slate-400">
+              Órdenes entregadas asociadas a los vehículos de este cliente.
+            </p>
+          </div>
+
+          <p className="text-sm text-slate-400">
+            {deliveredWorkOrders.length} orden
+            {deliveredWorkOrders.length === 1 ? "" : "es"}
+          </p>
+        </div>
+
+        {deliveredWorkOrders.length > 0 ? (
+          <div className="grid gap-4">
+            {deliveredWorkOrders.map((workOrder) => (
+              <WorkOrderCard key={workOrder.id} workOrder={workOrder} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            eyebrow="Sin historial"
+            title="Este cliente todavía no tiene trabajos entregados"
+            description="Cuando una orden pase a entregada, va a quedar disponible como historial del cliente."
+            actions={[
+              {
+                label: "Ver vehículos",
+                href: `/customers/${customer.id}`,
+                variant: "primary",
+              },
+              {
+                label: "Volver a clientes",
+                href: "/customers",
+                variant: "secondary",
+              },
+            ]}
+          />
+        )}
+      </section>
     </section>
   );
 }
@@ -191,6 +306,33 @@ function getCustomerVehicles(
   customerId: string,
 ): VehicleListItem[] {
   return vehicles.filter((vehicle) => vehicle.customer.id === customerId);
+}
+
+/**
+ * Returns only work orders that belong to vehicles owned by the selected
+ * customer.
+ */
+function getCustomerWorkOrders(
+  workOrders: WorkOrder[],
+  customerId: string,
+): WorkOrder[] {
+  return workOrders.filter(
+    (workOrder) => workOrder.vehicle.customer.id === customerId,
+  );
+}
+
+/**
+ * Returns non-delivered work orders.
+ */
+function getActiveWorkOrders(workOrders: WorkOrder[]): WorkOrder[] {
+  return workOrders.filter((workOrder) => workOrder.status !== "DELIVERED");
+}
+
+/**
+ * Returns delivered work orders used as customer history.
+ */
+function getDeliveredWorkOrders(workOrders: WorkOrder[]): WorkOrder[] {
+  return workOrders.filter((workOrder) => workOrder.status === "DELIVERED");
 }
 
 type InfoItemProps = {
