@@ -5,6 +5,10 @@ import {
   formatMoney,
   formatWorkOrderStatus,
 } from "../../../lib/format";
+import {
+  DetailSheet,
+  DetailSheetRow,
+} from "../../../components/ui/DetailSheet";
 import { UpdateWorkOrderStatusForm } from "../../work-orders/components/UpdateWorkOrderStatusForm";
 import type { VehicleProfileWorkOrder } from "../types";
 
@@ -19,7 +23,8 @@ type VehicleWorkOrdersPanelProps = {
  * Displays active or historical work orders inside the vehicle profile.
  *
  * Active orders expose direct actions to view, edit and update status.
- * Historical delivered orders keep a read-only detail shortcut.
+ * Historical delivered orders keep a read-only detail shortcut. Operational
+ * and financial information is grouped into readable sections.
  */
 export function VehicleWorkOrdersPanel({
   title,
@@ -29,9 +34,15 @@ export function VehicleWorkOrdersPanel({
 }: VehicleWorkOrdersPanelProps) {
   return (
     <section className="rounded-3xl border border-slate-800 bg-slate-900/70">
-      <div className="border-b border-slate-800 p-6">
-        <h2 className="text-lg font-semibold text-white">{title}</h2>
-        <p className="mt-1 text-sm text-slate-400">{description}</p>
+      <div className="flex flex-col gap-3 border-b border-slate-800 p-6 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-white">{title}</h2>
+          <p className="mt-1 text-sm text-slate-400">{description}</p>
+        </div>
+
+        <p className="text-sm text-slate-400">
+          {workOrders.length} orden{workOrders.length === 1 ? "" : "es"}
+        </p>
       </div>
 
       {workOrders.length > 0 ? (
@@ -41,49 +52,46 @@ export function VehicleWorkOrdersPanel({
 
             return (
               <article key={workOrder.id} className="p-6">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm font-semibold text-orange-300">
-                        Orden #{workOrder.orderNumber}
-                      </p>
+                <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
+                  <div className="min-w-0 space-y-5">
+                    <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-orange-300">
+                          Orden #{workOrder.orderNumber}
+                        </p>
 
-                      <h3 className="mt-2 text-lg font-semibold text-white">
-                        {workOrder.reportedIssue}
-                      </h3>
-                    </div>
+                        <h3 className="mt-2 wrap-break-word text-xl font-semibold tracking-tight text-white">
+                          {workOrder.reportedIssue}
+                        </h3>
+                      </div>
 
-                    <div className="grid gap-3 text-sm text-slate-400 md:grid-cols-2">
-                      <p>
-                        <span className="text-slate-500">Diagnóstico:</span>{" "}
-                        {workOrder.diagnosis ?? "Pendiente"}
-                      </p>
+                      <span className="inline-flex w-fit shrink-0 rounded-full border border-slate-700 bg-slate-950 px-4 py-2 text-sm font-semibold text-slate-100">
+                        {formatWorkOrderStatus(workOrder.status)}
+                      </span>
+                    </header>
 
-                      <p>
-                        <span className="text-slate-500">
-                          Trabajo realizado:
-                        </span>{" "}
-                        {workOrder.workDone ?? "Pendiente"}
-                      </p>
-
-                      <p>
-                        <span className="text-slate-500">Repuestos:</span>{" "}
-                        {workOrder.partsUsed ?? "Sin cargar"}
-                      </p>
-
-                      <p>
-                        <span className="text-slate-500">
-                          Kilometraje ingreso:
-                        </span>{" "}
-                        {formatMileage(workOrder.entryMileage)}
-                      </p>
-                    </div>
-
-                    {workOrder.notes ? (
-                      <p className="rounded-xl border border-slate-800 bg-slate-950/70 p-4 text-sm leading-6 text-slate-400">
-                        {workOrder.notes}
-                      </p>
-                    ) : null}
+                    <DetailSheet
+                      headingId={`vehicle-work-order-work-${workOrder.id}`}
+                      title="Información del trabajo"
+                      titleSize="sm"
+                    >
+                      <DetailSheetRow
+                        label="Diagnóstico"
+                        value={getReadableText(workOrder.diagnosis, "Diagnóstico pendiente")}
+                      />
+                      <DetailSheetRow
+                        label="Trabajo realizado"
+                        value={getReadableText(workOrder.workDone, "Trabajo pendiente")}
+                      />
+                      <DetailSheetRow
+                        label="Repuestos usados"
+                        value={getReadableText(workOrder.partsUsed, "Sin repuestos cargados")}
+                      />
+                      <DetailSheetRow
+                        label="Notas"
+                        value={getReadableText(workOrder.notes, "Sin notas internas")}
+                      />
+                    </DetailSheet>
 
                     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                       <Link
@@ -111,32 +119,44 @@ export function VehicleWorkOrdersPanel({
                     ) : null}
                   </div>
 
-                  <dl className="grid shrink-0 gap-3 sm:grid-cols-2 lg:w-90">
-                    <Detail
+                  <DetailSheet
+                    headingId={`vehicle-work-order-details-${workOrder.id}`}
+                    title="Datos de la orden"
+                    titleSize="sm"
+                  >
+                    <DetailSheetRow
                       label="Estado"
                       value={formatWorkOrderStatus(workOrder.status)}
                     />
-                    <Detail
+                    <DetailSheetRow
                       label="Ingreso"
                       value={formatDate(workOrder.entryDate)}
                     />
-                    <Detail
+                    <DetailSheetRow
                       label="Entrega"
                       value={formatDate(workOrder.deliveryDate)}
                     />
-                    <Detail
-                      label="Estimado"
-                      value={formatMoney(workOrder.estimatedTotal)}
+                    <DetailSheetRow
+                      label="Km ingreso"
+                      value={formatMileage(workOrder.entryMileage)}
                     />
-                    <Detail
+                    <DetailSheetRow
                       label="Mano de obra"
                       value={formatMoney(workOrder.laborCost)}
                     />
-                    <Detail
+                    <DetailSheetRow
+                      label="Repuestos"
+                      value={formatMoney(workOrder.partsCost)}
+                    />
+                    <DetailSheetRow
+                      label="Estimado"
+                      value={formatMoney(workOrder.estimatedTotal)}
+                    />
+                    <DetailSheetRow
                       label="Total final"
                       value={formatMoney(workOrder.finalTotal)}
                     />
-                  </dl>
+                  </DetailSheet>
                 </div>
               </article>
             );
@@ -153,21 +173,14 @@ export function VehicleWorkOrdersPanel({
   );
 }
 
-type DetailProps = {
-  label: string;
-  value: string;
-};
 
 /**
- * Compact definition item for work order metadata.
+ * Converts nullable or empty API text into a readable fallback.
  */
-function Detail({ label, value }: DetailProps) {
-  return (
-    <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-      <dt className="text-xs uppercase tracking-[0.14em] text-slate-500">
-        {label}
-      </dt>
-      <dd className="mt-2 text-sm font-semibold text-slate-100">{value}</dd>
-    </div>
-  );
+function getReadableText(value: string | null, fallback: string): string {
+  if (!value || value.trim().length === 0) {
+    return fallback;
+  }
+
+  return value;
 }
