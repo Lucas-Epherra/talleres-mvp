@@ -202,66 +202,65 @@ export default async function WorkOrderDetailPage({
         </div>
 
         <aside className="space-y-6">
-          <section
-            aria-labelledby="work-order-vehicle-heading"
-            className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6"
-          >
-            <h2
-              id="work-order-vehicle-heading"
-              className="text-lg font-semibold text-white"
-            >
-              Vehículo
-            </h2>
+  <section
+    aria-labelledby="work-order-vehicle-heading"
+    className="rounded-3xl border border-slate-800 bg-slate-900/70"
+  >
+    <div className="flex flex-col gap-3 border-b border-slate-800 p-5 sm:flex-row sm:items-center sm:justify-between">
+      <h2
+        id="work-order-vehicle-heading"
+        className="text-lg font-semibold text-white"
+      >
+        Vehículo
+      </h2>
 
-            <div className="mt-5 rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-300">
-                {vehicle.licensePlate}
-              </p>
+      <Link
+        href={`/vehicles/${vehicle.id}`}
+        className="text-xs font-semibold uppercase tracking-[0.14em] text-orange-300 transition hover:text-orange-200"
+      >
+        Abrir ficha
+      </Link>
+    </div>
 
-              <p className="mt-3 wrap-break-words text-xl font-semibold text-white">
-                {vehicle.brand} {vehicle.model}
-              </p>
+    <dl className="divide-y divide-slate-800">
+      <SheetRow label="Patente" value={vehicle.licensePlate} />
+      <SheetRow label="Marca" value={vehicle.brand} />
+      <SheetRow label="Modelo" value={vehicle.model} />
+      <SheetRow
+        label="Año"
+        value={vehicle.year ? vehicle.year.toString() : "Sin cargar"}
+      />
+      <SheetRow label="Kilometraje" value={formatMileage(vehicle.mileage)} />
+    </dl>
+  </section>
 
-              <p className="mt-2 text-sm text-slate-400">
-                {vehicle.year ?? "Año sin cargar"} ·{" "}
-                {formatMileage(vehicle.mileage)}
-              </p>
+  <section
+    aria-labelledby="work-order-customer-heading"
+    className="rounded-3xl border border-slate-800 bg-slate-900/70"
+  >
+    <div className="flex flex-col gap-3 border-b border-slate-800 p-5 sm:flex-row sm:items-center sm:justify-between">
+      <h2
+        id="work-order-customer-heading"
+        className="text-lg font-semibold text-white"
+      >
+        Cliente
+      </h2>
 
-              <Link
-                href={`/vehicles/${vehicle.id}`}
-                className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300"
-              >
-                Abrir ficha
-              </Link>
-            </div>
-          </section>
+      <Link
+        href={`/customers/${customer.id}`}
+        className="text-xs font-semibold uppercase tracking-[0.14em] text-orange-300 transition hover:text-orange-200"
+      >
+        Ver cliente
+      </Link>
+    </div>
 
-          <section
-            aria-labelledby="work-order-customer-heading"
-            className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6"
-          >
-            <h2
-              id="work-order-customer-heading"
-              className="text-lg font-semibold text-white"
-            >
-              Cliente
-            </h2>
-
-            <div className="mt-5 rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
-              <p className="wrap-break-words text-sm font-semibold text-white">
-                {customer.fullName}
-              </p>
-
-              <p className="mt-2 wrap-break-words text-sm text-slate-400">
-                {customer.phone ?? "Sin teléfono"}
-              </p>
-
-              <p className="mt-1 wrap-break-words text-sm text-slate-400">
-                {customer.email ?? "Sin email"}
-              </p>
-            </div>
-          </section>
-        </aside>
+    <dl className="divide-y divide-slate-800">
+      <SheetRow label="Nombre" value={customer.fullName} />
+      <SheetRow label="Teléfono" value={customer.phone ?? "Sin teléfono"} />
+      <SheetRow label="Email" value={customer.email ?? "Sin email"} />
+    </dl>
+  </section>
+</aside>
       </div>
     </section>
   );
@@ -329,6 +328,27 @@ function Metric({ label, value }: MetricProps) {
         {label}
       </dt>
       <dd className="mt-2 wrap-break-words text-sm font-semibold text-slate-100">
+        {value}
+      </dd>
+    </div>
+  );
+}
+type SheetRowProps = {
+  label: string;
+  value: string;
+};
+
+/**
+ * Spreadsheet-like row for compact detail metadata.
+ */
+function SheetRow({ label, value }: SheetRowProps) {
+  return (
+    <div className="grid md:grid-cols-[9rem_1fr]">
+      <dt className="border-slate-800 bg-slate-950/60 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 md:border-r">
+        {label}
+      </dt>
+
+      <dd className="wrap-break-words px-4 py-3 text-sm font-medium leading-6 text-slate-100">
         {value}
       </dd>
     </div>
