@@ -352,7 +352,7 @@ type BreakableValueProps = {
  */
 function BreakableValue({ value }: BreakableValueProps) {
   return (
-    <span className="block min-w-0 max-w-full break-words [overflow-wrap:anywhere]">
+    <span className="block min-w-0 max-w-full wrap-break-word">
       {value}
     </span>
   );
