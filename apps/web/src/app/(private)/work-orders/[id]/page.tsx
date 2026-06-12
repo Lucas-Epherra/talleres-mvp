@@ -99,46 +99,31 @@ export default async function WorkOrderDetailPage({
 
       <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
         <div className="space-y-6">
-          <section
-            aria-labelledby="work-order-description-heading"
-            className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6"
+          <DetailSheet
+            headingId="work-order-description-heading"
+            title="Información del trabajo"
           >
-            <h2
-              id="work-order-description-heading"
-              className="text-lg font-semibold text-white"
-            >
-              Información del trabajo
-            </h2>
-
-            <div className="mt-5 grid gap-4">
-              <TextDetail
-                label="Problema reportado"
-                value={workOrder.reportedIssue}
-              />
-              <TextDetail
-                label="Diagnóstico"
-                value={getReadableText(
-                  workOrder.diagnosis,
-                  "Diagnóstico pendiente",
-                )}
-              />
-              <TextDetail
-                label="Trabajo realizado"
-                value={getReadableText(workOrder.workDone, "Trabajo pendiente")}
-              />
-              <TextDetail
-                label="Repuestos usados"
-                value={getReadableText(
-                  workOrder.partsUsed,
-                  "Sin repuestos cargados",
-                )}
-              />
-              <TextDetail
-                label="Notas"
-                value={getReadableText(workOrder.notes, "Sin notas internas")}
-              />
-            </div>
-          </section>
+            <DetailSheetRow
+              label="Problema reportado"
+              value={workOrder.reportedIssue}
+            />
+            <DetailSheetRow
+              label="Diagnóstico"
+              value={getReadableText(workOrder.diagnosis, "Diagnóstico pendiente")}
+            />
+            <DetailSheetRow
+              label="Trabajo realizado"
+              value={getReadableText(workOrder.workDone, "Trabajo pendiente")}
+            />
+            <DetailSheetRow
+              label="Repuestos usados"
+              value={getReadableText(workOrder.partsUsed, "Sin repuestos cargados")}
+            />
+            <DetailSheetRow
+              label="Notas"
+              value={getReadableText(workOrder.notes, "Sin notas internas")}
+            />
+          </DetailSheet>
 
           <section
             aria-labelledby="work-order-costs-heading"
@@ -274,27 +259,6 @@ function getReadableText(value: string | null, fallback: string): string {
   }
 
   return value;
-}
-
-type TextDetailProps = {
-  label: string;
-  value: string;
-};
-
-/**
- * Large text block used for work order operational descriptions.
- */
-function TextDetail({ label, value }: TextDetailProps) {
-  return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-        {label}
-      </p>
-      <p className="mt-3 wrap-break-words text-sm leading-6 text-slate-300">
-        {value}
-      </p>
-    </div>
-  );
 }
 
 type MetricProps = {
