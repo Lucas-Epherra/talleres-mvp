@@ -22,6 +22,11 @@ type WorkOrderDetailPageProps = {
   }>;
 };
 
+type ParsedPartLine = {
+  name: string;
+  cost: string | null;
+};
+
 export const metadata: Metadata = {
   title: "Detalle de orden",
 };
@@ -97,8 +102,8 @@ export default async function WorkOrderDetailPage({
         </div>
       </header>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-        <div className="space-y-6">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
+        <div className="min-w-0 space-y-6">
           <DetailSheet
             headingId="work-order-description-heading"
             title="Información del trabajo"
@@ -107,21 +112,38 @@ export default async function WorkOrderDetailPage({
               label="Problema reportado"
               value={workOrder.reportedIssue}
             />
+
             <DetailSheetRow
               label="Diagnóstico"
-              value={getReadableText(workOrder.diagnosis, "Diagnóstico pendiente")}
+              value={getReadableText(
+                workOrder.diagnosis,
+                "Diagnóstico pendiente",
+              )}
             />
+
             <DetailSheetRow
               label="Trabajo realizado"
               value={getReadableText(workOrder.workDone, "Trabajo pendiente")}
             />
+
             <DetailSheetRow
               label="Repuestos usados"
-              value={getReadableText(workOrder.partsUsed, "Sin repuestos cargados")}
+              value={
+                <PartsUsedValue
+                  value={workOrder.partsUsed}
+                  fallback="Sin repuestos cargados"
+                />
+              }
             />
+
             <DetailSheetRow
               label="Notas"
-              value={getReadableText(workOrder.notes, "Sin notas internas")}
+              value={
+                <NotesValue
+                  value={workOrder.notes}
+                  fallback="Sin notas internas"
+                />
+              }
             />
           </DetailSheet>
 
@@ -129,30 +151,37 @@ export default async function WorkOrderDetailPage({
             headingId="work-order-costs-heading"
             title="Fechas, kilometraje y costos"
           >
-            <DetailSheetRow label="Ingreso" value={formatDate(workOrder.entryDate)} />
+            <DetailSheetRow
+              label="Ingreso"
+              value={formatDate(workOrder.entryDate)}
+            />
+
             <DetailSheetRow
               label="Entrega"
               value={formatDate(workOrder.deliveryDate)}
             />
+
             <DetailSheetRow
               label="Km ingreso"
               value={formatMileage(workOrder.entryMileage)}
             />
+
             <DetailSheetRow
               label="Mano de obra"
               value={formatMoney(workOrder.laborCost)}
             />
+
             <DetailSheetRow
               label="Repuestos"
               value={formatMoney(workOrder.partsCost)}
             />
-            
+
             <DetailSheetRow
               label="Total final"
               value={formatMoney(workOrder.finalTotal)}
             />
           </DetailSheet>
-          
+
           {workOrder.status !== "DELIVERED" ? (
             <section
               aria-labelledby="work-order-status-heading"
@@ -178,7 +207,7 @@ export default async function WorkOrderDetailPage({
           ) : null}
         </div>
 
-        <aside className="space-y-6">
+        <aside className="min-w-0 space-y-6 xl:h-fit xl:self-start">
           <DetailSheet
             headingId="work-order-vehicle-heading"
             title="Vehículo"
@@ -198,7 +227,10 @@ export default async function WorkOrderDetailPage({
               label="Año"
               value={vehicle.year ? vehicle.year.toString() : "Sin cargar"}
             />
-            <DetailSheetRow label="Kilometraje" value={formatMileage(vehicle.mileage)} />
+            <DetailSheetRow
+              label="Kilometraje"
+              value={formatMileage(vehicle.mileage)}
+            />
           </DetailSheet>
 
           <DetailSheet
@@ -214,8 +246,18 @@ export default async function WorkOrderDetailPage({
             }
           >
             <DetailSheetRow label="Nombre" value={customer.fullName} />
-            <DetailSheetRow label="Teléfono" value={customer.phone ?? "Sin teléfono"} />
-            <DetailSheetRow label="Email" value={customer.email ?? "Sin email"} />
+
+            <DetailSheetRow
+              label="Teléfono"
+              value={customer.phone ?? "Sin teléfono"}
+            />
+
+            <DetailSheetRow
+              label="Email"
+              value={
+                <BreakableValue value={customer.email ?? "Sin email"} />
+              }
+            />
           </DetailSheet>
         </aside>
       </div>
@@ -223,6 +265,98 @@ export default async function WorkOrderDetailPage({
   );
 }
 
+type PartsUsedValueProps = {
+  value: string | null;
+  fallback: string;
+};
+
+/**
+ * Renders serialized work order parts as compact internal rows.
+ *
+ * Expected stored format:
+ * - Pastillas delanteras — $ 50.000
+ */
+function PartsUsedValue({ value, fallback }: PartsUsedValueProps) {
+  const lines = splitStoredList(value);
+
+  if (lines.length === 0) {
+    return <span>{fallback}</span>;
+  }
+
+  return (
+    <div className="space-y-2">
+      {lines.map((line, index) => {
+        const part = parsePartLine(line);
+
+        return (
+          <div
+            key={`${part.name}-${index.toString()}`}
+            className="grid gap-1 rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+          >
+            <span className="wrap-break-word text-sm font-semibold text-slate-100">
+              {part.name}
+            </span>
+
+            {part.cost ? (
+              <span className="text-sm font-semibold text-orange-200">
+                {part.cost}
+              </span>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+type NotesValueProps = {
+  value: string | null;
+  fallback: string;
+};
+
+/**
+ * Renders serialized internal notes as compact stacked rows.
+ */
+function NotesValue({ value, fallback }: NotesValueProps) {
+  const lines = splitStoredList(value);
+
+  if (lines.length === 0) {
+    return <span>{fallback}</span>;
+  }
+
+  return (
+    <ul className="space-y-2">
+      {lines.map((line, index) => (
+        <li
+          key={`${line}-${index.toString()}`}
+          className="flex gap-2 rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2"
+        >
+          <span aria-hidden="true" className="text-orange-300">
+            •
+          </span>
+
+          <span className="wrap-break-word text-sm font-semibold text-slate-100">
+            {stripListPrefix(line)}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+type BreakableValueProps = {
+  value: string;
+};
+/**
+ * Forces long operational strings like emails to wrap inside narrow sheet cells.
+ */
+function BreakableValue({ value }: BreakableValueProps) {
+  return (
+    <span className="block min-w-0 max-w-full break-words [overflow-wrap:anywhere]">
+      {value}
+    </span>
+  );
+}
 /**
  * Fetches a work order and converts backend 404 responses into Next notFound.
  */
@@ -249,23 +383,36 @@ function getReadableText(value: string | null, fallback: string): string {
   return value;
 }
 
-type MetricProps = {
-  label: string;
-  value: string;
-};
+/**
+ * Splits stored multiline text into clean list rows.
+ */
+function splitStoredList(value: string | null): string[] {
+  if (!value || value.trim().length === 0) {
+    return [];
+  }
+
+  return value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
 
 /**
- * Compact metric item for dates, mileage and money values.
+ * Parses a stored part row into name and optional cost.
  */
-function Metric({ label, value }: MetricProps) {
-  return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-      <dt className="text-xs uppercase tracking-[0.14em] text-slate-500">
-        {label}
-      </dt>
-      <dd className="mt-2 wrap-break-words text-sm font-semibold text-slate-100">
-        {value}
-      </dd>
-    </div>
-  );
+function parsePartLine(line: string): ParsedPartLine {
+  const normalizedLine = stripListPrefix(line);
+  const [rawName, rawCost] = normalizedLine.split(/\s+—\s+/u);
+
+  return {
+    name: rawName?.trim() ?? normalizedLine,
+    cost: rawCost?.trim() || null,
+  };
+}
+
+/**
+ * Removes common bullet prefixes from stored rows.
+ */
+function stripListPrefix(value: string): string {
+  return value.replace(/^[-•]\s*/, "").trim();
 }

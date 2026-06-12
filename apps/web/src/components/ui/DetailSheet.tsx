@@ -52,24 +52,22 @@ export function DetailSheet({
     </section>
   );
 }
-
 /**
  * Single label/value row for DetailSheet.
  */
 export function DetailSheetRow({ label, value }: DetailSheetRowProps) {
   return (
-    <div className="grid md:grid-cols-[12rem_1fr]">
-      <dt className="border-slate-800 bg-slate-950/60 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 md:border-r">
+    <div className="grid min-w-0 md:grid-cols-[12rem_minmax(0,1fr)]">
+      <dt className="min-w-0 border-slate-800 bg-slate-950/60 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 md:border-r">
         {label}
       </dt>
 
-      <dd className="wrap-break-word px-4 py-3 text-sm font-medium leading-6 text-slate-100">
+      <dd className="min-w-0 px-4 py-3 text-sm font-medium leading-6 text-slate-100 break-words [overflow-wrap:anywhere]">
         {value}
       </dd>
     </div>
   );
 }
-
 /**
  * Joins the base sheet class with optional spacing/layout classes.
  */
