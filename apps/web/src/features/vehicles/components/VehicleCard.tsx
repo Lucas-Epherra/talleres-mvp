@@ -50,15 +50,27 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
             aria-labelledby={`vehicle-customer-${vehicle.id}`}
             className="mt-5 rounded-xl border border-slate-800 bg-slate-950/70 p-4"
           >
-            <h3
-              id={`vehicle-customer-${vehicle.id}`}
-              className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
-            >
-              Cliente asociado
-            </h3>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <h3
+                id={`vehicle-customer-${vehicle.id}`}
+                className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
+              >
+                Cliente asociado
+              </h3>
+
+              <Link
+                href={`/customers/${vehicle.customer.id}`}
+                className="text-xs font-semibold uppercase tracking-[0.14em] text-orange-300 transition hover:text-orange-200"
+              >
+                Ver cliente
+              </Link>
+            </div>
 
             <div className="mt-3 grid gap-3 md:grid-cols-3">
-              <CustomerMetaItem label="Nombre" value={vehicle.customer.fullName} />
+              <CustomerMetaItem
+                label="Nombre"
+                value={vehicle.customer.fullName}
+              />
               <CustomerMetaItem
                 label="Teléfono"
                 value={vehicle.customer.phone ?? "Sin teléfono"}
@@ -70,7 +82,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
             </div>
           </section>
 
-          {vehicle.notes ? (
+          {/* {vehicle.notes ? (
             <section
               aria-labelledby={`vehicle-notes-${vehicle.id}`}
               className="mt-5 rounded-xl border border-slate-800 bg-slate-950/70 p-4"
@@ -86,7 +98,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
                 {vehicle.notes}
               </p>
             </section>
-          ) : null}
+          ) : null} */} {/* //notas anuladas */}
         </div>
 
         <aside className="w-full shrink-0 lg:w-48">
@@ -96,6 +108,13 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
               className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-orange-500 px-4 text-sm font-semibold text-white transition hover:bg-orange-400"
             >
               Abrir ficha
+            </Link>
+
+            <Link
+              href={`/customers/${vehicle.customer.id}`}
+              className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300"
+            >
+              Ver cliente  
             </Link>
           </div>
         </aside>

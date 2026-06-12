@@ -84,6 +84,14 @@ export default async function CustomerDetailPage({
             >
               Cargar vehículo
             </Link>
+
+
+            <Link
+              href="#customer-vehicles-heading"
+              className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-slate-700 px-5 text-sm font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300 sm:w-auto"
+            >
+              Ver vehículos
+            </Link>
           </div>
         </div>
       </header>

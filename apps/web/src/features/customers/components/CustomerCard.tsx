@@ -41,7 +41,7 @@ export function CustomerCard({ customer }: CustomerCardProps) {
             />
           </div>
 
-          {customer.notes ? (
+          {/* {customer.notes ? (
             <section
               aria-labelledby={`customer-notes-${customer.id}`}
               className="mt-5 rounded-xl border border-slate-800 bg-slate-950/70 p-4"
@@ -57,7 +57,7 @@ export function CustomerCard({ customer }: CustomerCardProps) {
                 {customer.notes}
               </p>
             </section>
-          ) : null}
+          ) : null} */} {/* //Seccion de notas internas en la card de la lista - anulada */}
         </div>
 
         <aside className="w-full shrink-0 lg:w-56">

@@ -73,10 +73,18 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
         aria-labelledby="customer-heading"
         className="mt-8 rounded-2xl border border-slate-800 bg-slate-950/70 p-5"
       >
-        <h2 id="customer-heading" className="text-sm font-semibold text-white">
-          Cliente asociado
-        </h2>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <h2 id="customer-heading" className="text-sm font-semibold text-white">
+            Cliente asociado
+          </h2>
 
+          <Link
+            href={`/customers/${vehicle.customerId}`}
+            className="text-xs font-semibold uppercase tracking-[0.14em] text-orange-300 transition hover:text-orange-200"
+          >
+            Ver cliente
+          </Link>
+        </div>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           <InfoItem label="Nombre" value={customer.fullName} />
           <InfoItem label="Teléfono" value={customer.phone ?? "Sin teléfono"} />

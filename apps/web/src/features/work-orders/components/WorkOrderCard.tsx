@@ -95,12 +95,21 @@ export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
               aria-labelledby={`work-order-vehicle-${workOrder.id}`}
               className="rounded-xl border border-slate-800 bg-slate-950/70 p-4"
             >
-              <h3
-                id={`work-order-vehicle-${workOrder.id}`}
-                className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
-              >
-                Vehículo
-              </h3>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <h3
+                  id={`work-order-vehicle-${workOrder.id}`}
+                  className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
+                >
+                  Vehículo
+                </h3>
+
+                <Link
+                  href={`/vehicles/${vehicle.id}`}
+                  className="text-xs font-semibold uppercase tracking-[0.14em] text-orange-300 transition hover:text-orange-200"
+                >
+                  Ver ficha
+                </Link>
+              </div>
 
               <div className="mt-4 grid gap-3 md:grid-cols-2">
                 <ContextMetaItem label="Patente" value={vehicle.licensePlate} />
@@ -121,12 +130,21 @@ export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
               aria-labelledby={`work-order-customer-${workOrder.id}`}
               className="rounded-xl border border-slate-800 bg-slate-950/70 p-4"
             >
-              <h3
-                id={`work-order-customer-${workOrder.id}`}
-                className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
-              >
-                Cliente
-              </h3>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <h3
+                  id={`work-order-customer-${workOrder.id}`}
+                  className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
+                >
+                  Cliente
+                </h3>
+
+                <Link
+                  href={`/customers/${customer.id}`}
+                  className="text-xs font-semibold uppercase tracking-[0.14em] text-orange-300 transition hover:text-orange-200"
+                >
+                  Ver cliente
+                </Link>
+              </div>
 
               <div className="mt-4 grid gap-3 md:grid-cols-2">
                 <ContextMetaItem label="Nombre" value={customer.fullName} />
@@ -213,6 +231,13 @@ export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
               className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300"
             >
               Ver ficha
+            </Link>
+
+            <Link
+              href={`/customers/${customer.id}`}
+              className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300"
+            >
+              Ver cliente
             </Link>
           </div>
         </aside>
