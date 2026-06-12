@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { getCurrentUser } from "../../features/auth/auth.server";
 import { LogoutButton } from "../../features/auth/components/LogoutButton";
+import { PrivateFooter } from "./_components/PrivateFooter";
 import { PrivateNavigation } from "./_components/PrivateNavigation";
 
 /**
@@ -23,7 +24,7 @@ export default async function PrivateLayout({
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-slate-950">
+    <div className="flex min-h-screen flex-col overflow-x-hidden bg-slate-950">
       <header className="border-b border-slate-800 bg-slate-950/95">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-6">
           <div className="min-w-0 space-y-1">
@@ -50,13 +51,17 @@ export default async function PrivateLayout({
         </div>
       </header>
 
-      <div className="mx-auto grid w-full max-w-7xl gap-5 px-5 py-6 sm:px-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-6 lg:py-8">
+      <div className="mx-auto grid w-full max-w-7xl flex-1 gap-5 px-5 py-6 sm:px-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-6 lg:py-8">
         <aside className="min-w-0 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70 p-3 lg:p-4">
           <PrivateNavigation />
         </aside>
 
-        <main className="min-w-0 overflow-hidden">{children}</main>
+        <main id="main-content" className="min-w-0 overflow-hidden">
+          {children}
+        </main>
       </div>
+
+      <PrivateFooter />
     </div>
   );
 }
