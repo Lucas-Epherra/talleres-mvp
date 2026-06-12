@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "../../../components/ui/EmptyState";
+import { SearchForm } from "../../../components/ui/SearchForm";
 import { CustomerCard } from "../../../features/customers/components/CustomerCard";
 import { getCustomers } from "../../../features/customers/customers.server";
 import type { Customer } from "../../../features/customers/types";
@@ -27,7 +28,7 @@ type CustomersPageProps = {
 export default async function CustomersPage({
   searchParams,
 }: CustomersPageProps) {
-  const [customers,vehicles, resolvedSearchParams] = await Promise.all([
+  const [customers, vehicles, resolvedSearchParams] = await Promise.all([
     getCustomers(),
     getVehicles(),
     searchParams,
@@ -45,9 +46,11 @@ export default async function CustomersPage({
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-orange-300">
               Clientes
             </p>
+
             <h1 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
               Base de clientes
             </h1>
+
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
               Registro operativo de clientes del taller. Desde acá podés crear
               clientes y luego asociarles vehículos.
@@ -62,36 +65,14 @@ export default async function CustomersPage({
           </Link>
         </div>
 
-        <form className="mt-6 flex flex-col gap-3 sm:flex-row" role="search">
-          <label htmlFor="search" className="sr-only">
-            Buscar clientes
-          </label>
-
-          <input
-            id="search"
-            name="search"
-            type="search"
-            defaultValue={search}
-            placeholder="Buscar por nombre, teléfono, email, dirección o notas..."
-            className="h-11 min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20"
-          />
-
-          <button
-            type="submit"
-            className="h-11 rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400"
-          >
-            Buscar
-          </button>
-
-          {hasSearch ? (
-            <Link
-              href="/customers"
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-700 px-5 text-sm font-semibold text-slate-100 transition hover:border-slate-500 hover:bg-slate-900"
-            >
-              Limpiar
-            </Link>
-          ) : null}
-        </form>
+        <SearchForm
+          id="customers-search"
+          label="Buscar"
+          defaultValue={search}
+          placeholder="Buscar por nombre, teléfono, email, dirección o notas..."
+          clearHref="/customers"
+          showClearAction={hasSearch}
+        />
       </header>
 
       <section aria-labelledby="customers-results-heading" className="space-y-4">
@@ -102,6 +83,7 @@ export default async function CustomersPage({
           >
             {hasSearch ? "Resultados" : "Registrados"}
           </h2>
+
           <p className="shrink-0 text-sm text-slate-400">
             {filteredCustomers.length} cliente
             {filteredCustomers.length === 1 ? "" : "s"}
@@ -115,7 +97,8 @@ export default async function CustomersPage({
                 key={customer.id}
                 customer={customer}
                 vehicles={getCustomerVehicles(vehicles, customer.id)}
-              />))}
+              />
+            ))}
           </div>
         ) : (
           <EmptyState
@@ -133,29 +116,29 @@ export default async function CustomersPage({
             actions={
               hasSearch
                 ? [
-                  {
-                    label: "Limpiar búsqueda",
-                    href: "/customers",
-                    variant: "primary",
-                  },
-                  {
-                    label: "Crear cliente",
-                    href: "/customers/new",
-                    variant: "secondary",
-                  },
-                ]
+                    {
+                      label: "Limpiar búsqueda",
+                      href: "/customers",
+                      variant: "primary",
+                    },
+                    {
+                      label: "Crear cliente",
+                      href: "/customers/new",
+                      variant: "secondary",
+                    },
+                  ]
                 : [
-                  {
-                    label: "Crear cliente",
-                    href: "/customers/new",
-                    variant: "primary",
-                  },
-                  {
-                    label: "Ver vehículos",
-                    href: "/vehicles",
-                    variant: "secondary",
-                  },
-                ]
+                    {
+                      label: "Crear cliente",
+                      href: "/customers/new",
+                      variant: "primary",
+                    },
+                    {
+                      label: "Ver vehículos",
+                      href: "/vehicles",
+                      variant: "secondary",
+                    },
+                  ]
             }
           />
         )}

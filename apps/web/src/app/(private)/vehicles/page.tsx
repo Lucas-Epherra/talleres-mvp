@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "../../../components/ui/EmptyState";
-import { normalizeSearchParam } from "../../../lib/format";
+import { SearchForm } from "../../../components/ui/SearchForm";
 import { VehicleCard } from "../../../features/vehicles/components/VehicleCard";
 import { getVehicles } from "../../../features/vehicles/vehicles.server";
+import { normalizeSearchParam } from "../../../lib/format";
 
 export const metadata: Metadata = {
   title: "Vehículos",
@@ -54,34 +55,14 @@ export default async function VehiclesPage({ searchParams }: VehiclesPageProps) 
           </Link>
         </div>
 
-        <form className="mt-6 flex flex-col gap-3 sm:flex-row" role="search">
-          <label htmlFor="search" className="sr-only">
-            Buscar vehículos
-          </label>
-          <input
-            id="search"
-            name="search"
-            type="search"
-            defaultValue={search}
-            placeholder="Buscar por patente, cliente o teléfono..."
-            className="h-11 min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20"
-          />
-          <button
-            type="submit"
-            className="h-11 rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400"
-          >
-            Buscar
-          </button>
-
-          {hasSearch ? (
-            <Link
-              href="/vehicles"
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-700 px-5 text-sm font-semibold text-slate-100 transition hover:border-slate-500 hover:bg-slate-900"
-            >
-              Limpiar
-            </Link>
-          ) : null}
-        </form>
+        <SearchForm
+          id="vehicles-search"
+          label="Buscar"
+          defaultValue={search}
+          placeholder="Buscar por patente, cliente o teléfono..."
+          clearHref="/vehicles"
+          showClearAction={hasSearch}
+        />
       </header>
 
       <section aria-labelledby="vehicles-results-heading" className="space-y-4">
@@ -92,6 +73,7 @@ export default async function VehiclesPage({ searchParams }: VehiclesPageProps) 
           >
             Resultados
           </h2>
+
           <p className="shrink-0 text-sm text-slate-400">
             {vehicles.length} vehículo{vehicles.length === 1 ? "" : "s"}
           </p>
