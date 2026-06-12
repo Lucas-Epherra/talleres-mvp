@@ -15,15 +15,32 @@ type VehicleCardProps = {
 export function VehicleCard({ vehicle }: VehicleCardProps) {
   return (
     <article className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 transition hover:border-slate-700 hover:bg-slate-900 sm:p-6">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-stretch lg:justify-between">
         <div className="min-w-0 flex-1">
-          <p className="wrap-break-word text-xs font-semibold uppercase tracking-[0.18em] text-orange-300">
-            {vehicle.licensePlate}
-          </p>
+          <header className="flex flex-col gap-5 border-b border-slate-800 pb-5 md:flex-row md:items-start md:justify-between">
+            <div className="min-w-0">
+              <p className="wrap-break-word text-xs font-semibold uppercase tracking-[0.18em] text-orange-300">
+                {vehicle.licensePlate}
+              </p>
 
-          <h2 className="mt-2 wrap-break-word text-xl font-semibold tracking-tight text-white sm:text-2xl">
-            {vehicle.brand} {vehicle.model}
-          </h2>
+              <h2 className="mt-2 wrap-break-word text-xl font-semibold tracking-tight text-white sm:text-2xl">
+                {vehicle.brand} {vehicle.model}
+              </h2>
+            </div>
+
+            <div className="min-w-0 md:max-w-xs md:text-right">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Cliente asociado
+              </p>
+
+              <Link
+                href={`/customers/${vehicle.customer.id}`}
+                className="mt-2 block wrap-break-word text-xl font-semibold tracking-tight text-white transition hover:text-orange-200 sm:text-2xl"
+              >
+                {vehicle.customer.fullName}
+              </Link>
+            </div>
+          </header>
 
           <div className="mt-5 grid gap-3 md:grid-cols-3">
             <VehicleMetaItem
@@ -41,20 +58,10 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
               }`}
             />
           </div>
-
-          <div className="mt-5 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Cliente asociado
-            </p>
-
-            <p className="mt-2 wrap-break-word text-sm font-semibold text-slate-100">
-              {vehicle.customer.fullName}
-            </p>
-          </div>
         </div>
 
         <aside className="w-full shrink-0 lg:w-48">
-          <div className="flex flex-col gap-3 lg:border-l lg:border-slate-800 lg:pl-5">
+          <div className="flex h-full flex-col gap-3 lg:border-l lg:border-slate-800 lg:pl-5">
             <Link
               href={`/vehicles/${vehicle.id}`}
               className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-orange-500 px-4 text-sm font-semibold text-white transition hover:bg-orange-400"
