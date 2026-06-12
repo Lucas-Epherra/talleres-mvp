@@ -125,46 +125,37 @@ export default async function WorkOrderDetailPage({
             />
           </DetailSheet>
 
-          <section
-            aria-labelledby="work-order-costs-heading"
-            className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6"
+          <DetailSheet
+            headingId="work-order-costs-heading"
+            title="Fechas, kilometraje y costos"
           >
-            <h2
-              id="work-order-costs-heading"
-              className="text-lg font-semibold text-white"
-            >
-              Fechas, kilometraje y costos
-            </h2>
-
-            <dl className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              <Metric label="Ingreso" value={formatDate(workOrder.entryDate)} />
-              <Metric
-                label="Entrega"
-                value={formatDate(workOrder.deliveryDate)}
-              />
-              <Metric
-                label="Km ingreso"
-                value={formatMileage(workOrder.entryMileage)}
-              />
-              <Metric
-                label="Mano de obra"
-                value={formatMoney(workOrder.laborCost)}
-              />
-              <Metric
-                label="Repuestos"
-                value={formatMoney(workOrder.partsCost)}
-              />
-              <Metric
-                label="Total estimado"
-                value={formatMoney(workOrder.estimatedTotal)}
-              />
-              <Metric
-                label="Total final"
-                value={formatMoney(workOrder.finalTotal)}
-              />
-            </dl>
-          </section>
-
+            <DetailSheetRow label="Ingreso" value={formatDate(workOrder.entryDate)} />
+            <DetailSheetRow
+              label="Entrega"
+              value={formatDate(workOrder.deliveryDate)}
+            />
+            <DetailSheetRow
+              label="Km ingreso"
+              value={formatMileage(workOrder.entryMileage)}
+            />
+            <DetailSheetRow
+              label="Mano de obra"
+              value={formatMoney(workOrder.laborCost)}
+            />
+            <DetailSheetRow
+              label="Repuestos"
+              value={formatMoney(workOrder.partsCost)}
+            />
+            <DetailSheetRow
+              label="Total estimado"
+              value={formatMoney(workOrder.estimatedTotal)}
+            />
+            <DetailSheetRow
+              label="Total final"
+              value={formatMoney(workOrder.finalTotal)}
+            />
+          </DetailSheet>
+          
           {workOrder.status !== "DELIVERED" ? (
             <section
               aria-labelledby="work-order-status-heading"
