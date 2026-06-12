@@ -2,10 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, type ReactNode, useId, useState } from "react";
 import { ApiError } from "../../../lib/api";
 import { updateVehicle } from "../vehicles.client";
 import type { UpdateVehicleInput, VehicleProfile } from "../types";
+import {
+  readVehicleFormDraft,
+  validateVehicleFormDraft,
+} from "../utils/vehicle-form";
 
 type EditVehicleFormProps = {
   profile: VehicleProfile;
@@ -44,28 +48,27 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
       return;
     }
 
-    const formData = new FormData(event.currentTarget);
+    const draft = readVehicleFormDraft(new FormData(event.currentTarget));
+    const validation = validateVehicleFormDraft(draft);
 
-    const licensePlate = getRequiredString(formData, "licensePlate").toUpperCase();
-    const brand = getRequiredString(formData, "brand");
-    const model = getRequiredString(formData, "model");
-
-    if (!licensePlate || !brand || !model) {
+    if (!validation.isValid) {
       setState({
         status: "error",
-        message: "Patente, marca y modelo son obligatorios.",
+        message: validation.message,
       });
 
       return;
     }
 
+    const { data } = validation;
+
     const input: UpdateVehicleInput = {
-      licensePlate,
-      brand,
-      model,
-      year: getNullableNumber(formData, "year"),
-      mileage: getNullableNumber(formData, "mileage"),
-      notes: getNullableString(formData, "notes"),
+      licensePlate: data.licensePlate,
+      brand: data.brand,
+      model: data.model,
+      year: data.year,
+      mileage: data.mileage,
+      notes: data.notes,
     };
 
     try {
@@ -141,6 +144,9 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
               defaultValue={vehicle.licensePlate}
               disabled={isLoading}
               required
+              maxLength={10}
+              autoCapitalize="characters"
+              autoComplete="off"
             />
           </Field>
 
@@ -153,6 +159,8 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
               defaultValue={vehicle.brand}
               disabled={isLoading}
               required
+              maxLength={60}
+              autoComplete="off"
             />
           </Field>
 
@@ -165,6 +173,8 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
               defaultValue={vehicle.model}
               disabled={isLoading}
               required
+              maxLength={60}
+              autoComplete="off"
             />
           </Field>
 
@@ -177,6 +187,10 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
               placeholder="2018"
               defaultValue={toInputValue(vehicle.year)}
               disabled={isLoading}
+              min={1900}
+              max={new Date().getFullYear() + 1}
+              step={1}
+              inputMode="numeric"
             />
           </Field>
 
@@ -189,12 +203,17 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
               placeholder="142000"
               defaultValue={toInputValue(vehicle.mileage)}
               disabled={isLoading}
+              min={0}
+              max={2_000_000}
+              step={1}
+              inputMode="numeric"
             />
           </Field>
         </div>
 
         <Field className="mt-5">
           <Label htmlFor="notes">Notas del vehículo</Label>
+
           <textarea
             id="notes"
             name="notes"
@@ -202,6 +221,7 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
             placeholder="Estado general, detalles conocidos, observaciones..."
             defaultValue={vehicle.notes ?? ""}
             disabled={isLoading}
+            maxLength={800}
             className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
           />
         </Field>
@@ -251,6 +271,7 @@ function ReadOnlyDetail({ label, value }: ReadOnlyDetailProps) {
       <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
         {label}
       </p>
+
       <p className="mt-2 wrap-break-word text-sm font-semibold text-slate-100">
         {value}
       </p>
@@ -259,7 +280,7 @@ function ReadOnlyDetail({ label, value }: ReadOnlyDetailProps) {
 }
 
 type FieldProps = {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 };
 
@@ -272,7 +293,7 @@ function Field({ children, className }: FieldProps) {
 
 type LabelProps = {
   htmlFor: string;
-  children: React.ReactNode;
+  children: ReactNode;
 };
 
 /**
@@ -294,6 +315,13 @@ type InputProps = {
   defaultValue?: string | number;
   disabled?: boolean;
   required?: boolean;
+  maxLength?: number;
+  min?: number;
+  max?: number;
+  step?: number;
+  inputMode?: "text" | "numeric" | "decimal";
+  autoComplete?: string;
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
 };
 
 /**
@@ -307,19 +335,31 @@ function Input({
   defaultValue,
   disabled,
   required,
+  maxLength,
+  min,
+  max,
+  step,
+  inputMode,
+  autoComplete,
+  autoCapitalize,
 }: InputProps) {
   return (
     <input
       id={id}
       name={name}
       type={type}
-      min={type === "number" ? 0 : undefined}
-      step={type === "number" ? 1 : undefined}
       placeholder={placeholder}
       defaultValue={defaultValue}
       disabled={disabled}
       required={required}
-      className="h-11 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+      maxLength={maxLength}
+      min={min}
+      max={max}
+      step={step}
+      inputMode={inputMode}
+      autoComplete={autoComplete}
+      autoCapitalize={autoCapitalize}
+      className="h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
     />
   );
 }
@@ -329,47 +369,6 @@ function Input({
  */
 function toInputValue(value: number | null): number | undefined {
   return value === null ? undefined : value;
-}
-
-/**
- * Reads and trims a string field from form data.
- */
-function getRequiredString(formData: FormData, key: string): string {
-  const value = formData.get(key);
-
-  if (typeof value !== "string") {
-    return "";
-  }
-
-  return value.trim();
-}
-
-/**
- * Reads an editable nullable string from form data.
- *
- * Empty values become null so users can clear optional vehicle notes.
- */
-function getNullableString(formData: FormData, key: string): string | null {
-  const value = getRequiredString(formData, key);
-
-  return value.length > 0 ? value : null;
-}
-
-/**
- * Reads an editable nullable number from form data.
- *
- * Empty values become null so users can clear optional numeric vehicle fields.
- */
-function getNullableNumber(formData: FormData, key: string): number | null {
-  const value = getRequiredString(formData, key);
-
-  if (!value) {
-    return null;
-  }
-
-  const numericValue = Number(value);
-
-  return Number.isFinite(numericValue) ? numericValue : null;
 }
 
 /**

@@ -1,10 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type FormEvent, type ReactNode, useState } from "react";
+import { type ReactNode, type FormEvent, useState } from "react";
 import { ApiError } from "../../../lib/api";
 import type { Customer } from "../../customers/types";
 import { createVehicle } from "../vehicles.client";
+import {
+  readVehicleFormDraft,
+  validateVehicleFormDraft,
+} from "../utils/vehicle-form";
 
 type CreateVehicleFormProps = {
   customers: Customer[];
@@ -38,24 +42,36 @@ export function CreateVehicleForm({
 
   const isLoading = state.status === "loading";
   const hasCustomers = customers.length > 0;
+  const validCustomerIds = customers.map((customer) => customer.id);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const formData = new FormData(event.currentTarget);
+    if (isLoading) {
+      return;
+    }
 
-    const customerId = getStringValue(formData, "customerId");
-    const licensePlate = getStringValue(formData, "licensePlate");
-    const brand = getStringValue(formData, "brand");
-    const model = getStringValue(formData, "model");
-    const year = getOptionalNumberValue(formData, "year");
-    const mileage = getOptionalNumberValue(formData, "mileage");
-    const notes = getOptionalStringValue(formData, "notes");
+    const draft = readVehicleFormDraft(new FormData(event.currentTarget));
+    const validation = validateVehicleFormDraft(draft, {
+      requireCustomer: true,
+      validCustomerIds,
+    });
 
-    if (!customerId || !licensePlate || !brand || !model) {
+    if (!validation.isValid) {
       setState({
         status: "error",
-        message: "Cliente, patente, marca y modelo son obligatorios.",
+        message: validation.message,
+      });
+
+      return;
+    }
+
+    const { data } = validation;
+
+    if (!data.customerId) {
+      setState({
+        status: "error",
+        message: "Seleccioná un cliente para asociar el vehículo.",
       });
 
       return;
@@ -68,26 +84,21 @@ export function CreateVehicleForm({
 
     try {
       const vehicle = await createVehicle({
-        customerId,
-        licensePlate,
-        brand,
-        model,
-        year,
-        mileage,
-        notes,
+        customerId: data.customerId,
+        licensePlate: data.licensePlate,
+        brand: data.brand,
+        model: data.model,
+        year: data.year ?? undefined,
+        mileage: data.mileage ?? undefined,
+        notes: data.notes ?? undefined,
       });
 
       router.replace(`/vehicles/${vehicle.id}`);
       router.refresh();
     } catch (error) {
-      const message =
-        error instanceof ApiError
-          ? error.message
-          : "No se pudo crear el vehículo.";
-
       setState({
         status: "error",
-        message,
+        message: getSubmitErrorMessage(error),
       });
     }
   }
@@ -98,10 +109,12 @@ export function CreateVehicleForm({
         <h2 className="text-lg font-semibold text-white">
           Primero necesitás crear un cliente
         </h2>
+
         <p className="mt-2 text-sm leading-6 text-slate-400">
           El vehículo siempre debe estar asociado a un cliente. Creá el cliente
           y después volvé a esta pantalla para cargar su vehículo.
         </p>
+
         <button
           type="button"
           onClick={() => router.push("/customers/new")}
@@ -121,16 +134,19 @@ export function CreateVehicleForm({
       aria-describedby={state.message ? "create-vehicle-error" : undefined}
     >
       <Field>
-        <Label htmlFor="customerId">Cliente</Label>
+        <Label htmlFor="customerId">Cliente *</Label>
+
         <select
           id="customerId"
           name="customerId"
           defaultValue={defaultCustomerId ?? ""}
           disabled={isLoading}
           required
-          className="h-11 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+          autoComplete="off"
+          className="h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <option value="">Seleccionar cliente</option>
+
           {customers.map((customer) => (
             <option key={customer.id} value={customer.id}>
               {customer.fullName}
@@ -142,35 +158,42 @@ export function CreateVehicleForm({
 
       <div className="grid gap-5 md:grid-cols-2">
         <Field>
-          <Label htmlFor="licensePlate">Patente</Label>
+          <Label htmlFor="licensePlate">Patente *</Label>
           <Input
             id="licensePlate"
             name="licensePlate"
             placeholder="AD999ZZ"
             disabled={isLoading}
             required
+            maxLength={10}
+            autoCapitalize="characters"
+            autoComplete="off"
           />
         </Field>
 
         <Field>
-          <Label htmlFor="brand">Marca</Label>
+          <Label htmlFor="brand">Marca *</Label>
           <Input
             id="brand"
             name="brand"
             placeholder="Renault"
             disabled={isLoading}
             required
+            maxLength={60}
+            autoComplete="off"
           />
         </Field>
 
         <Field>
-          <Label htmlFor="model">Modelo</Label>
+          <Label htmlFor="model">Modelo *</Label>
           <Input
             id="model"
             name="model"
             placeholder="Kangoo"
             disabled={isLoading}
             required
+            maxLength={60}
+            autoComplete="off"
           />
         </Field>
 
@@ -182,6 +205,10 @@ export function CreateVehicleForm({
             type="number"
             placeholder="2018"
             disabled={isLoading}
+            min={1900}
+            max={new Date().getFullYear() + 1}
+            step={1}
+            inputMode="numeric"
           />
         </Field>
 
@@ -193,18 +220,24 @@ export function CreateVehicleForm({
             type="number"
             placeholder="142000"
             disabled={isLoading}
+            min={0}
+            max={2_000_000}
+            step={1}
+            inputMode="numeric"
           />
         </Field>
       </div>
 
       <Field>
         <Label htmlFor="notes">Notas del vehículo</Label>
+
         <textarea
           id="notes"
           name="notes"
           rows={4}
           placeholder="Estado general, detalles conocidos, observaciones..."
           disabled={isLoading}
+          maxLength={800}
           className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
         />
       </Field>
@@ -219,7 +252,7 @@ export function CreateVehicleForm({
         </p>
       ) : null}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <button
           type="button"
           onClick={() => router.back()}
@@ -271,10 +304,17 @@ function Label({ htmlFor, children }: LabelProps) {
 type InputProps = {
   id: string;
   name: string;
-  type?: string;
+  type?: "text" | "number";
   placeholder?: string;
   disabled?: boolean;
   required?: boolean;
+  maxLength?: number;
+  min?: number;
+  max?: number;
+  step?: number;
+  inputMode?: "text" | "numeric" | "decimal";
+  autoComplete?: string;
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
 };
 
 /**
@@ -287,54 +327,45 @@ function Input({
   placeholder,
   disabled,
   required,
+  maxLength,
+  min,
+  max,
+  step,
+  inputMode,
+  autoComplete,
+  autoCapitalize,
 }: InputProps) {
   return (
     <input
       id={id}
       name={name}
       type={type}
-      min={type === "number" ? 0 : undefined}
       placeholder={placeholder}
       disabled={disabled}
       required={required}
-      className="h-11 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+      maxLength={maxLength}
+      min={min}
+      max={max}
+      step={step}
+      inputMode={inputMode}
+      autoComplete={autoComplete}
+      autoCapitalize={autoCapitalize}
+      className="h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
     />
   );
 }
 
 /**
- * Reads and trims a string value from form data.
+ * Converts unknown submit errors into a safe user-facing message.
  */
-function getStringValue(formData: FormData, key: string): string {
-  return String(formData.get(key) ?? "").trim();
-}
-
-/**
- * Reads an optional string from form data.
- */
-function getOptionalStringValue(
-  formData: FormData,
-  key: string,
-): string | undefined {
-  const value = getStringValue(formData, key);
-
-  return value.length > 0 ? value : undefined;
-}
-
-/**
- * Reads an optional number from form data.
- */
-function getOptionalNumberValue(
-  formData: FormData,
-  key: string,
-): number | undefined {
-  const value = getStringValue(formData, key);
-
-  if (!value) {
-    return undefined;
+function getSubmitErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    return error.message;
   }
 
-  const numericValue = Number(value);
+  if (error instanceof Error) {
+    return error.message;
+  }
 
-  return Number.isFinite(numericValue) ? numericValue : undefined;
+  return "No se pudo crear el vehículo.";
 }
