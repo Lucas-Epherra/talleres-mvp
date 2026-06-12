@@ -1,9 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { type FormEvent, type ReactNode, useState } from "react";
 import { ApiError } from "../../../lib/api";
 import { createCustomer } from "../customers.client";
+import {
+  readCustomerFormDraft,
+  validateCustomerFormDraft,
+} from "../utils/customer-form";
 
 type FormStatus = "idle" | "loading" | "error";
 
@@ -16,7 +20,7 @@ type CreateCustomerFormState = {
  * Interactive customer creation form.
  *
  * This is intentionally a Client Component because it handles form submission,
- * loading state and client-side redirection after creation.
+ * loading state, validation feedback and client-side redirection after creation.
  */
 export function CreateCustomerForm() {
   const router = useRouter();
@@ -31,22 +35,23 @@ export function CreateCustomerForm() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const formData = new FormData(event.currentTarget);
+    if (isLoading) {
+      return;
+    }
 
-    const fullName = getStringValue(formData, "fullName");
-    const phone = getOptionalStringValue(formData, "phone");
-    const email = getOptionalStringValue(formData, "email");
-    const address = getOptionalStringValue(formData, "address");
-    const notes = getOptionalStringValue(formData, "notes");
+    const draft = readCustomerFormDraft(new FormData(event.currentTarget));
+    const validation = validateCustomerFormDraft(draft);
 
-    if (!fullName) {
+    if (!validation.isValid) {
       setState({
         status: "error",
-        message: "El nombre del cliente es obligatorio.",
+        message: validation.message,
       });
 
       return;
     }
+
+    const { data } = validation;
 
     setState({
       status: "loading",
@@ -55,24 +60,19 @@ export function CreateCustomerForm() {
 
     try {
       await createCustomer({
-        fullName,
-        phone,
-        email,
-        address,
-        notes,
+        fullName: data.fullName,
+        phone: data.phone ?? undefined,
+        email: data.email ?? undefined,
+        address: data.address ?? undefined,
+        notes: data.notes ?? undefined,
       });
 
       router.replace("/customers");
       router.refresh();
     } catch (error) {
-      const message =
-        error instanceof ApiError
-          ? error.message
-          : "No se pudo crear el cliente.";
-
       setState({
         status: "error",
-        message,
+        message: getSubmitErrorMessage(error),
       });
     }
   }
@@ -86,13 +86,15 @@ export function CreateCustomerForm() {
     >
       <div className="grid gap-5 md:grid-cols-2">
         <Field>
-          <Label htmlFor="fullName">Nombre completo</Label>
+          <Label htmlFor="fullName">Nombre completo *</Label>
           <Input
             id="fullName"
             name="fullName"
             placeholder="María González"
             disabled={isLoading}
             required
+            maxLength={80}
+            autoComplete="name"
           />
         </Field>
 
@@ -101,9 +103,16 @@ export function CreateCustomerForm() {
           <Input
             id="phone"
             name="phone"
+            type="tel"
             placeholder="2983 654321"
             disabled={isLoading}
+            maxLength={18}
+            inputMode="tel"
+            autoComplete="tel"
           />
+          <HelpText>
+            Formato esperado: 10 dígitos nacionales. Ej: 2983 654321.
+          </HelpText>
         </Field>
 
         <Field>
@@ -114,6 +123,9 @@ export function CreateCustomerForm() {
             type="email"
             placeholder="cliente@email.com"
             disabled={isLoading}
+            maxLength={254}
+            inputMode="email"
+            autoComplete="email"
           />
         </Field>
 
@@ -124,6 +136,8 @@ export function CreateCustomerForm() {
             name="address"
             placeholder="Belgrano 850"
             disabled={isLoading}
+            maxLength={120}
+            autoComplete="street-address"
           />
         </Field>
       </div>
@@ -136,6 +150,7 @@ export function CreateCustomerForm() {
           rows={4}
           placeholder="Preferencias, datos útiles o aclaraciones del cliente..."
           disabled={isLoading}
+          maxLength={800}
           className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
         />
       </Field>
@@ -150,7 +165,7 @@ export function CreateCustomerForm() {
         </p>
       ) : null}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <button
           type="button"
           onClick={() => router.back()}
@@ -173,7 +188,7 @@ export function CreateCustomerForm() {
 }
 
 type FieldProps = {
-  children: React.ReactNode;
+  children: ReactNode;
 };
 
 /**
@@ -185,7 +200,7 @@ function Field({ children }: FieldProps) {
 
 type LabelProps = {
   htmlFor: string;
-  children: React.ReactNode;
+  children: ReactNode;
 };
 
 /**
@@ -199,13 +214,27 @@ function Label({ htmlFor, children }: LabelProps) {
   );
 }
 
+type HelpTextProps = {
+  children: ReactNode;
+};
+
+/**
+ * Small helper text for field-level instructions.
+ */
+function HelpText({ children }: HelpTextProps) {
+  return <p className="text-xs leading-5 text-slate-500">{children}</p>;
+}
+
 type InputProps = {
   id: string;
   name: string;
-  type?: string;
+  type?: "text" | "email" | "tel";
   placeholder?: string;
   disabled?: boolean;
   required?: boolean;
+  maxLength?: number;
+  inputMode?: "text" | "tel" | "email";
+  autoComplete?: string;
 };
 
 /**
@@ -218,6 +247,9 @@ function Input({
   placeholder,
   disabled,
   required,
+  maxLength,
+  inputMode,
+  autoComplete,
 }: InputProps) {
   return (
     <input
@@ -227,20 +259,25 @@ function Input({
       placeholder={placeholder}
       disabled={disabled}
       required={required}
-      className="h-11 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+      maxLength={maxLength}
+      inputMode={inputMode}
+      autoComplete={autoComplete}
+      className="h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
     />
   );
 }
 
-function getStringValue(formData: FormData, key: string): string {
-  return String(formData.get(key) ?? "").trim();
-}
+/**
+ * Converts unknown submit errors into a safe user-facing message.
+ */
+function getSubmitErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    return error.message;
+  }
 
-function getOptionalStringValue(
-  formData: FormData,
-  key: string,
-): string | undefined {
-  const value = getStringValue(formData, key);
+  if (error instanceof Error) {
+    return error.message;
+  }
 
-  return value.length > 0 ? value : undefined;
+  return "No se pudo crear el cliente.";
 }

@@ -6,6 +6,10 @@ import { type FormEvent, type ReactNode, useId, useState } from "react";
 import { ApiError } from "../../../lib/api";
 import { updateCustomer } from "../customers.client";
 import type { Customer, UpdateCustomerInput } from "../types";
+import {
+  readCustomerFormDraft,
+  validateCustomerFormDraft,
+} from "../utils/customer-form";
 
 type EditCustomerFormProps = {
   customer: Customer;
@@ -42,24 +46,26 @@ export function EditCustomerForm({ customer }: EditCustomerFormProps) {
       return;
     }
 
-    const formData = new FormData(event.currentTarget);
-    const fullName = getRequiredString(formData, "fullName");
+    const draft = readCustomerFormDraft(new FormData(event.currentTarget));
+    const validation = validateCustomerFormDraft(draft);
 
-    if (!fullName) {
+    if (!validation.isValid) {
       setState({
         status: "error",
-        message: "El nombre del cliente es obligatorio.",
+        message: validation.message,
       });
 
       return;
     }
 
+    const { data } = validation;
+
     const input: UpdateCustomerInput = {
-      fullName,
-      phone: getNullableString(formData, "phone"),
-      email: getNullableString(formData, "email"),
-      address: getNullableString(formData, "address"),
-      notes: getNullableString(formData, "notes"),
+      fullName: data.fullName,
+      phone: data.phone,
+      email: data.email,
+      address: data.address,
+      notes: data.notes,
     };
 
     try {
@@ -70,7 +76,7 @@ export function EditCustomerForm({ customer }: EditCustomerFormProps) {
 
       await updateCustomer(customer.id, input);
 
-      router.push("/customers");
+      router.push(`/customers/${customer.id}`);
       router.refresh();
     } catch (error) {
       setState({
@@ -113,6 +119,8 @@ export function EditCustomerForm({ customer }: EditCustomerFormProps) {
               defaultValue={customer.fullName}
               disabled={isLoading}
               required
+              maxLength={80}
+              autoComplete="name"
             />
           </Field>
 
@@ -121,10 +129,17 @@ export function EditCustomerForm({ customer }: EditCustomerFormProps) {
             <Input
               id="phone"
               name="phone"
+              type="tel"
               placeholder="2983 654321"
               defaultValue={customer.phone ?? ""}
               disabled={isLoading}
+              maxLength={18}
+              inputMode="tel"
+              autoComplete="tel"
             />
+            <HelpText>
+              Formato esperado: 10 dígitos nacionales. Ej: 2983 654321.
+            </HelpText>
           </Field>
 
           <Field>
@@ -136,6 +151,9 @@ export function EditCustomerForm({ customer }: EditCustomerFormProps) {
               placeholder="cliente@email.com"
               defaultValue={customer.email ?? ""}
               disabled={isLoading}
+              maxLength={254}
+              inputMode="email"
+              autoComplete="email"
             />
           </Field>
 
@@ -147,6 +165,8 @@ export function EditCustomerForm({ customer }: EditCustomerFormProps) {
               placeholder="Belgrano 850"
               defaultValue={customer.address ?? ""}
               disabled={isLoading}
+              maxLength={120}
+              autoComplete="street-address"
             />
           </Field>
         </div>
@@ -160,6 +180,7 @@ export function EditCustomerForm({ customer }: EditCustomerFormProps) {
             placeholder="Preferencias, datos útiles o aclaraciones del cliente..."
             defaultValue={customer.notes ?? ""}
             disabled={isLoading}
+            maxLength={800}
             className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
           />
         </Field>
@@ -177,7 +198,7 @@ export function EditCustomerForm({ customer }: EditCustomerFormProps) {
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <Link
-          href="/customers"
+          href={`/customers/${customer.id}`}
           className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-700 px-5 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-800"
         >
           Cancelar
@@ -223,14 +244,28 @@ function Label({ htmlFor, children }: LabelProps) {
   );
 }
 
+type HelpTextProps = {
+  children: ReactNode;
+};
+
+/**
+ * Small helper text for field-level instructions.
+ */
+function HelpText({ children }: HelpTextProps) {
+  return <p className="text-xs leading-5 text-slate-500">{children}</p>;
+}
+
 type InputProps = {
   id: string;
   name: string;
-  type?: "text" | "email";
+  type?: "text" | "email" | "tel";
   placeholder?: string;
   defaultValue?: string;
   disabled?: boolean;
   required?: boolean;
+  maxLength?: number;
+  inputMode?: "text" | "tel" | "email";
+  autoComplete?: string;
 };
 
 /**
@@ -244,6 +279,9 @@ function Input({
   defaultValue,
   disabled,
   required,
+  maxLength,
+  inputMode,
+  autoComplete,
 }: InputProps) {
   return (
     <input
@@ -254,33 +292,12 @@ function Input({
       defaultValue={defaultValue}
       disabled={disabled}
       required={required}
-      className="h-11 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+      maxLength={maxLength}
+      inputMode={inputMode}
+      autoComplete={autoComplete}
+      className="h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
     />
   );
-}
-
-/**
- * Reads and trims a string field from form data.
- */
-function getRequiredString(formData: FormData, key: string): string {
-  const value = formData.get(key);
-
-  if (typeof value !== "string") {
-    return "";
-  }
-
-  return value.trim();
-}
-
-/**
- * Reads an editable nullable string from form data.
- *
- * Empty values become null so users can clear optional customer fields.
- */
-function getNullableString(formData: FormData, key: string): string | null {
-  const value = getRequiredString(formData, key);
-
-  return value.length > 0 ? value : null;
 }
 
 /**
