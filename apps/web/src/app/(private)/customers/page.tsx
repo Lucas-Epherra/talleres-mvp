@@ -4,6 +4,8 @@ import { EmptyState } from "../../../components/ui/EmptyState";
 import { CustomerCard } from "../../../features/customers/components/CustomerCard";
 import { getCustomers } from "../../../features/customers/customers.server";
 import type { Customer } from "../../../features/customers/types";
+import { getVehicles } from "../../../features/vehicles/vehicles.server";
+import type { VehicleListItem } from "../../../features/vehicles/types";
 
 export const metadata: Metadata = {
   title: "Clientes",
@@ -25,8 +27,9 @@ type CustomersPageProps = {
 export default async function CustomersPage({
   searchParams,
 }: CustomersPageProps) {
-  const [customers, resolvedSearchParams] = await Promise.all([
+  const [customers,vehicles, resolvedSearchParams] = await Promise.all([
     getCustomers(),
+    getVehicles(),
     searchParams,
   ]);
 
@@ -108,8 +111,11 @@ export default async function CustomersPage({
         {filteredCustomers.length > 0 ? (
           <div className="grid gap-4">
             {filteredCustomers.map((customer) => (
-              <CustomerCard key={customer.id} customer={customer} />
-            ))}
+              <CustomerCard
+                key={customer.id}
+                customer={customer}
+                vehicles={getCustomerVehicles(vehicles, customer.id)}
+              />))}
           </div>
         ) : (
           <EmptyState
@@ -127,29 +133,29 @@ export default async function CustomersPage({
             actions={
               hasSearch
                 ? [
-                    {
-                      label: "Limpiar búsqueda",
-                      href: "/customers",
-                      variant: "primary",
-                    },
-                    {
-                      label: "Crear cliente",
-                      href: "/customers/new",
-                      variant: "secondary",
-                    },
-                  ]
+                  {
+                    label: "Limpiar búsqueda",
+                    href: "/customers",
+                    variant: "primary",
+                  },
+                  {
+                    label: "Crear cliente",
+                    href: "/customers/new",
+                    variant: "secondary",
+                  },
+                ]
                 : [
-                    {
-                      label: "Crear cliente",
-                      href: "/customers/new",
-                      variant: "primary",
-                    },
-                    {
-                      label: "Ver vehículos",
-                      href: "/vehicles",
-                      variant: "secondary",
-                    },
-                  ]
+                  {
+                    label: "Crear cliente",
+                    href: "/customers/new",
+                    variant: "primary",
+                  },
+                  {
+                    label: "Ver vehículos",
+                    href: "/vehicles",
+                    variant: "secondary",
+                  },
+                ]
             }
           />
         )}
@@ -212,4 +218,14 @@ function normalizeText(value: string): string {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
+}
+
+/**
+ * Returns the vehicles associated with the selected customer.
+ */
+function getCustomerVehicles(
+  vehicles: VehicleListItem[],
+  customerId: string,
+): VehicleListItem[] {
+  return vehicles.filter((vehicle) => vehicle.customer.id === customerId);
 }

@@ -61,7 +61,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
         </div>
 
         <aside className="w-full shrink-0 lg:w-48">
-          <div className="flex h-full flex-col gap-3 lg:border-l lg:border-slate-800 lg:pl-5">
+          <div className="flex h-full lg:justify-center flex-col gap-3 lg:border-l lg:border-slate-800 lg:pl-5">
             <Link
               href={`/vehicles/${vehicle.id}`}
               className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-orange-500 px-4 text-sm font-semibold text-white transition hover:bg-orange-400"
