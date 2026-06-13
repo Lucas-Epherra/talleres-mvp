@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -7,6 +8,12 @@ import { Prisma, WorkOrderStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
+
+const MIN_VEHICLE_YEAR = 1900;
+const MAX_MILEAGE = 2000000;
+const MAX_TEXT_LENGTH = 80;
+const MAX_NOTES_LENGTH = 800;
+const NORMALIZED_LICENSE_PLATE_PATTERN = /^[A-Z0-9]{5,10}$/;
 
 /**
  * Handles vehicle persistence and lookup operations.
@@ -24,33 +31,41 @@ export class VehiclesService {
    * Search matches license plate, brand, model, customer name or customer phone.
    */
   async findAll(workshopId: string, search?: string) {
+    const normalizedSearch = this.normalizeSearch(search);
+    const normalizedLicensePlateSearch =
+      this.normalizeLicensePlateSearch(normalizedSearch);
+
     const where: Prisma.VehicleWhereInput = {
       workshopId,
-      ...(search
+      ...(normalizedSearch
         ? {
             OR: [
-              {
-                licensePlate: {
-                  contains: search,
-                  mode: Prisma.QueryMode.insensitive,
-                },
-              },
+              ...(normalizedLicensePlateSearch
+                ? [
+                    {
+                      licensePlate: {
+                        contains: normalizedLicensePlateSearch,
+                        mode: Prisma.QueryMode.insensitive,
+                      },
+                    },
+                  ]
+                : []),
               {
                 brand: {
-                  contains: search,
+                  contains: normalizedSearch,
                   mode: Prisma.QueryMode.insensitive,
                 },
               },
               {
                 model: {
-                  contains: search,
+                  contains: normalizedSearch,
                   mode: Prisma.QueryMode.insensitive,
                 },
               },
               {
                 customer: {
                   fullName: {
-                    contains: search,
+                    contains: normalizedSearch,
                     mode: Prisma.QueryMode.insensitive,
                   },
                 },
@@ -58,7 +73,7 @@ export class VehiclesService {
               {
                 customer: {
                   phone: {
-                    contains: search,
+                    contains: normalizedSearch,
                     mode: Prisma.QueryMode.insensitive,
                   },
                 },
@@ -120,7 +135,7 @@ export class VehiclesService {
     });
 
     if (!vehicle) {
-      throw new NotFoundException('Vehicle not found.');
+      throw new NotFoundException('Vehículo no encontrado.');
     }
 
     return vehicle;
@@ -129,9 +144,8 @@ export class VehiclesService {
   /**
    * Returns the complete operational vehicle profile.
    *
-   * This endpoint is designed to feed the future vehicle profile page in the
-   * frontend, including customer data, active work orders, historical work
-   * orders and a compact summary.
+   * This endpoint feeds the vehicle profile page, including customer data,
+   * active work orders, historical work orders and a compact summary.
    */
   async findProfile(workshopId: string, id: string) {
     const vehicle = await this.prisma.vehicle.findFirst({
@@ -180,7 +194,7 @@ export class VehiclesService {
     });
 
     if (!vehicle) {
-      throw new NotFoundException('Vehicle not found.');
+      throw new NotFoundException('Vehículo no encontrado.');
     }
 
     const activeWorkOrders = vehicle.workOrders.filter(
@@ -226,31 +240,40 @@ export class VehiclesService {
    * Creates a vehicle associated with an existing customer from the same workshop.
    */
   async create(workshopId: string, dto: CreateVehicleDto) {
-    await this.ensureCustomerBelongsToWorkshop(workshopId, dto.customerId);
-    await this.ensureLicensePlateIsAvailable(workshopId, dto.licensePlate);
+    const normalizedLicensePlate = this.normalizeLicensePlate(dto.licensePlate);
 
-    return this.prisma.vehicle.create({
-      data: {
-        workshopId,
-        customerId: dto.customerId,
-        licensePlate: this.normalizeLicensePlate(dto.licensePlate),
-        brand: dto.brand,
-        model: dto.model,
-        year: dto.year,
-        mileage: dto.mileage,
-        notes: dto.notes,
-      },
-      include: {
-        customer: {
-          select: {
-            id: true,
-            fullName: true,
-            phone: true,
-            email: true,
+    await this.ensureCustomerBelongsToWorkshop(workshopId, dto.customerId);
+    await this.ensureLicensePlateIsAvailable(
+      workshopId,
+      normalizedLicensePlate,
+    );
+
+    try {
+      return await this.prisma.vehicle.create({
+        data: {
+          workshopId,
+          customerId: dto.customerId,
+          licensePlate: normalizedLicensePlate,
+          brand: this.normalizeRequiredText(dto.brand, 'Marca'),
+          model: this.normalizeRequiredText(dto.model, 'Modelo'),
+          year: this.normalizeYear(dto.year),
+          mileage: this.normalizeMileage(dto.mileage),
+          notes: this.normalizeNullableText(dto.notes, 'Notas'),
+        },
+        include: {
+          customer: {
+            select: {
+              id: true,
+              fullName: true,
+              phone: true,
+              email: true,
+            },
           },
         },
-      },
-    });
+      });
+    } catch (error) {
+      this.handlePrismaWriteError(error);
+    }
   }
 
   /**
@@ -258,49 +281,59 @@ export class VehiclesService {
    */
   async update(workshopId: string, id: string, dto: UpdateVehicleDto) {
     const currentVehicle = await this.findOne(workshopId, id);
+    const normalizedLicensePlate = dto.licensePlate
+      ? this.normalizeLicensePlate(dto.licensePlate)
+      : undefined;
 
     if (dto.customerId) {
       await this.ensureCustomerBelongsToWorkshop(workshopId, dto.customerId);
     }
 
     if (
-      dto.licensePlate &&
-      this.normalizeLicensePlate(dto.licensePlate) !==
-        currentVehicle.licensePlate
+      normalizedLicensePlate &&
+      normalizedLicensePlate !== currentVehicle.licensePlate
     ) {
       await this.ensureLicensePlateIsAvailable(
         workshopId,
-        dto.licensePlate,
+        normalizedLicensePlate,
         id,
       );
     }
 
-    return this.prisma.vehicle.update({
-      where: {
-        id,
-      },
-      data: {
-        customerId: dto.customerId,
-        licensePlate: dto.licensePlate
-          ? this.normalizeLicensePlate(dto.licensePlate)
-          : undefined,
-        brand: dto.brand,
-        model: dto.model,
-        year: dto.year,
-        mileage: dto.mileage,
-        notes: dto.notes,
-      },
-      include: {
-        customer: {
-          select: {
-            id: true,
-            fullName: true,
-            phone: true,
-            email: true,
+    try {
+      return await this.prisma.vehicle.update({
+        where: {
+          id,
+        },
+        data: {
+          customerId: dto.customerId,
+          licensePlate: normalizedLicensePlate,
+          brand:
+            dto.brand !== undefined
+              ? this.normalizeRequiredText(dto.brand, 'Marca')
+              : undefined,
+          model:
+            dto.model !== undefined
+              ? this.normalizeRequiredText(dto.model, 'Modelo')
+              : undefined,
+          year: this.normalizeYear(dto.year),
+          mileage: this.normalizeMileage(dto.mileage),
+          notes: this.normalizeOptionalNullableText(dto.notes, 'Notas'),
+        },
+        include: {
+          customer: {
+            select: {
+              id: true,
+              fullName: true,
+              phone: true,
+              email: true,
+            },
           },
         },
-      },
-    });
+      });
+    } catch (error) {
+      this.handlePrismaWriteError(error);
+    }
   }
 
   /**
@@ -321,7 +354,7 @@ export class VehiclesService {
     });
 
     if (!customer) {
-      throw new NotFoundException('Customer not found.');
+      throw new NotFoundException('Cliente no encontrado.');
     }
   }
 
@@ -330,11 +363,9 @@ export class VehiclesService {
    */
   private async ensureLicensePlateIsAvailable(
     workshopId: string,
-    licensePlate: string,
+    normalizedLicensePlate: string,
     currentVehicleId?: string,
   ): Promise<void> {
-    const normalizedLicensePlate = this.normalizeLicensePlate(licensePlate);
-
     const existingVehicle = await this.prisma.vehicle.findFirst({
       where: {
         workshopId,
@@ -353,14 +384,175 @@ export class VehiclesService {
     });
 
     if (existingVehicle) {
-      throw new ConflictException('License plate already exists.');
+      throw new ConflictException(
+        'Ya existe un vehículo con esa patente en este taller.',
+      );
     }
   }
 
   /**
-   * Normalizes license plates to avoid duplicates caused by casing or spaces.
+   * Normalizes and validates license plates to avoid duplicates caused by
+   * casing, spaces or hyphens.
    */
   private normalizeLicensePlate(licensePlate: string): string {
-    return licensePlate.trim().toUpperCase().replaceAll(' ', '');
+    const rawLicensePlate = licensePlate.trim().toUpperCase();
+
+    if (!/^(?=.*[A-Z0-9])[A-Z0-9\s-]+$/.test(rawLicensePlate)) {
+      throw new BadRequestException(
+        'La patente solo puede contener letras, números, espacios o guiones.',
+      );
+    }
+
+    const normalizedLicensePlate = rawLicensePlate.replace(/[\s-]/g, '');
+
+    if (!NORMALIZED_LICENSE_PLATE_PATTERN.test(normalizedLicensePlate)) {
+      throw new BadRequestException(
+        'La patente debe tener entre 5 y 10 caracteres alfanuméricos.',
+      );
+    }
+
+    return normalizedLicensePlate;
+  }
+
+  /**
+   * Normalizes search text and caps it to avoid unnecessarily expensive queries.
+   */
+  private normalizeSearch(search?: string): string | undefined {
+    const normalizedSearch = search?.trim().replace(/\s+/g, ' ');
+
+    if (!normalizedSearch) {
+      return undefined;
+    }
+
+    return normalizedSearch.slice(0, MAX_TEXT_LENGTH);
+  }
+
+  /**
+   * Normalizes a search value specifically for license plate matching.
+   */
+  private normalizeLicensePlateSearch(search?: string): string | undefined {
+    const normalizedSearch = search
+      ?.trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '');
+
+    return normalizedSearch || undefined;
+  }
+
+  /**
+   * Normalizes required text fields and rejects blank values.
+   */
+  private normalizeRequiredText(value: string, fieldName: string): string {
+    const normalizedValue = value.trim().replace(/\s+/g, ' ');
+
+    if (!normalizedValue) {
+      throw new BadRequestException(`${fieldName} es obligatorio.`);
+    }
+
+    if (normalizedValue.length > MAX_TEXT_LENGTH) {
+      throw new BadRequestException(
+        `${fieldName} no puede superar ${MAX_TEXT_LENGTH} caracteres.`,
+      );
+    }
+
+    return normalizedValue;
+  }
+
+  /**
+   * Normalizes optional nullable text on create operations.
+   */
+  private normalizeNullableText(
+    value: string | undefined,
+    fieldName: string,
+  ): string | null {
+    const normalizedValue = this.normalizeOptionalNullableText(
+      value,
+      fieldName,
+    );
+
+    return normalizedValue ?? null;
+  }
+
+  /**
+   * Normalizes optional nullable text on update operations.
+   *
+   * Undefined means "do not update". Empty string means "clear value".
+   */
+  private normalizeOptionalNullableText(
+    value: string | undefined,
+    fieldName: string,
+  ): string | null | undefined {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    const normalizedValue = value.trim().replace(/\s+/g, ' ');
+
+    if (!normalizedValue) {
+      return null;
+    }
+
+    if (normalizedValue.length > MAX_NOTES_LENGTH) {
+      throw new BadRequestException(
+        `${fieldName} no puede superar ${MAX_NOTES_LENGTH} caracteres.`,
+      );
+    }
+
+    return normalizedValue;
+  }
+
+  /**
+   * Validates vehicle year against the current year plus one.
+   */
+  private normalizeYear(year: number | undefined): number | undefined {
+    if (year === undefined) {
+      return undefined;
+    }
+
+    const maxAllowedYear = new Date().getFullYear() + 1;
+
+    if (year < MIN_VEHICLE_YEAR || year > maxAllowedYear) {
+      throw new BadRequestException(
+        `El año debe estar entre ${MIN_VEHICLE_YEAR} y ${maxAllowedYear}.`,
+      );
+    }
+
+    return year;
+  }
+
+  /**
+   * Validates vehicle mileage.
+   */
+  private normalizeMileage(mileage: number | undefined): number | undefined {
+    if (mileage === undefined) {
+      return undefined;
+    }
+
+    if (mileage < 0 || mileage > MAX_MILEAGE) {
+      throw new BadRequestException(
+        `El kilometraje debe estar entre 0 y ${MAX_MILEAGE}.`,
+      );
+    }
+
+    return mileage;
+  }
+
+  /**
+   * Converts Prisma write errors into safe API exceptions.
+   */
+  private handlePrismaWriteError(error: unknown): never {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        throw new ConflictException(
+          'Ya existe un vehículo con esa patente en este taller.',
+        );
+      }
+
+      if (error.code === 'P2025') {
+        throw new NotFoundException('Vehículo no encontrado.');
+      }
+    }
+
+    throw error;
   }
 }

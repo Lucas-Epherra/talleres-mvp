@@ -1,10 +1,13 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { WorkshopRole } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { AuthUser } from './types/auth-user.type';
 import { JwtPayload } from './types/jwt-payload.type';
+
+const INVALID_CREDENTIALS_MESSAGE = 'Credenciales inválidas.';
 
 /**
  * Handles authentication, token generation and current-user resolution.
@@ -20,9 +23,11 @@ export class AuthService {
    * Validates credentials and returns the authenticated user context plus token.
    */
   async login(dto: LoginDto) {
+    const email = this.normalizeEmail(dto.email);
+
     const user = await this.prisma.user.findUnique({
       where: {
-        email: dto.email,
+        email,
       },
       include: {
         memberships: {
@@ -43,19 +48,21 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials.');
+      throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials.');
+      throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
     }
 
     const membership = user.memberships[0];
 
     if (!membership) {
-      throw new UnauthorizedException('User does not belong to a workshop.');
+      throw new UnauthorizedException(
+        'El usuario no pertenece a ningún taller.',
+      );
     }
 
     const payload: JwtPayload = {
@@ -83,10 +90,12 @@ export class AuthService {
    * Resolves the authenticated user from a verified JWT payload.
    */
   async getCurrentUser(payload: JwtPayload): Promise<AuthUser> {
+    const safePayload = this.validateJwtPayload(payload);
+
     const membership = await this.prisma.workshopMember.findFirst({
       where: {
-        userId: payload.sub,
-        workshopId: payload.workshopId,
+        userId: safePayload.sub,
+        workshopId: safePayload.workshopId,
       },
       include: {
         user: {
@@ -100,7 +109,7 @@ export class AuthService {
     });
 
     if (!membership) {
-      throw new UnauthorizedException('Invalid authentication context.');
+      throw new UnauthorizedException('Contexto de autenticación inválido.');
     }
 
     return {
@@ -113,13 +122,43 @@ export class AuthService {
   }
 
   /**
-   * Verifies an access token and returns its payload.
+   * Verifies an access token and returns its safe payload.
    */
   async verifyAccessToken(token: string): Promise<JwtPayload> {
     try {
-      return await this.jwtService.verifyAsync<JwtPayload>(token);
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(token);
+
+      return this.validateJwtPayload(payload);
     } catch {
-      throw new UnauthorizedException('Invalid or expired token.');
+      throw new UnauthorizedException('Token inválido o expirado.');
     }
+  }
+
+  /**
+   * Normalizes emails before querying the database.
+   */
+  private normalizeEmail(email: string): string {
+    return email.trim().toLowerCase();
+  }
+
+  /**
+   * Validates the minimum runtime shape expected from the access token payload.
+   */
+  private validateJwtPayload(payload: JwtPayload): JwtPayload {
+    const isValidRole = Object.values(WorkshopRole).includes(
+      payload.role as WorkshopRole,
+    );
+
+    if (
+      typeof payload.sub !== 'string' ||
+      !payload.sub ||
+      typeof payload.workshopId !== 'string' ||
+      !payload.workshopId ||
+      !isValidRole
+    ) {
+      throw new UnauthorizedException('Contexto de autenticación inválido.');
+    }
+
+    return payload;
   }
 }

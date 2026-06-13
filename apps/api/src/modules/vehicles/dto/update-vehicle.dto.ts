@@ -4,11 +4,14 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Matches,
   Max,
   MaxLength,
   Min,
   MinLength,
 } from 'class-validator';
+
+const MAX_ALLOWED_VEHICLE_YEAR = new Date().getFullYear() + 1;
 
 /**
  * Payload accepted when updating a vehicle.
@@ -25,6 +28,10 @@ export class UpdateVehicleDto {
   @IsString()
   @MinLength(3)
   @MaxLength(20)
+  @Matches(/^(?=.*[A-Za-z0-9])[A-Za-z0-9\s-]+$/, {
+    message:
+      'La patente solo puede contener letras, números, espacios o guiones.',
+  })
   licensePlate?: string;
 
   @IsOptional()
@@ -43,7 +50,7 @@ export class UpdateVehicleDto {
   @Type(() => Number)
   @IsInt()
   @Min(1900)
-  @Max(2100)
+  @Max(MAX_ALLOWED_VEHICLE_YEAR)
   year?: number;
 
   @IsOptional()
@@ -55,6 +62,6 @@ export class UpdateVehicleDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(500)
+  @MaxLength(800)
   notes?: string;
 }

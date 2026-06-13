@@ -8,7 +8,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import type { Response } from 'express';
+import type { CookieOptions, Response } from 'express';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { LoginDto } from './dto/login.dto';
@@ -16,6 +16,86 @@ import { AuthGuard } from './guards/auth.guard';
 import type { AuthUser } from './types/auth-user.type';
 
 const ACCESS_TOKEN_COOKIE_NAME = 'access_token';
+const DEFAULT_ACCESS_TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
+const VALID_SAME_SITE_VALUES = ['lax', 'strict', 'none'] as const;
+
+type CookieSameSite = (typeof VALID_SAME_SITE_VALUES)[number];
+
+/**
+ * Safely parses the access token cookie max age from environment variables.
+ */
+function getAccessTokenMaxAgeMs(): number {
+  const rawMaxAge = process.env.JWT_ACCESS_EXPIRES_IN_SECONDS;
+  const parsedMaxAge = rawMaxAge ? Number(rawMaxAge) : NaN;
+
+  if (
+    Number.isInteger(parsedMaxAge) &&
+    parsedMaxAge > 0 &&
+    parsedMaxAge <= DEFAULT_ACCESS_TOKEN_MAX_AGE_SECONDS
+  ) {
+    return parsedMaxAge * 1000;
+  }
+
+  return DEFAULT_ACCESS_TOKEN_MAX_AGE_SECONDS * 1000;
+}
+
+/**
+ * Reads the cookie SameSite mode.
+ *
+ * For local same-origin development, lax is safer and simpler.
+ * For separated production domains, SameSite=None requires secure cookies.
+ */
+function getCookieSameSite(): CookieSameSite {
+  const rawSameSite = process.env.AUTH_COOKIE_SAME_SITE?.toLowerCase();
+
+  if (
+    rawSameSite &&
+    VALID_SAME_SITE_VALUES.includes(rawSameSite as CookieSameSite)
+  ) {
+    return rawSameSite as CookieSameSite;
+  }
+
+  return process.env.NODE_ENV === 'production' ? 'none' : 'lax';
+}
+
+/**
+ * Determines if auth cookies must be sent only over HTTPS.
+ */
+function shouldUseSecureCookie(): boolean {
+  if (process.env.AUTH_COOKIE_SECURE === 'true') {
+    return true;
+  }
+
+  if (process.env.AUTH_COOKIE_SECURE === 'false') {
+    return false;
+  }
+
+  return process.env.NODE_ENV === 'production';
+}
+
+/**
+ * Builds the access token cookie options used by login and logout.
+ */
+function getAccessTokenCookieOptions(): CookieOptions {
+  const sameSite = getCookieSameSite();
+
+  return {
+    httpOnly: true,
+    sameSite,
+    secure: sameSite === 'none' ? true : shouldUseSecureCookie(),
+    path: '/',
+    maxAge: getAccessTokenMaxAgeMs(),
+  };
+}
+
+/**
+ * Builds the cookie options required to clear the access token cookie.
+ */
+function getClearAccessTokenCookieOptions(): CookieOptions {
+  const { maxAge: _maxAge, ...cookieOptions } = getAccessTokenCookieOptions();
+
+  return cookieOptions;
+}
 
 /**
  * HTTP controller for authentication operations.
@@ -32,13 +112,11 @@ export class AuthController {
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.login(dto);
 
-    res.cookie(ACCESS_TOKEN_COOKIE_NAME, result.accessToken, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: false,
-      path: '/',
-      maxAge: 1000 * 60 * 60 * 24 * 7,
-    });
+    res.cookie(
+      ACCESS_TOKEN_COOKIE_NAME,
+      result.accessToken,
+      getAccessTokenCookieOptions(),
+    );
 
     return {
       user: result.user,
@@ -52,15 +130,13 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie(ACCESS_TOKEN_COOKIE_NAME, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: false,
-      path: '/',
-    });
+    res.clearCookie(
+      ACCESS_TOKEN_COOKIE_NAME,
+      getClearAccessTokenCookieOptions(),
+    );
 
     return {
-      message: 'Logged out successfully.',
+      message: 'Sesión cerrada correctamente.',
     };
   }
 

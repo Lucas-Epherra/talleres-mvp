@@ -7,8 +7,13 @@ import {
 import { AuthService } from '../auth.service';
 import { AuthenticatedRequest } from '../types/authenticated-request.type';
 
+const ACCESS_TOKEN_COOKIE_NAME = 'access_token';
+
 /**
- * Protects routes by validating the access token from cookies or Authorization header.
+ * Protects routes by validating the access token from an httpOnly cookie.
+ *
+ * Bearer tokens are useful for local API testing, but should not be accepted in
+ * production unless explicitly enabled.
  */
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -22,7 +27,7 @@ export class AuthGuard implements CanActivate {
     const token = this.extractToken(request);
 
     if (!token) {
-      throw new UnauthorizedException('Missing access token.');
+      throw new UnauthorizedException('Token de acceso faltante.');
     }
 
     const payload = await this.authService.verifyAccessToken(token);
@@ -34,13 +39,20 @@ export class AuthGuard implements CanActivate {
   }
 
   /**
-   * Reads the token from httpOnly cookie first, then falls back to Bearer header.
+   * Reads the token from the httpOnly cookie first.
+   *
+   * Authorization Bearer is only accepted outside production or when explicitly
+   * enabled with AUTH_ALLOW_BEARER_TOKENS=true.
    */
   private extractToken(request: AuthenticatedRequest): string | null {
-    const cookieToken = request.cookies?.access_token as string | undefined;
+    const cookieToken = request.cookies?.[ACCESS_TOKEN_COOKIE_NAME];
 
-    if (cookieToken) {
+    if (typeof cookieToken === 'string' && cookieToken.trim()) {
       return cookieToken;
+    }
+
+    if (!this.shouldAllowBearerTokens()) {
+      return null;
     }
 
     const authorizationHeader = request.headers.authorization;
@@ -49,12 +61,26 @@ export class AuthGuard implements CanActivate {
       return null;
     }
 
-    const [scheme, token] = authorizationHeader.split(' ');
+    const [scheme, token, ...rest] = authorizationHeader.split(' ');
 
-    if (scheme !== 'Bearer' || !token) {
+    if (
+      rest.length > 0 ||
+      scheme.toLowerCase() !== 'bearer' ||
+      !token?.trim()
+    ) {
       return null;
     }
 
     return token;
+  }
+
+  /**
+   * Allows Bearer tokens only for local tooling unless explicitly enabled.
+   */
+  private shouldAllowBearerTokens(): boolean {
+    return (
+      process.env.NODE_ENV !== 'production' ||
+      process.env.AUTH_ALLOW_BEARER_TOKENS === 'true'
+    );
   }
 }
