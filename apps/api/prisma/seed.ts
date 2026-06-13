@@ -21,6 +21,30 @@ const VEHICLE_HILUX_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 const VEHICLE_307_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 const VEHICLE_MAZDA_RX_ID = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
 
+const DEFAULT_DEMO_ADMIN_PASSWORD = 'Admin123!';
+
+/**
+ * Prevents destructive demo seeding from running accidentally in production.
+ */
+function assertSeedCanRun(): void {
+  if (
+    process.env.NODE_ENV === 'production' &&
+    process.env.ALLOW_DESTRUCTIVE_SEED !== 'true'
+  ) {
+    throw new Error(
+      'Refusing to run destructive demo seed in production without ALLOW_DESTRUCTIVE_SEED=true.',
+    );
+  }
+}
+
+/**
+ * Reads the demo admin password from environment variables.
+ */
+function getDemoAdminPassword(): string {
+  return process.env.DEMO_ADMIN_PASSWORD ?? DEFAULT_DEMO_ADMIN_PASSWORD;
+}
+
+
 /**
  * Creates deterministic demo data for local development.
  *
@@ -29,8 +53,10 @@ const VEHICLE_MAZDA_RX_ID = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
  * stale manually-created records with broken encoding.
  */
 async function main(): Promise<void> {
-  const passwordHash = await bcrypt.hash('Admin123!', 10);
+assertSeedCanRun();
 
+const demoAdminPassword = getDemoAdminPassword();
+const passwordHash = await bcrypt.hash(demoAdminPassword, 10);
   const workshop = await prisma.workshop.upsert({
     where: {
       slug: 'taller-demo',
@@ -133,7 +159,7 @@ async function main(): Promise<void> {
       id: CUSTOMER_LUCAS_EPHERRA_ID,
       workshopId: workshop.id,
       fullName: 'Lucas Epherra',
-      phone: '02983659649',
+      phone: '02983 659649',
       email: 'lucas.epherra@example.com',
       address: 'Colón 135 8vo 1',
       notes:
@@ -358,7 +384,7 @@ async function main(): Promise<void> {
       entryMileage: 287000,
       laborCost: 70000,
       partsCost: 55000,
-      estimatedTotal: 12000,
+      estimatedTotal: 120000,
       finalTotal: 125000,
       status: WorkOrderStatus.DELIVERED,
       entryDate: daysAgo(1),
@@ -414,8 +440,11 @@ async function main(): Promise<void> {
   console.log(`Work orders: ${workOrdersCount}`);
   console.log('Demo credentials:');
   console.log('Email: admin@taller.demo');
-  console.log('Password: Admin123!');
-}
+console.log(
+  `Password: ${
+    process.env.DEMO_ADMIN_PASSWORD ? '[from DEMO_ADMIN_PASSWORD]' : '[local default]'
+  }`,
+);}
 
 /**
  * Deletes operational records for the demo workshop.
