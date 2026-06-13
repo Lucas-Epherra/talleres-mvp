@@ -79,6 +79,7 @@ model Customer {
   workshop Workshop  @relation(fields: [workshopId], references: [id], onDelete: Cascade)
   vehicles Vehicle[]
 
+  @@unique([workshopId, phone])
   @@index([workshopId])
   @@index([phone])
   @@map("customers")
