@@ -8,12 +8,18 @@
     "build": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\""
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "api:build": "pnpm --filter api build",
+    "api:typecheck": "pnpm --filter api typecheck",
+    "api:lint": "pnpm --filter api lint",
+    "api:studio": "pnpm --filter api db:studio",
+    "api:migrate": "pnpm --filter api db:migrate",
+    "api:seed": "pnpm --filter api db:seed"
   },
   "devDependencies": {
-    "prettier": "latest",
-    "turbo": "latest",
-    "typescript": "latest"
+    "prettier": "3.8.4",
+    "turbo": "2.9.18",
+    "typescript": "6.0.3"
   },
   "engines": {
     "node": ">=20"
