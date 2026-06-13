@@ -8,11 +8,11 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { WorkOrderStatus } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
+import { FindWorkOrdersQueryDto } from './dto/find-work-orders-query.dto';
 import { UpdateWorkOrderStatusDto } from './dto/update-work-order-status.dto';
 import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
 import { WorkOrdersService } from './work-orders.service';
@@ -33,10 +33,13 @@ export class WorkOrdersController {
   @Get()
   findAll(
     @CurrentUser() user: AuthUser,
-    @Query('search') search?: string,
-    @Query('status') status?: WorkOrderStatus,
+    @Query() query: FindWorkOrdersQueryDto,
   ) {
-    return this.workOrdersService.findAll(user.workshopId, search, status);
+    return this.workOrdersService.findAll(
+      user.workshopId,
+      query.search,
+      query.status,
+    );
   }
 
   /**

@@ -12,6 +12,9 @@ import {
 } from 'class-validator';
 import { WorkOrderStatus } from '@prisma/client';
 
+const MAX_MILEAGE = 2000000;
+const MAX_MONEY_VALUE = 9999999999.99;
+
 /**
  * Payload accepted when updating a work order.
  *
@@ -27,48 +30,52 @@ export class UpdateWorkOrderDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(500)
+  @MaxLength(1000)
   diagnosis?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(800)
+  @MaxLength(1000)
   workDone?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(500)
+  @MaxLength(2000)
   partsUsed?: string;
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)
-  @Max(2000000)
+  @Max(MAX_MILEAGE)
   entryMileage?: number;
 
   @IsOptional()
   @Type(() => Number)
-  @IsNumber()
+  @IsNumber({ allowInfinity: false, allowNaN: false, maxDecimalPlaces: 2 })
   @Min(0)
+  @Max(MAX_MONEY_VALUE)
   laborCost?: number;
 
   @IsOptional()
   @Type(() => Number)
-  @IsNumber()
+  @IsNumber({ allowInfinity: false, allowNaN: false, maxDecimalPlaces: 2 })
   @Min(0)
+  @Max(MAX_MONEY_VALUE)
   partsCost?: number;
 
   @IsOptional()
   @Type(() => Number)
-  @IsNumber()
+  @IsNumber({ allowInfinity: false, allowNaN: false, maxDecimalPlaces: 2 })
   @Min(0)
+  @Max(MAX_MONEY_VALUE)
   estimatedTotal?: number;
 
   @IsOptional()
   @Type(() => Number)
-  @IsNumber()
+  @IsNumber({ allowInfinity: false, allowNaN: false, maxDecimalPlaces: 2 })
   @Min(0)
+  @Max(MAX_MONEY_VALUE)
   finalTotal?: number;
 
   @IsOptional()
@@ -77,6 +84,6 @@ export class UpdateWorkOrderDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(500)
+  @MaxLength(800)
   notes?: string;
 }
