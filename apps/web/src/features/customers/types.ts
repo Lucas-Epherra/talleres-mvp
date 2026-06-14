@@ -2,7 +2,7 @@ export type Customer = {
   id: string;
   workshopId: string;
   fullName: string;
-  phone: string | null;
+  phone: string;
   email: string | null;
   address: string | null;
   notes: string | null;
@@ -12,7 +12,7 @@ export type Customer = {
 
 export type CreateCustomerInput = {
   fullName: string;
-  phone?: string;
+  phone: string;
   email?: string;
   address?: string;
   notes?: string;
@@ -20,7 +20,7 @@ export type CreateCustomerInput = {
 
 export type UpdateCustomerInput = {
   fullName?: string;
-  phone?: string | null;
+  phone?: string;
   email?: string | null;
   address?: string | null;
   notes?: string | null;

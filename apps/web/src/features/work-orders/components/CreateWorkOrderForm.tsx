@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { type FormEvent, useMemo, useState } from "react";
-import { ApiError } from "../../../lib/api";
+import { getApiErrorMessage } from "../../../lib/api";
 import { createWorkOrder } from "../work-orders.client";
 import type { CreateWorkOrderInput } from "../types";
 import { WorkOrderNotesEditor } from "./WorkOrderNotesEditor";
@@ -434,13 +434,5 @@ function getOptionalNumber(
  * Converts unknown submit errors into a safe user-facing message.
  */
 function getSubmitErrorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "No se pudo crear la orden de trabajo.";
+  return getApiErrorMessage(error);
 }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useId, useMemo, useState } from "react";
-import { ApiError } from "../../../lib/api";
+import { getApiErrorMessage } from "../../../lib/api";
 import { formatMileage } from "../../../lib/format";
 import { updateWorkOrder } from "../work-orders.client";
 import type { UpdateWorkOrderInput, WorkOrder } from "../types";
@@ -71,6 +71,11 @@ export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
       return;
     }
 
+    if (laborCost.trim().length > 0 && parsedLaborCost === null) {
+      setErrorMessage("El costo de mano de obra debe ser un número válido.");
+      return;
+    }
+    
     if (partsValidationMessage) {
       setErrorMessage(partsValidationMessage);
       return;
@@ -432,18 +437,9 @@ function getNullableNumber(formData: FormData, key: string): number | null {
 
   return Number.isFinite(parsedValue) ? parsedValue : null;
 }
-
 /**
  * Converts unknown submit errors into a safe user-facing message.
  */
 function getSubmitErrorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "No se pudo actualizar la orden de trabajo.";
+  return getApiErrorMessage(error);
 }

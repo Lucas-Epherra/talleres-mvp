@@ -14,6 +14,9 @@ type CompleteWorkOrderPart = {
   cost: number;
 };
 
+const MAX_MONEY_VALUE = 9_999_999_999.99;
+const MONEY_PATTERN = /^\d+([.,]\d{1,2})?$/;
+
 /**
  * Creates an empty work order part draft with a stable client-side id.
  */
@@ -85,7 +88,9 @@ export function parseWorkOrderParts(
 /**
  * Parses stored notes into editable note rows.
  */
-export function parseWorkOrderNotes(notes: string | null): WorkOrderNoteDraft[] {
+export function parseWorkOrderNotes(
+  notes: string | null,
+): WorkOrderNoteDraft[] {
   const normalizedNotes = (notes ?? "").trim();
 
   if (!normalizedNotes) {
@@ -167,9 +172,11 @@ export function serializeWorkOrderNotes(
 
   return normalizedNotes.map((note) => `- ${note}`).join("\n");
 }
-
 /**
- * Converts a controlled money input value into a number.
+ * Converts a controlled money input value into a backend-safe number.
+ *
+ * Allows integers or decimals with up to two decimal places. Negative values,
+ * Infinity, NaN and values above the backend limit are rejected.
  */
 export function parseMoneyInputValue(value: string): number | null {
   const normalizedValue = value.trim().replace(",", ".");
@@ -178,21 +185,26 @@ export function parseMoneyInputValue(value: string): number | null {
     return null;
   }
 
-  const parsedValue = Number(normalizedValue);
-
-  if (!Number.isFinite(parsedValue) || parsedValue < 0) {
+  if (!MONEY_PATTERN.test(normalizedValue)) {
     return null;
   }
 
-  return parsedValue;
-}
+  const parsedValue = Number(normalizedValue);
 
+  if (
+    !Number.isFinite(parsedValue) ||
+    parsedValue < 0 ||
+    parsedValue > MAX_MONEY_VALUE
+  ) {
+    return null;
+  }
+
+  return Number(parsedValue.toFixed(2));
+}
 /**
  * Converts nullable API money values into safe controlled input strings.
  */
-export function apiMoneyToInputString(
-  value: number | string | null,
-): string {
+export function apiMoneyToInputString(value: number | string | null): string {
   if (value === null || value === "") {
     return "";
   }
@@ -281,11 +293,15 @@ function parseSerializedMoney(value: string): number | null {
 
   const parsedValue = Number(normalizedValue);
 
-  if (!Number.isFinite(parsedValue) || parsedValue < 0) {
+  if (
+    !Number.isFinite(parsedValue) ||
+    parsedValue < 0 ||
+    parsedValue > MAX_MONEY_VALUE
+  ) {
     return null;
   }
 
-  return parsedValue;
+  return Number(parsedValue.toFixed(2));
 }
 
 /**

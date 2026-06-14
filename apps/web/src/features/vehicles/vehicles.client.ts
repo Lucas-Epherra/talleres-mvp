@@ -1,15 +1,9 @@
 import { apiFetch } from "../../lib/api";
-import type { UpdateVehicleInput, VehicleListItem } from "./types";
-
-export type CreateVehicleInput = {
-  customerId: string;
-  licensePlate: string;
-  brand: string;
-  model: string;
-  year?: number;
-  mileage?: number;
-  notes?: string;
-};
+import type {
+  CreateVehicleInput,
+  UpdateVehicleInput,
+  VehicleListItem,
+} from "./types";
 
 /**
  * Creates a vehicle inside the authenticated workshop.

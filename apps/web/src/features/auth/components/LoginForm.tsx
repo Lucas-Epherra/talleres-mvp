@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { ApiError } from "../../../lib/api";
+import { getApiErrorMessage } from "../../../lib/api";
 import { login } from "../auth.client";
 
 type FormStatus = "idle" | "loading" | "error";
@@ -31,8 +31,12 @@ export function LoginForm() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    if (isLoading) {
+      return;
+    }
+
     const formData = new FormData(event.currentTarget);
-    const email = String(formData.get("email") ?? "").trim();
+    const email = String(formData.get("email") ?? "").trim().toLowerCase();
     const password = String(formData.get("password") ?? "");
 
     if (!email || !password) {
@@ -55,14 +59,9 @@ export function LoginForm() {
       router.replace("/dashboard");
       router.refresh();
     } catch (error) {
-      const message =
-        error instanceof ApiError
-          ? error.message
-          : "No se pudo iniciar sesión.";
-
       setState({
         status: "error",
-        message,
+        message: getApiErrorMessage(error),
       });
     }
   }

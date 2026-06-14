@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type ReactNode, type FormEvent, useState } from "react";
-import { ApiError } from "../../../lib/api";
+import { type FormEvent, type ReactNode, useState } from "react";
+import { getApiErrorMessage } from "../../../lib/api";
 import type { Customer } from "../../customers/types";
 import { createVehicle } from "../vehicles.client";
 import {
@@ -98,7 +98,7 @@ export function CreateVehicleForm({
     } catch (error) {
       setState({
         status: "error",
-        message: getSubmitErrorMessage(error),
+        message: getApiErrorMessage(error),
       });
     }
   }
@@ -149,8 +149,7 @@ export function CreateVehicleForm({
 
           {customers.map((customer) => (
             <option key={customer.id} value={customer.id}>
-              {customer.fullName}
-              {customer.phone ? ` · ${customer.phone}` : ""}
+              {customer.fullName} · {customer.phone}
             </option>
           ))}
         </select>
@@ -165,10 +164,14 @@ export function CreateVehicleForm({
             placeholder="AD999ZZ"
             disabled={isLoading}
             required
-            maxLength={10}
+            maxLength={20}
             autoCapitalize="characters"
             autoComplete="off"
           />
+          <HelpText>
+            Podés escribirla con espacios o guiones. Se guardará normalizada en
+            mayúsculas.
+          </HelpText>
         </Field>
 
         <Field>
@@ -179,7 +182,7 @@ export function CreateVehicleForm({
             placeholder="Renault"
             disabled={isLoading}
             required
-            maxLength={60}
+            maxLength={80}
             autoComplete="off"
           />
         </Field>
@@ -192,7 +195,7 @@ export function CreateVehicleForm({
             placeholder="Kangoo"
             disabled={isLoading}
             required
-            maxLength={60}
+            maxLength={80}
             autoComplete="off"
           />
         </Field>
@@ -295,10 +298,24 @@ type LabelProps = {
  */
 function Label({ htmlFor, children }: LabelProps) {
   return (
-    <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-200">
+    <label
+      htmlFor={htmlFor}
+      className="block text-sm font-medium text-slate-200"
+    >
       {children}
     </label>
   );
+}
+
+type HelpTextProps = {
+  children: ReactNode;
+};
+
+/**
+ * Small helper text for field-level instructions.
+ */
+function HelpText({ children }: HelpTextProps) {
+  return <p className="text-xs leading-5 text-slate-500">{children}</p>;
 }
 
 type InputProps = {
@@ -353,19 +370,4 @@ function Input({
       className="h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
     />
   );
-}
-
-/**
- * Converts unknown submit errors into a safe user-facing message.
- */
-function getSubmitErrorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "No se pudo crear el vehículo.";
 }

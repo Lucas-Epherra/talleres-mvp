@@ -8,7 +8,7 @@ export type CustomerFormDraft = {
 
 export type ValidCustomerFormData = {
   fullName: string;
-  phone: string | null;
+  phone: string;
   email: string | null;
   address: string | null;
   notes: string | null;
@@ -28,6 +28,16 @@ type OptionalStringValidationResult =
   | {
       isValid: true;
       value: string | null;
+    }
+  | {
+      isValid: false;
+      message: string;
+    };
+
+type RequiredStringValidationResult =
+  | {
+      isValid: true;
+      value: string;
     }
   | {
       isValid: false;
@@ -60,7 +70,7 @@ export function readCustomerFormDraft(formData: FormData): CustomerFormDraft {
  * Validates customer form data before sending it to the API.
  *
  * Frontend validation improves UX and blocks obvious malformed input, but it
- * is not a security boundary. Backend validation must still enforce the same
+ * is not a security boundary. Backend validation still enforces the same
  * business rules.
  */
 export function validateCustomerFormDraft(
@@ -87,7 +97,7 @@ export function validateCustomerFormDraft(
     };
   }
 
-  const phoneResult = parseOptionalArgentinePhone(draft.phone);
+  const phoneResult = parseRequiredArgentinePhone(draft.phone);
 
   if (!phoneResult.isValid) {
     return {
@@ -132,7 +142,7 @@ export function validateCustomerFormDraft(
 }
 
 /**
- * Parses and normalizes an optional Argentinian phone number for this MVP.
+ * Parses and normalizes a required Argentinian phone number for this MVP.
  *
  * Accepted examples:
  * 2983654321
@@ -143,15 +153,15 @@ export function validateCustomerFormDraft(
  * Stored format:
  * 2983 654321
  */
-function parseOptionalArgentinePhone(
+function parseRequiredArgentinePhone(
   value: string,
-): OptionalStringValidationResult {
+): RequiredStringValidationResult {
   const normalizedValue = value.trim();
 
   if (!normalizedValue) {
     return {
-      isValid: true,
-      value: null,
+      isValid: false,
+      message: "El teléfono del cliente es obligatorio.",
     };
   }
 

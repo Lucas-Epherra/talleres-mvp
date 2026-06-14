@@ -1,6 +1,10 @@
 import { apiFetch } from "../../lib/api";
 import type { AuthResponse, LoginInput } from "./types";
 
+type LogoutResponse = {
+  message: string;
+};
+
 /**
  * Authenticates a user against the backend.
  *
@@ -16,8 +20,8 @@ export function login(input: LoginInput): Promise<AuthResponse> {
 /**
  * Ends the current authenticated session.
  */
-export function logout(): Promise<AuthResponse> {
-  return apiFetch<AuthResponse>("/auth/logout", {
+export function logout(): Promise<LogoutResponse> {
+  return apiFetch<LogoutResponse>("/auth/logout", {
     method: "POST",
   });
 }

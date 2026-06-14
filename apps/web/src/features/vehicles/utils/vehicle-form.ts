@@ -36,7 +36,7 @@ type VehicleFormValidationResult =
 const LICENSE_PLATE_PATTERN = /^[A-Z0-9]{5,10}$/;
 const MIN_VEHICLE_YEAR = 1900;
 const MAX_MILEAGE = 2_000_000;
-const MAX_TEXT_LENGTH = 60;
+const MAX_TEXT_LENGTH = 80;
 const MAX_NOTES_LENGTH = 800;
 
 /**
@@ -46,7 +46,9 @@ const MAX_NOTES_LENGTH = 800;
 export function readVehicleFormDraft(formData: FormData): VehicleFormDraft {
   return {
     customerId: getStringValue(formData, "customerId"),
-    licensePlate: normalizeLicensePlate(getStringValue(formData, "licensePlate")),
+    licensePlate: normalizeLicensePlate(
+      getStringValue(formData, "licensePlate"),
+    ),
     brand: normalizeHumanText(getStringValue(formData, "brand")),
     model: normalizeHumanText(getStringValue(formData, "model")),
     year: getStringValue(formData, "year"),
@@ -96,7 +98,7 @@ export function validateVehicleFormDraft(
     return {
       isValid: false,
       message:
-        "La patente debe tener entre 5 y 10 caracteres alfanuméricos, sin espacios ni guiones.",
+        "La patente debe tener entre 5 y 10 caracteres alfanuméricos. Podés escribir espacios o guiones; el sistema los normaliza automáticamente.",
     };
   }
 
@@ -110,7 +112,7 @@ export function validateVehicleFormDraft(
   if (draft.brand.length > MAX_TEXT_LENGTH) {
     return {
       isValid: false,
-      message: `La marca no puede superar ${MAX_TEXT_LENGTH} caracteres.`,
+      message: `La marca no puede superar ${MAX_TEXT_LENGTH.toString()} caracteres.`,
     };
   }
 
@@ -124,7 +126,7 @@ export function validateVehicleFormDraft(
   if (draft.model.length > MAX_TEXT_LENGTH) {
     return {
       isValid: false,
-      message: `El modelo no puede superar ${MAX_TEXT_LENGTH} caracteres.`,
+      message: `El modelo no puede superar ${MAX_TEXT_LENGTH.toString()} caracteres.`,
     };
   }
 
@@ -159,7 +161,7 @@ export function validateVehicleFormDraft(
   if (draft.notes.length > MAX_NOTES_LENGTH) {
     return {
       isValid: false,
-      message: `Las notas no pueden superar ${MAX_NOTES_LENGTH} caracteres.`,
+      message: `Las notas no pueden superar ${MAX_NOTES_LENGTH.toString()} caracteres.`,
     };
   }
 
@@ -179,6 +181,9 @@ export function validateVehicleFormDraft(
 
 /**
  * Normalizes license plates into uppercase alphanumeric text.
+ *
+ * Spaces and hyphens are accepted in the UI but removed before sending the
+ * payload to the API.
  */
 function normalizeLicensePlate(value: string): string {
   return value.replace(/[\s-]/g, "").toUpperCase();
@@ -241,12 +246,19 @@ function parseOptionalInteger(
     };
   }
 
-  const numericValue = Number(value);
-
-  if (!Number.isInteger(numericValue)) {
+  if (!/^\d+$/.test(value)) {
     return {
       isValid: false,
-      message: `${label} debe ser un número entero.`,
+      message: `${label} debe ser un número entero positivo.`,
+    };
+  }
+
+  const numericValue = Number(value);
+
+  if (!Number.isSafeInteger(numericValue)) {
+    return {
+      isValid: false,
+      message: `${label} debe ser un número entero válido.`,
     };
   }
 

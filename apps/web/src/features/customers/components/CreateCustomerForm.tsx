@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { type FormEvent, type ReactNode, useState } from "react";
-import { ApiError } from "../../../lib/api";
+import { getApiErrorMessage } from "../../../lib/api";
 import { createCustomer } from "../customers.client";
 import {
   readCustomerFormDraft,
@@ -61,7 +61,7 @@ export function CreateCustomerForm() {
     try {
       await createCustomer({
         fullName: data.fullName,
-        phone: data.phone ?? undefined,
+        phone: data.phone,
         email: data.email ?? undefined,
         address: data.address ?? undefined,
         notes: data.notes ?? undefined,
@@ -72,7 +72,7 @@ export function CreateCustomerForm() {
     } catch (error) {
       setState({
         status: "error",
-        message: getSubmitErrorMessage(error),
+        message: getApiErrorMessage(error),
       });
     }
   }
@@ -99,19 +99,21 @@ export function CreateCustomerForm() {
         </Field>
 
         <Field>
-          <Label htmlFor="phone">Teléfono</Label>
+          <Label htmlFor="phone">Teléfono *</Label>
           <Input
             id="phone"
             name="phone"
             type="tel"
             placeholder="2983 654321"
             disabled={isLoading}
+            required
             maxLength={18}
             inputMode="tel"
             autoComplete="tel"
           />
           <HelpText>
-            Formato esperado: 10 dígitos nacionales. Ej: 2983 654321.
+            Obligatorio. Formato esperado: 10 dígitos nacionales. Ej: 2983
+            654321.
           </HelpText>
         </Field>
 
@@ -208,7 +210,10 @@ type LabelProps = {
  */
 function Label({ htmlFor, children }: LabelProps) {
   return (
-    <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-200">
+    <label
+      htmlFor={htmlFor}
+      className="block text-sm font-medium text-slate-200"
+    >
       {children}
     </label>
   );
@@ -265,19 +270,4 @@ function Input({
       className="h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
     />
   );
-}
-
-/**
- * Converts unknown submit errors into a safe user-facing message.
- */
-function getSubmitErrorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "No se pudo crear el cliente.";
 }

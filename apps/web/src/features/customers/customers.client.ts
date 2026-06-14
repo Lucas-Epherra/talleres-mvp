@@ -20,8 +20,8 @@ export function createCustomer(input: CreateCustomerInput): Promise<Customer> {
 /**
  * Updates editable customer fields inside the authenticated workshop.
  *
- * Empty optional fields can be sent as null so the user can clear previously
- * saved phone, email, address or notes.
+ * Phone is required by the backend and cannot be cleared. Optional fields like
+ * email, address and notes can be sent as null to clear previously saved values.
  */
 export function updateCustomer(
   customerId: string,

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, type ReactNode, useId, useState } from "react";
-import { ApiError } from "../../../lib/api";
+import { getApiErrorMessage } from "../../../lib/api";
 import { updateVehicle } from "../vehicles.client";
 import type { UpdateVehicleInput, VehicleProfile } from "../types";
 import {
@@ -66,9 +66,9 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
       licensePlate: data.licensePlate,
       brand: data.brand,
       model: data.model,
-      year: data.year,
-      mileage: data.mileage,
-      notes: data.notes,
+      year: data.year ?? undefined,
+      mileage: data.mileage ?? undefined,
+      notes: data.notes ?? "",
     };
 
     try {
@@ -84,7 +84,7 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
     } catch (error) {
       setState({
         status: "error",
-        message: getSubmitErrorMessage(error),
+        message: getApiErrorMessage(error),
       });
     }
   }
@@ -115,10 +115,7 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
 
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           <ReadOnlyDetail label="Cliente" value={customer.fullName} />
-          <ReadOnlyDetail
-            label="Teléfono"
-            value={customer.phone ?? "Sin teléfono"}
-          />
+          <ReadOnlyDetail label="Teléfono" value={customer.phone} />
           <ReadOnlyDetail label="Email" value={customer.email ?? "Sin email"} />
         </div>
       </section>
@@ -144,10 +141,14 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
               defaultValue={vehicle.licensePlate}
               disabled={isLoading}
               required
-              maxLength={10}
+              maxLength={20}
               autoCapitalize="characters"
               autoComplete="off"
             />
+            <HelpText>
+              Podés escribirla con espacios o guiones. Se guardará normalizada
+              en mayúsculas.
+            </HelpText>
           </Field>
 
           <Field>
@@ -159,7 +160,7 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
               defaultValue={vehicle.brand}
               disabled={isLoading}
               required
-              maxLength={60}
+              maxLength={80}
               autoComplete="off"
             />
           </Field>
@@ -173,7 +174,7 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
               defaultValue={vehicle.model}
               disabled={isLoading}
               required
-              maxLength={60}
+              maxLength={80}
               autoComplete="off"
             />
           </Field>
@@ -288,7 +289,11 @@ type FieldProps = {
  * Form field wrapper.
  */
 function Field({ children, className }: FieldProps) {
-  return <div className={className ? `space-y-2 ${className}` : "space-y-2"}>{children}</div>;
+  return (
+    <div className={className ? `space-y-2 ${className}` : "space-y-2"}>
+      {children}
+    </div>
+  );
 }
 
 type LabelProps = {
@@ -301,10 +306,24 @@ type LabelProps = {
  */
 function Label({ htmlFor, children }: LabelProps) {
   return (
-    <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-200">
+    <label
+      htmlFor={htmlFor}
+      className="block text-sm font-medium text-slate-200"
+    >
       {children}
     </label>
   );
+}
+
+type HelpTextProps = {
+  children: ReactNode;
+};
+
+/**
+ * Small helper text for field-level instructions.
+ */
+function HelpText({ children }: HelpTextProps) {
+  return <p className="text-xs leading-5 text-slate-500">{children}</p>;
 }
 
 type InputProps = {
@@ -369,19 +388,4 @@ function Input({
  */
 function toInputValue(value: number | null): number | undefined {
   return value === null ? undefined : value;
-}
-
-/**
- * Converts unknown submit errors into a safe user-facing message.
- */
-function getSubmitErrorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "No se pudo actualizar el vehículo.";
 }

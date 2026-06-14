@@ -3,7 +3,7 @@ import type { WorkOrderStatus } from "../../lib/format";
 export type VehicleCustomer = {
   id: string;
   fullName: string;
-  phone: string | null;
+  phone: string;
   email: string | null;
 };
 
@@ -25,13 +25,23 @@ export type VehicleListItem = {
   };
 };
 
+export type CreateVehicleInput = {
+  customerId: string;
+  licensePlate: string;
+  brand: string;
+  model: string;
+  year?: number;
+  mileage?: number;
+  notes?: string;
+};
+
 export type UpdateVehicleInput = {
   licensePlate?: string;
   brand?: string;
   model?: string;
-  year?: number | null;
-  mileage?: number | null;
-  notes?: string | null;
+  year?: number;
+  mileage?: number;
+  notes?: string;
 };
 
 export type VehicleProfileCustomer = VehicleCustomer & {

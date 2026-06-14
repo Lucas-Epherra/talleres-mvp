@@ -2,11 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { type FormEvent, useId, useMemo, useState } from "react";
+import { getApiErrorMessage } from "../../../lib/api";
 import {
   formatWorkOrderStatus,
   type WorkOrderStatus,
 } from "../../../lib/format";
-import { ApiError } from "../../../lib/api";
 import { updateWorkOrderStatus } from "../work-orders.client";
 
 type UpdateWorkOrderStatusFormProps = {
@@ -24,8 +24,8 @@ const WORK_ORDER_STATUS_OPTIONS: WorkOrderStatus[] = [
 /**
  * Leaf client form used to update a work order status from the vehicle profile.
  *
- * It keeps the vehicle profile as the operational screen and refreshes the
- * current route after the mutation so active/history sections stay consistent.
+ * Delivered orders are intentionally locked in the UI because the backend does
+ * not allow moving a delivered order back to a previous state.
  */
 export function UpdateWorkOrderStatusForm({
   workOrderId,
@@ -40,6 +40,7 @@ export function UpdateWorkOrderStatusForm({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const isDelivered = currentStatus === "DELIVERED";
   const hasChangedStatus = selectedStatus !== currentStatus;
 
   const availableStatusOptions = useMemo(
@@ -54,7 +55,7 @@ export function UpdateWorkOrderStatusForm({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (isSubmitting) {
+    if (isSubmitting || isDelivered) {
       return;
     }
 
@@ -73,7 +74,7 @@ export function UpdateWorkOrderStatusForm({
 
       router.refresh();
     } catch (error) {
-      setErrorMessage(getUpdateErrorMessage(error));
+      setErrorMessage(getApiErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
@@ -98,10 +99,11 @@ export function UpdateWorkOrderStatusForm({
             id={selectId}
             name="status"
             value={selectedStatus}
+            disabled={isSubmitting || isDelivered}
             onChange={(event) =>
               setSelectedStatus(event.target.value as WorkOrderStatus)
             }
-            className="mt-2 h-11 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm font-medium text-white outline-none transition focus:border-orange-400"
+            className="mt-2 h-11 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm font-medium text-white outline-none transition focus:border-orange-400 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {availableStatusOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -109,11 +111,17 @@ export function UpdateWorkOrderStatusForm({
               </option>
             ))}
           </select>
+
+          {isDelivered ? (
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              Esta orden ya fue entregada y no puede volver a estados anteriores.
+            </p>
+          ) : null}
         </div>
 
         <button
           type="submit"
-          disabled={isSubmitting || !hasChangedStatus}
+          disabled={isSubmitting || isDelivered || !hasChangedStatus}
           className="inline-flex h-11 items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSubmitting ? "Actualizando..." : "Actualizar estado"}
@@ -131,19 +139,4 @@ export function UpdateWorkOrderStatusForm({
       ) : null}
     </form>
   );
-}
-
-/**
- * Converts unknown mutation errors into a safe user-facing message.
- */
-function getUpdateErrorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "No se pudo actualizar el estado de la orden.";
 }

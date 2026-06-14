@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, type ReactNode, useId, useState } from "react";
-import { ApiError } from "../../../lib/api";
+import { getApiErrorMessage } from "../../../lib/api";
 import { updateCustomer } from "../customers.client";
 import type { Customer, UpdateCustomerInput } from "../types";
 import {
@@ -81,7 +81,7 @@ export function EditCustomerForm({ customer }: EditCustomerFormProps) {
     } catch (error) {
       setState({
         status: "error",
-        message: getSubmitErrorMessage(error),
+        message: getApiErrorMessage(error),
       });
     }
   }
@@ -125,7 +125,7 @@ export function EditCustomerForm({ customer }: EditCustomerFormProps) {
           </Field>
 
           <Field>
-            <Label htmlFor="phone">Teléfono</Label>
+            <Label htmlFor="phone">Teléfono *</Label>
             <Input
               id="phone"
               name="phone"
@@ -133,12 +133,14 @@ export function EditCustomerForm({ customer }: EditCustomerFormProps) {
               placeholder="2983 654321"
               defaultValue={customer.phone ?? ""}
               disabled={isLoading}
+              required
               maxLength={18}
               inputMode="tel"
               autoComplete="tel"
             />
             <HelpText>
-              Formato esperado: 10 dígitos nacionales. Ej: 2983 654321.
+              Obligatorio. Formato esperado: 10 dígitos nacionales. Ej: 2983
+              654321.
             </HelpText>
           </Field>
 
@@ -225,7 +227,11 @@ type FieldProps = {
  * Form field wrapper.
  */
 function Field({ children, className }: FieldProps) {
-  return <div className={className ? `space-y-2 ${className}` : "space-y-2"}>{children}</div>;
+  return (
+    <div className={className ? `space-y-2 ${className}` : "space-y-2"}>
+      {children}
+    </div>
+  );
 }
 
 type LabelProps = {
@@ -238,7 +244,10 @@ type LabelProps = {
  */
 function Label({ htmlFor, children }: LabelProps) {
   return (
-    <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-200">
+    <label
+      htmlFor={htmlFor}
+      className="block text-sm font-medium text-slate-200"
+    >
       {children}
     </label>
   );
@@ -298,19 +307,4 @@ function Input({
       className="h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
     />
   );
-}
-
-/**
- * Converts unknown submit errors into a safe user-facing message.
- */
-function getSubmitErrorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "No se pudo actualizar el cliente.";
 }
