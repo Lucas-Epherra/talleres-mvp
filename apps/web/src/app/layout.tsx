@@ -1,25 +1,27 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Exo_2, Montserrat } from "next/font/google";
 import type { ReactNode } from "react";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const exo = Exo_2({
+  variable: "--font-exo",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "Talleres MVP",
-    template: "%s | Talleres MVP",
+    default: "Mi Taller",
+    template: "%s | Mi Taller",
   },
   description:
-    "Aplicación operativa para centralizar clientes, vehículos, órdenes de trabajo e historial de taller.",
+    "Sistema operativo para centralizar clientes, vehículos, órdenes de trabajo e historial de taller mecánico.",
 };
 
 /**
@@ -33,9 +35,9 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${montserrat.variable} ${exo.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-slate-950 text-slate-100">
+      <body className="min-h-full bg-background text-foreground">
         {children}
       </body>
     </html>

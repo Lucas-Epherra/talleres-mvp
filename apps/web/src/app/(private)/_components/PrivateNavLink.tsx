@@ -7,6 +7,7 @@ import type { MouseEventHandler, ReactNode } from "react";
 type PrivateNavLinkProps = {
   href: string;
   children: ReactNode;
+  code: string;
   onClick?: MouseEventHandler<HTMLAnchorElement>;
 };
 
@@ -19,6 +20,7 @@ type PrivateNavLinkProps = {
 export function PrivateNavLink({
   href,
   children,
+  code,
   onClick,
 }: PrivateNavLinkProps) {
   const pathname = usePathname();
@@ -30,13 +32,32 @@ export function PrivateNavLink({
       onClick={onClick}
       aria-current={isActive ? "page" : undefined}
       className={buildClassName(
-        "flex h-11 w-full items-center justify-start rounded-xl px-4 text-sm font-semibold transition",
+        "group relative flex h-12 w-full items-center gap-3 rounded-2xl px-3 text-sm font-bold transition",
         isActive
-          ? "bg-orange-500 text-white"
-          : "text-slate-200 hover:bg-slate-800 hover:text-white",
+          ? "bg-primary text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)]"
+          : "text-muted-foreground hover:bg-surface-muted hover:text-white",
       )}
     >
-      {children}
+      <span
+        className={buildClassName(
+          "grid size-8 shrink-0 place-items-center rounded-xl border text-[0.65rem] font-black uppercase tracking-[0.08em]",
+          isActive
+            ? "border-white/20 bg-white/10 text-white"
+            : "border-border-strong bg-background/60 text-steel group-hover:border-primary/50 group-hover:text-primary",
+        )}
+        aria-hidden="true"
+      >
+        {code}
+      </span>
+
+      <span className="truncate">{children}</span>
+
+      {isActive ? (
+        <span
+          aria-hidden="true"
+          className="absolute right-3 h-5 w-1 rounded-full bg-white/70"
+        />
+      ) : null}
     </Link>
   );
 }
