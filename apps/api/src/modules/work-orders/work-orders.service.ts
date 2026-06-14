@@ -33,11 +33,7 @@ export class WorkOrdersService {
    *
    * Search matches issue, diagnosis, vehicle data and customer data.
    */
-  async findAll(
-    workshopId: string,
-    search?: string,
-    status?: WorkOrderStatus,
-  ) {
+  async findAll(workshopId: string, search?: string, status?: WorkOrderStatus) {
     const normalizedSearch = this.normalizeSearch(search);
     const normalizedLicensePlateSearch =
       this.normalizeLicensePlateSearch(normalizedSearch);

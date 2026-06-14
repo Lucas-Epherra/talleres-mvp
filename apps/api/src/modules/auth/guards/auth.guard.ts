@@ -45,9 +45,9 @@ export class AuthGuard implements CanActivate {
    * enabled with AUTH_ALLOW_BEARER_TOKENS=true.
    */
   private extractToken(request: AuthenticatedRequest): string | null {
-    const cookieToken = request.cookies?.[ACCESS_TOKEN_COOKIE_NAME];
+    const cookieToken = this.extractCookieToken(request);
 
-    if (typeof cookieToken === 'string' && cookieToken.trim()) {
+    if (cookieToken) {
       return cookieToken;
     }
 
@@ -72,6 +72,27 @@ export class AuthGuard implements CanActivate {
     }
 
     return token;
+  }
+
+  /**
+   * Safely extracts the access token from cookie-parser output.
+   */
+  private extractCookieToken(request: AuthenticatedRequest): string | null {
+    const cookies: unknown = request.cookies;
+
+    if (!cookies || typeof cookies !== 'object') {
+      return null;
+    }
+
+    const token = (cookies as Record<string, unknown>)[
+      ACCESS_TOKEN_COOKIE_NAME
+    ];
+
+    if (typeof token === 'string' && token.trim()) {
+      return token;
+    }
+
+    return null;
   }
 
   /**

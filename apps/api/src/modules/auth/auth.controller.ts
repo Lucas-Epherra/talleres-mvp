@@ -41,9 +41,6 @@ function getAccessTokenMaxAgeMs(): number {
 
 /**
  * Reads the cookie SameSite mode.
- *
- * For local same-origin development, lax is safer and simpler.
- * For separated production domains, SameSite=None requires secure cookies.
  */
 function getCookieSameSite(): CookieSameSite {
   const rawSameSite = process.env.AUTH_COOKIE_SAME_SITE?.toLowerCase();
@@ -92,9 +89,14 @@ function getAccessTokenCookieOptions(): CookieOptions {
  * Builds the cookie options required to clear the access token cookie.
  */
 function getClearAccessTokenCookieOptions(): CookieOptions {
-  const { maxAge: _maxAge, ...cookieOptions } = getAccessTokenCookieOptions();
+  const cookieOptions = getAccessTokenCookieOptions();
 
-  return cookieOptions;
+  return {
+    httpOnly: cookieOptions.httpOnly,
+    sameSite: cookieOptions.sameSite,
+    secure: cookieOptions.secure,
+    path: cookieOptions.path,
+  };
 }
 
 /**
@@ -109,7 +111,10 @@ export class AuthController {
    */
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const result = await this.authService.login(dto);
 
     res.cookie(

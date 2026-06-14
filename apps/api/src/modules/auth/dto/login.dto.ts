@@ -5,8 +5,8 @@ import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
  * Payload required to authenticate an internal workshop user.
  */
 export class LoginDto {
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : '',
   )
   @IsEmail()
   @MaxLength(254)

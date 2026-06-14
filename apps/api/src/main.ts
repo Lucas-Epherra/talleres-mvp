@@ -1,18 +1,17 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
+import type { Express } from 'express';
 import { AppModule } from './app.module';
 
 const DEFAULT_ALLOWED_ORIGINS = ['http://localhost:3000'];
 
+type CorsOriginCallback = (error: Error | null, allow?: boolean) => void;
+
 /**
  * Reads allowed frontend origins from environment variables.
  *
- * CORS must never be configured with a wildcard when credentials/cookies are
- * enabled. Use a comma-separated list for production and preview deployments.
- *
- * Example:
- * CORS_ALLOWED_ORIGINS="http://localhost:3000,https://talleres.example.com"
+ * CORS must never use wildcard origin when credentials/cookies are enabled.
  */
 function getAllowedOrigins(): string[] {
   const rawOrigins =
@@ -45,23 +44,21 @@ function isOriginAllowed(
 
 /**
  * Bootstraps the NestJS API application.
- *
- * The API runs on port 3001 to avoid conflicts with the Next.js frontend,
- * which runs on port 3000 during local development.
  */
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   const allowedOrigins = getAllowedOrigins();
-  const expressApp = app.getHttpAdapter().getInstance();
+  const expressApp = app.getHttpAdapter().getInstance() as Express;
 
-  if (typeof expressApp.disable === 'function') {
-    expressApp.disable('x-powered-by');
-  }
+  expressApp.disable('x-powered-by');
 
   app.setGlobalPrefix('api/v1');
 
   app.enableCors({
-    origin: (origin, callback) => {
+    origin: (
+      origin: string | undefined,
+      callback: CorsOriginCallback,
+    ): void => {
       if (isOriginAllowed(origin, allowedOrigins)) {
         callback(null, true);
         return;

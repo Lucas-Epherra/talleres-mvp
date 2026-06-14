@@ -216,7 +216,10 @@ function normalizeUpdateCustomerData(
   const data: NormalizedCustomerUpdateData = {};
 
   if (dto.fullName !== undefined) {
-    data.fullName = normalizeRequiredText(dto.fullName, 'El nombre del cliente');
+    data.fullName = normalizeRequiredText(
+      dto.fullName,
+      'El nombre del cliente',
+    );
   }
 
   if (dto.phone !== undefined) {
@@ -267,7 +270,9 @@ function normalizeOptionalText(value: string | undefined): string | null {
 /**
  * Normalizes optional multiline text fields.
  */
-function normalizeOptionalMultilineText(value: string | undefined): string | null {
+function normalizeOptionalMultilineText(
+  value: string | undefined,
+): string | null {
   if (value === undefined) {
     return null;
   }

@@ -51,7 +51,10 @@ export class AuthService {
       throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      user.passwordHash,
+    );
 
     if (!isPasswordValid) {
       throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
@@ -145,9 +148,7 @@ export class AuthService {
    * Validates the minimum runtime shape expected from the access token payload.
    */
   private validateJwtPayload(payload: JwtPayload): JwtPayload {
-    const isValidRole = Object.values(WorkshopRole).includes(
-      payload.role as WorkshopRole,
-    );
+    const isValidRole = Object.values(WorkshopRole).includes(payload.role);
 
     if (
       typeof payload.sub !== 'string' ||

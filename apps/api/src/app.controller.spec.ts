@@ -14,9 +14,13 @@ describe('AppController', () => {
     appController = app.get<AppController>(AppController);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+  describe('getHealth', () => {
+    it('should return the API health status', () => {
+      const response = appController.getHealth();
+
+      expect(response.status).toBe('ok');
+      expect(response.service).toBe('talleres-api');
+      expect(typeof response.timestamp).toBe('string');
     });
   });
 });
