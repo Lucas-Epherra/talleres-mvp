@@ -105,7 +105,7 @@ export function CreateVehicleForm({
 
   if (!hasCustomers) {
     return (
-      <section className="relative overflow-hidden rounded-[1.35rem] border border-dashed border-border-strong bg-surface/75 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3">
+      <section className="relative overflow-hidden rounded-[1.35rem] border border-dashed border-border-strong bg-surface/75 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03]">
         <div
           aria-hidden="true"
           className="absolute right-0 top-0 h-28 w-28 translate-x-10 -translate-y-10 rounded-full bg-primary/15 blur-2xl"
@@ -146,7 +146,7 @@ export function CreateVehicleForm({
     >
       <section
         aria-labelledby="create-vehicle-main-heading"
-        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8"
+        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8"
       >
         <div className="border-b border-border pb-5">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">

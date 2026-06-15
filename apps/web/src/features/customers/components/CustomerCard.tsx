@@ -21,7 +21,7 @@ export function CustomerCard({ customer, vehicles }: CustomerCardProps) {
   const hiddenVehiclesCount = Math.max(vehicles.length - MAX_VISIBLE_VEHICLES, 0);
 
   return (
-    <article className="rounded-[1.35rem] border border-border bg-surface/80 p-5 shadow-(--shadow-industrial) ring-1 ring-white/3 transition hover:border-primary/45 hover:bg-surface sm:p-6">
+    <article className="rounded-[1.35rem] border border-border bg-surface/80 p-5 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] transition hover:border-primary/45 hover:bg-surface sm:p-6">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-stretch lg:justify-between">
         <div className="min-w-0 flex-1">
           <header className="flex flex-col gap-5 border-b border-border pb-5 md:flex-row md:items-start md:justify-between">
@@ -30,7 +30,7 @@ export function CustomerCard({ customer, vehicles }: CustomerCardProps) {
                 Cliente
               </p>
 
-              <h2 className="mt-2 wrap-break-word font-display text-2xl font-black uppercase tracking-[0.02em] text-white">
+              <h2 className="mt-2 wrap-anywhere font-display text-2xl font-black uppercase tracking-[0.02em] text-white">
                 {customer.fullName}
               </h2>
             </div>
@@ -40,7 +40,7 @@ export function CustomerCard({ customer, vehicles }: CustomerCardProps) {
                 Teléfono
               </p>
 
-              <p className="mt-2 wrap-break-word text-xl font-bold text-white sm:text-2xl">
+              <p className="mt-2 wrap-anywhere text-xl font-bold text-white sm:text-2xl">
                 {customer.phone}
               </p>
             </div>

@@ -33,7 +33,7 @@ export default async function NewWorkOrderPage({
 
   if (!vehicleId) {
     return (
-      <section className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
+      <section className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8">
         <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
           Nueva orden
         </p>
@@ -61,7 +61,7 @@ export default async function NewWorkOrderPage({
 
   return (
     <section>
-      <div className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
+      <div className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8">
         <Link
           href={`/vehicles/${vehicleProfile.vehicle.id}`}
           className="text-sm font-bold text-primary transition hover:text-primary-hover"

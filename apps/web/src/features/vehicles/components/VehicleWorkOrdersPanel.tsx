@@ -38,7 +38,7 @@ export function VehicleWorkOrdersPanel({
   workOrders,
 }: VehicleWorkOrdersPanelProps) {
   return (
-    <section className="overflow-hidden rounded-[1.35rem] border border-border bg-surface/85 shadow-(--shadow-industrial) ring-1 ring-white/3">
+    <section className="overflow-hidden rounded-[1.35rem] border border-border bg-surface/85 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03]">
       <div className="flex flex-col gap-3 border-b border-border p-6 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
@@ -74,7 +74,7 @@ export function VehicleWorkOrdersPanel({
                           Orden #{workOrder.orderNumber}
                         </p>
 
-                        <h3 className="mt-2 wrap-break-word font-display text-xl font-black uppercase tracking-[0.02em] text-white">
+                        <h3 className="mt-2 wrap-anywhere font-display text-xl font-black uppercase tracking-[0.02em] text-white">
                           {workOrder.reportedIssue}
                         </h3>
                       </div>

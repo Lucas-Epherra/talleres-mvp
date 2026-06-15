@@ -30,7 +30,7 @@ export default async function EditCustomerPage({
 
   return (
     <section className="space-y-8">
-      <header className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
+      <header className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8">
         <Link
           href="/customers"
           className="text-sm font-bold text-primary transition hover:text-primary-hover"
@@ -42,7 +42,7 @@ export default async function EditCustomerPage({
           Editar cliente
         </p>
 
-        <h1 className="mt-3 wrap-break-word font-display text-2xl font-black uppercase tracking-[0.04em] text-white sm:text-3xl">
+        <h1 className="mt-3 wrap-anywhere font-display text-2xl font-black uppercase tracking-[0.04em] text-white sm:text-3xl">
           {customer.fullName}
         </h1>
 

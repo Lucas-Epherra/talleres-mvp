@@ -50,7 +50,7 @@ export default async function CustomerDetailPage({
 
   return (
     <section className="space-y-6 sm:space-y-8">
-      <header className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
+      <header className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <Link
@@ -64,7 +64,7 @@ export default async function CustomerDetailPage({
               Ficha del cliente
             </p>
 
-            <h1 className="mt-3 wrap-break-word font-display text-2xl font-black uppercase tracking-[0.04em] text-white sm:text-3xl">
+            <h1 className="mt-3 wrap-anywhere font-display text-2xl font-black uppercase tracking-[0.04em] text-white sm:text-3xl">
               {customer.fullName}
             </h1>
 
@@ -138,7 +138,7 @@ export default async function CustomerDetailPage({
 
       <section
         aria-labelledby="customer-summary-heading"
-        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8"
+        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8"
       >
         <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
           Actividad
@@ -347,7 +347,7 @@ type SummaryMetricProps = {
  */
 function SummaryMetric({ label, value }: SummaryMetricProps) {
   return (
-    <div className="rounded-2xl border border-border bg-background/55 p-4 ring-1 ring-white/3">
+    <div className="rounded-2xl border border-border bg-background/55 p-4 ring-1 ring-white/[0.03]">
       <dt className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
         {label}
       </dt>
@@ -403,7 +403,7 @@ type BreakableDetailValueProps = {
  */
 function BreakableDetailValue({ value }: BreakableDetailValueProps) {
   return (
-    <span className="block min-w-0 max-w-full wrap-break-word">
+    <span className="block min-w-0 max-w-full wrap-anywhere">
       {value}
     </span>
   );

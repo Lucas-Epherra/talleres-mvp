@@ -29,7 +29,7 @@ export function SearchForm({
 }: SearchFormProps) {
   return (
     <form
-      className="mt-6 rounded-[1.35rem] border border-border bg-surface/80 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3"
+      className="mt-6 rounded-[1.35rem] border border-border bg-surface/80 p-4 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03]"
       role="search"
     >
       <label

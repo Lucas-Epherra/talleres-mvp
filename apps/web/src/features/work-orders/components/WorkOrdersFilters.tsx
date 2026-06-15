@@ -63,7 +63,7 @@ export function WorkOrdersFilters({
 
   return (
     <form
-      className="rounded-[1.35rem] border border-border bg-surface/85 p-5 shadow-(--shadow-industrial) ring-1 ring-white/3"
+      className="rounded-[1.35rem] border border-border bg-surface/85 p-5 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03]"
       onSubmit={handleSubmit}
       noValidate
     >

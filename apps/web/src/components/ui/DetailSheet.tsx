@@ -69,7 +69,7 @@ export function DetailSheetRow({ label, value }: DetailSheetRowProps) {
         {label}
       </dt>
 
-      <dd className="min-w-0 wrap-break-word px-4 py-3 text-sm font-medium leading-6 text-white">
+      <dd className="min-w-0 wrap-anywhere px-4 py-3 text-sm font-medium leading-6 text-white">
         {value}
       </dd>
     </div>

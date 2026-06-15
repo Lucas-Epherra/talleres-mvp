@@ -26,7 +26,7 @@ export function EmptyState({
   actions = [],
 }: EmptyStateProps) {
   return (
-    <section className="relative overflow-hidden rounded-[1.35rem] border border-dashed border-border-strong bg-surface/75 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
+    <section className="relative overflow-hidden rounded-[1.35rem] border border-dashed border-border-strong bg-surface/75 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8">
       <div
         aria-hidden="true"
         className="absolute right-0 top-0 h-28 w-28 translate-x-10 -translate-y-10 rounded-full bg-primary/15 blur-2xl"

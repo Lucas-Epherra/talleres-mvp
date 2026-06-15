@@ -98,7 +98,7 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
     >
       <section
         aria-labelledby="edit-vehicle-context-heading"
-        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8"
+        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8"
       >
         <div className="border-b border-border pb-5">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
@@ -128,7 +128,7 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
 
       <section
         aria-labelledby="edit-vehicle-data-heading"
-        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8"
+        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8"
       >
         <div className="border-b border-border pb-5">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
@@ -285,7 +285,7 @@ function ReadOnlyDetail({ label, value }: ReadOnlyDetailProps) {
         {label}
       </p>
 
-      <p className="mt-2 wrap-break-word text-sm font-bold text-white">
+      <p className="mt-2 wrap-anywhere text-sm font-bold text-white">
         {value}
       </p>
     </div>

@@ -18,7 +18,7 @@ export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
   const customer = vehicle.customer;
 
   return (
-    <article className="rounded-[1.35rem] border border-border bg-surface/80 p-5 shadow-(--shadow-industrial)-1 ring-white/3 transition hover:border-primary/40 sm:p-6">
+    <article className="rounded-[1.35rem] border border-border bg-surface/80 p-5 shadow-[var(--shadow-industrial)]-1 ring-white/[0.03] transition hover:border-primary/40 sm:p-6">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-stretch lg:justify-between">
         <div className="min-w-0 flex-1">
           <div className="grid gap-3 md:grid-cols-2">
@@ -42,7 +42,7 @@ export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
                   Orden #{workOrder.orderNumber}
                 </p>
 
-                <h2 className="mt-2 wrap-break-word font-display text-xl font-black uppercase tracking-[0.04em] text-white">
+                <h2 className="mt-2 wrap-anywhere font-display text-xl font-black uppercase tracking-[0.04em] text-white">
                   {workOrder.reportedIssue}
                 </h2>
               </div>
@@ -109,16 +109,16 @@ function SummaryContextBox({
   description,
 }: SummaryContextBoxProps) {
   return (
-    <div className="rounded-xl border border-border bg-background/55 p-4 ring-1 ring-white/3">
+    <div className="rounded-xl border border-border bg-background/55 p-4 ring-1 ring-white/[0.03]">
       <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
         {label}
       </p>
 
-      <p className="mt-2 wrap-break-word text-sm font-bold text-white">
+      <p className="mt-2 wrap-anywhere text-sm font-bold text-white">
         {title}
       </p>
 
-      <p className="mt-1 wrap-break-word text-sm text-muted-foreground">
+      <p className="mt-1 wrap-anywhere text-sm text-muted-foreground">
         {description}
       </p>
     </div>

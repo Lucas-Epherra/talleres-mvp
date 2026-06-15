@@ -36,9 +36,9 @@ export function WorkOrderPartsValue({
         return (
           <div
             key={`${part.name}-${index.toString()}`}
-            className="grid gap-1 rounded-xl border border-border bg-background/55 px-3 py-2 ring-1 ring-white/3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+            className="grid gap-1 rounded-xl border border-border bg-background/55 px-3 py-2 ring-1 ring-white/[0.03] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
           >
-            <span className="wrap-break-word text-sm font-bold text-white">
+            <span className="wrap-anywhere text-sm font-bold text-white">
               {part.name}
             </span>
 
@@ -72,13 +72,13 @@ export function WorkOrderNotesValue({
       {lines.map((line, index) => (
         <li
           key={`${line}-${index.toString()}`}
-          className="flex gap-2 rounded-xl border border-border bg-background/55 px-3 py-2 ring-1 ring-white/3"
+          className="flex gap-2 rounded-xl border border-border bg-background/55 px-3 py-2 ring-1 ring-white/[0.03]"
         >
           <span aria-hidden="true" className="text-primary">
             •
           </span>
 
-          <span className="wrap-break-word text-sm font-bold text-white">
+          <span className="wrap-anywhere text-sm font-bold text-white">
             {stripListPrefix(line)}
           </span>
         </li>
@@ -92,7 +92,7 @@ export function WorkOrderNotesValue({
  */
 export function BreakableDetailValue({ value }: BreakableDetailValueProps) {
   return (
-    <span className="block min-w-0 max-w-full wrap-break-word">
+    <span className="block min-w-0 max-w-full wrap-anywhere">
       {value}
     </span>
   );

@@ -30,7 +30,7 @@ export default async function VehiclesPage({ searchParams }: VehiclesPageProps) 
 
   return (
     <section className="space-y-6 sm:space-y-8">
-      <header className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
+      <header className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">

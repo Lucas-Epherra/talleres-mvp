@@ -14,16 +14,16 @@ type VehicleCardProps = {
  */
 export function VehicleCard({ vehicle }: VehicleCardProps) {
   return (
-    <article className="rounded-[1.35rem] border border-border bg-surface/80 p-5 shadow-(--shadow-industrial) ring-1 ring-white/3 transition hover:border-primary/45 hover:bg-surface sm:p-6">
+    <article className="rounded-[1.35rem] border border-border bg-surface/80 p-5 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] transition hover:border-primary/45 hover:bg-surface sm:p-6">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-stretch lg:justify-between">
         <div className="min-w-0 flex-1">
           <header className="flex flex-col gap-5 border-b border-border pb-5 md:flex-row md:items-start md:justify-between">
             <div className="min-w-0">
-              <p className="wrap-break-word text-xs font-bold uppercase tracking-[0.18em] text-primary">
+              <p className="wrap-anywhere text-xs font-bold uppercase tracking-[0.18em] text-primary">
                 {vehicle.licensePlate}
               </p>
 
-              <h2 className="mt-2 wrap-break-word font-display text-2xl font-black uppercase tracking-[0.02em] text-white">
+              <h2 className="mt-2 wrap-anywhere font-display text-2xl font-black uppercase tracking-[0.02em] text-white">
                 {vehicle.brand} {vehicle.model}
               </h2>
             </div>
@@ -35,7 +35,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
 
               <Link
                 href={`/customers/${vehicle.customer.id}`}
-                className="mt-2 block wrap-break-word text-xl font-bold text-white transition hover:text-primary"
+                className="mt-2 block wrap-anywhere text-xl font-bold text-white transition hover:text-primary"
               >
                 {vehicle.customer.fullName}
               </Link>
@@ -97,7 +97,7 @@ function VehicleMetaItem({ label, value }: VehicleMetaItemProps) {
         {label}
       </p>
 
-      <p className="mt-2 wrap-break-word text-sm font-semibold text-white">
+      <p className="mt-2 wrap-anywhere text-sm font-semibold text-white">
         {value}
       </p>
     </div>
