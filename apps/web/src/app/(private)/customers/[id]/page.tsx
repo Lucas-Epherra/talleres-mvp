@@ -50,25 +50,25 @@ export default async function CustomerDetailPage({
 
   return (
     <section className="space-y-6 sm:space-y-8">
-      <header className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 sm:p-8">
+      <header className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <Link
               href="/customers"
-              className="text-sm font-medium text-orange-300 transition hover:text-orange-200"
+              className="text-sm font-bold text-primary transition hover:text-primary-hover"
             >
               ← Volver a clientes
             </Link>
 
-            <p className="mt-6 text-sm font-semibold uppercase tracking-[0.24em] text-orange-300">
+            <p className="mt-6 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
               Ficha del cliente
             </p>
 
-            <h1 className="mt-3 wrap-break-word text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+            <h1 className="mt-3 wrap-break-word font-display text-2xl font-black uppercase tracking-[0.04em] text-white sm:text-3xl">
               {customer.fullName}
             </h1>
 
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
               Vista operativa del cliente, datos de contacto, vehículos
               asociados, órdenes activas e historial de trabajos.
             </p>
@@ -77,22 +77,21 @@ export default async function CustomerDetailPage({
           <div className="flex shrink-0 flex-col gap-3 sm:flex-row lg:flex-col">
             <Link
               href={`/customers/${customer.id}/edit`}
-              className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400 sm:w-auto"
+              className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover sm:w-auto"
             >
               Editar cliente
             </Link>
 
             <Link
               href={`/vehicles/new?customerId=${customer.id}`}
-              className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-slate-700 px-5 text-sm font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300 sm:w-auto"
+              className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
             >
               Cargar vehículo
             </Link>
 
-
             <Link
               href="#customer-vehicles-heading"
-              className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-slate-700 px-5 text-sm font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300 sm:w-auto"
+              className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
             >
               Ver vehículos
             </Link>
@@ -106,27 +105,49 @@ export default async function CustomerDetailPage({
         action={
           <Link
             href={`/customers/${customer.id}/edit`}
-            className="text-xs font-semibold uppercase tracking-[0.14em] text-orange-300 transition hover:text-orange-200"
+            className="text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
           >
             Editar datos
           </Link>
         }
       >
         <DetailSheetRow label="Nombre" value={customer.fullName} />
-        <DetailSheetRow label="Teléfono" value={customer.phone ?? "Sin teléfono"} />
-        <DetailSheetRow label="Email" value={customer.email ?? "Sin email"} />
+        <DetailSheetRow
+          label="Teléfono"
+          value={customer.phone ?? "Sin teléfono"}
+        />
+        <DetailSheetRow
+          label="Email"
+          value={
+            <BreakableDetailValue value={customer.email ?? "Sin email"} />
+          }
+        />
         <DetailSheetRow
           label="Dirección"
-          value={customer.address ?? "Sin dirección"}
+          value={
+            <BreakableDetailValue
+              value={customer.address ?? "Sin dirección"}
+            />
+          }
         />
-        <DetailSheetRow label="Notas" value={customer.notes ?? "Sin notas"} />
+        <DetailSheetRow
+          label="Notas"
+          value={<BreakableDetailValue value={customer.notes ?? "Sin notas"} />}
+        />
       </DetailSheet>
 
       <section
         aria-labelledby="customer-summary-heading"
-        className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 sm:p-8"
+        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8"
       >
-        <h2 id="customer-summary-heading" className="text-lg font-semibold text-white">
+        <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+          Actividad
+        </p>
+
+        <h2
+          id="customer-summary-heading"
+          className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-white"
+        >
           Resumen operativo
         </h2>
 
@@ -147,24 +168,14 @@ export default async function CustomerDetailPage({
       </section>
 
       <section aria-labelledby="customer-vehicles-heading" className="space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2
-              id="customer-vehicles-heading"
-              className="text-lg font-semibold text-white"
-            >
-              Vehículos asociados
-            </h2>
-            <p className="mt-1 text-sm text-slate-400">
-              Vehículos vinculados directamente a este cliente.
-            </p>
-          </div>
-
-          <p className="text-sm text-slate-400">
-            {associatedVehicles.length} vehículo
-            {associatedVehicles.length === 1 ? "" : "s"}
-          </p>
-        </div>
+        <SectionHeading
+          headingId="customer-vehicles-heading"
+          title="Vehículos asociados"
+          description="Vehículos vinculados directamente a este cliente."
+          count={`${associatedVehicles.length} vehículo${
+            associatedVehicles.length === 1 ? "" : "s"
+          }`}
+        />
 
         {associatedVehicles.length > 0 ? (
           <div className="grid gap-4">
@@ -197,24 +208,14 @@ export default async function CustomerDetailPage({
         aria-labelledby="customer-active-work-orders-heading"
         className="space-y-4"
       >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2
-              id="customer-active-work-orders-heading"
-              className="text-lg font-semibold text-white"
-            >
-              Órdenes activas
-            </h2>
-            <p className="mt-1 text-sm text-slate-400">
-              Trabajos pendientes, en progreso o listos para entregar.
-            </p>
-          </div>
-
-          <p className="text-sm text-slate-400">
-            {activeWorkOrders.length} orden
-            {activeWorkOrders.length === 1 ? "" : "es"}
-          </p>
-        </div>
+        <SectionHeading
+          headingId="customer-active-work-orders-heading"
+          title="Órdenes activas"
+          description="Trabajos pendientes, en progreso o listos para entregar."
+          count={`${activeWorkOrders.length} orden${
+            activeWorkOrders.length === 1 ? "" : "es"
+          }`}
+        />
 
         {activeWorkOrders.length > 0 ? (
           <div className="grid gap-4">
@@ -243,28 +244,15 @@ export default async function CustomerDetailPage({
         )}
       </section>
 
-      <section
-        aria-labelledby="customer-history-heading"
-        className="space-y-4"
-      >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2
-              id="customer-history-heading"
-              className="text-lg font-semibold text-white"
-            >
-              Historial del cliente
-            </h2>
-            <p className="mt-1 text-sm text-slate-400">
-              Órdenes entregadas asociadas a los vehículos de este cliente.
-            </p>
-          </div>
-
-          <p className="text-sm text-slate-400">
-            {deliveredWorkOrders.length} orden
-            {deliveredWorkOrders.length === 1 ? "" : "es"}
-          </p>
-        </div>
+      <section aria-labelledby="customer-history-heading" className="space-y-4">
+        <SectionHeading
+          headingId="customer-history-heading"
+          title="Historial del cliente"
+          description="Órdenes entregadas asociadas a los vehículos de este cliente."
+          count={`${deliveredWorkOrders.length} orden${
+            deliveredWorkOrders.length === 1 ? "" : "es"
+          }`}
+        />
 
         {deliveredWorkOrders.length > 0 ? (
           <div className="grid gap-4">
@@ -280,7 +268,7 @@ export default async function CustomerDetailPage({
             actions={[
               {
                 label: "Ver vehículos",
-                href: `/customers/${customer.id}`,
+                href: `/customers/${customer.id}#customer-vehicles-heading`,
                 variant: "primary",
               },
               {
@@ -349,7 +337,6 @@ function getDeliveredWorkOrders(workOrders: WorkOrder[]): WorkOrder[] {
   return workOrders.filter((workOrder) => workOrder.status === "DELIVERED");
 }
 
-
 type SummaryMetricProps = {
   label: string;
   value: string;
@@ -360,12 +347,64 @@ type SummaryMetricProps = {
  */
 function SummaryMetric({ label, value }: SummaryMetricProps) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-      <dt className="text-xs uppercase tracking-[0.14em] text-slate-500">
+    <div className="rounded-2xl border border-border bg-background/55 p-4 ring-1 ring-white/3">
+      <dt className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
         {label}
       </dt>
 
-      <dd className="mt-2 text-lg font-semibold text-white">{value}</dd>
+      <dd className="mt-2 font-display text-lg font-black text-white">
+        {value}
+      </dd>
     </div>
+  );
+}
+
+type SectionHeadingProps = {
+  headingId: string;
+  title: string;
+  description: string;
+  count: string;
+};
+
+/**
+ * Shared heading block for customer-related operational sections.
+ */
+function SectionHeading({
+  headingId,
+  title,
+  description,
+  count,
+}: SectionHeadingProps) {
+  return (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h2
+          id={headingId}
+          className="font-display text-lg font-black uppercase tracking-[0.04em] text-white"
+        >
+          {title}
+        </h2>
+
+        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+      </div>
+
+      <p className="text-sm font-semibold text-muted-foreground">{count}</p>
+    </div>
+  );
+}
+
+type BreakableDetailValueProps = {
+  value: string;
+};
+
+/**
+ * Prevents long customer data such as emails or addresses from overflowing
+ * inside detail sheet cells.
+ */
+function BreakableDetailValue({ value }: BreakableDetailValueProps) {
+  return (
+    <span className="block min-w-0 max-w-full wrap-break-word">
+      {value}
+    </span>
   );
 }
