@@ -84,83 +84,107 @@ export function CreateCustomerForm() {
       noValidate
       aria-describedby={state.message ? "create-customer-error" : undefined}
     >
-      <div className="grid gap-5 md:grid-cols-2">
-        <Field>
-          <Label htmlFor="fullName">Nombre completo *</Label>
-          <Input
-            id="fullName"
-            name="fullName"
-            placeholder="María González"
+      <section
+        aria-labelledby="create-customer-main-heading"
+        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8"
+      >
+        <div className="border-b border-border pb-5">
+          <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+            Alta de cliente
+          </p>
+
+          <h2
+            id="create-customer-main-heading"
+            className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-white"
+          >
+            Datos principales
+          </h2>
+
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            Cargá la información de contacto del cliente. El teléfono es
+            obligatorio porque será el dato principal para identificarlo en el
+            flujo operativo del taller.
+          </p>
+        </div>
+
+        <div className="mt-6 grid gap-5 md:grid-cols-2">
+          <Field>
+            <Label htmlFor="fullName">Nombre completo *</Label>
+            <Input
+              id="fullName"
+              name="fullName"
+              placeholder="María González"
+              disabled={isLoading}
+              required
+              maxLength={80}
+              autoComplete="name"
+            />
+          </Field>
+
+          <Field>
+            <Label htmlFor="phone">Teléfono *</Label>
+            <Input
+              id="phone"
+              name="phone"
+              type="tel"
+              placeholder="2983 654321"
+              disabled={isLoading}
+              required
+              maxLength={18}
+              inputMode="tel"
+              autoComplete="tel"
+            />
+            <HelpText>
+              Obligatorio. Formato esperado: 10 dígitos nacionales. Ej: 2983
+              654321.
+            </HelpText>
+          </Field>
+
+          <Field>
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="cliente@email.com"
+              disabled={isLoading}
+              maxLength={254}
+              inputMode="email"
+              autoComplete="email"
+            />
+          </Field>
+
+          <Field>
+            <Label htmlFor="address">Dirección</Label>
+            <Input
+              id="address"
+              name="address"
+              placeholder="Belgrano 850"
+              disabled={isLoading}
+              maxLength={120}
+              autoComplete="street-address"
+            />
+          </Field>
+        </div>
+
+        <Field className="mt-5">
+          <Label htmlFor="notes">Notas internas</Label>
+          <textarea
+            id="notes"
+            name="notes"
+            rows={4}
+            placeholder="Preferencias, datos útiles o aclaraciones del cliente..."
             disabled={isLoading}
-            required
-            maxLength={80}
-            autoComplete="name"
+            maxLength={800}
+            className="w-full rounded-xl border border-border-strong bg-background/70 px-4 py-3 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
           />
         </Field>
-
-        <Field>
-          <Label htmlFor="phone">Teléfono *</Label>
-          <Input
-            id="phone"
-            name="phone"
-            type="tel"
-            placeholder="2983 654321"
-            disabled={isLoading}
-            required
-            maxLength={18}
-            inputMode="tel"
-            autoComplete="tel"
-          />
-          <HelpText>
-            Obligatorio. Formato esperado: 10 dígitos nacionales. Ej: 2983
-            654321.
-          </HelpText>
-        </Field>
-
-        <Field>
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            placeholder="cliente@email.com"
-            disabled={isLoading}
-            maxLength={254}
-            inputMode="email"
-            autoComplete="email"
-          />
-        </Field>
-
-        <Field>
-          <Label htmlFor="address">Dirección</Label>
-          <Input
-            id="address"
-            name="address"
-            placeholder="Belgrano 850"
-            disabled={isLoading}
-            maxLength={120}
-            autoComplete="street-address"
-          />
-        </Field>
-      </div>
-
-      <Field>
-        <Label htmlFor="notes">Notas internas</Label>
-        <textarea
-          id="notes"
-          name="notes"
-          rows={4}
-          placeholder="Preferencias, datos útiles o aclaraciones del cliente..."
-          disabled={isLoading}
-          maxLength={800}
-          className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
-        />
-      </Field>
+      </section>
 
       {state.message ? (
         <p
           id="create-customer-error"
-          className="rounded-xl border border-red-900/60 bg-red-950/40 px-4 py-3 text-sm text-red-200"
+          className="rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-medium text-red-100"
           role="alert"
         >
           {state.message}
@@ -172,7 +196,7 @@ export function CreateCustomerForm() {
           type="button"
           onClick={() => router.back()}
           disabled={isLoading}
-          className="h-11 rounded-xl border border-slate-700 px-5 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          className="h-11 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-60"
         >
           Cancelar
         </button>
@@ -180,7 +204,7 @@ export function CreateCustomerForm() {
         <button
           type="submit"
           disabled={isLoading}
-          className="h-11 rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-60"
+          className="h-11 rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isLoading ? "Creando..." : "Crear cliente"}
         </button>
@@ -191,13 +215,18 @@ export function CreateCustomerForm() {
 
 type FieldProps = {
   children: ReactNode;
+  className?: string;
 };
 
 /**
  * Form field wrapper.
  */
-function Field({ children }: FieldProps) {
-  return <div className="space-y-2">{children}</div>;
+function Field({ children, className }: FieldProps) {
+  return (
+    <div className={className ? `space-y-2 ${className}` : "space-y-2"}>
+      {children}
+    </div>
+  );
 }
 
 type LabelProps = {
@@ -210,10 +239,7 @@ type LabelProps = {
  */
 function Label({ htmlFor, children }: LabelProps) {
   return (
-    <label
-      htmlFor={htmlFor}
-      className="block text-sm font-medium text-slate-200"
-    >
+    <label htmlFor={htmlFor} className="block text-sm font-bold text-white">
       {children}
     </label>
   );
@@ -227,7 +253,7 @@ type HelpTextProps = {
  * Small helper text for field-level instructions.
  */
 function HelpText({ children }: HelpTextProps) {
-  return <p className="text-xs leading-5 text-slate-500">{children}</p>;
+  return <p className="text-xs leading-5 text-muted-foreground">{children}</p>;
 }
 
 type InputProps = {
@@ -267,7 +293,7 @@ function Input({
       maxLength={maxLength}
       inputMode={inputMode}
       autoComplete={autoComplete}
-      className="h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+      className="h-12 w-full rounded-xl border border-border-strong bg-background/70 px-4 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
     />
   );
 }

@@ -36,14 +36,14 @@ export function WorkOrderPartsValue({
         return (
           <div
             key={`${part.name}-${index.toString()}`}
-            className="grid gap-1 rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+            className="grid gap-1 rounded-xl border border-border bg-background/55 px-3 py-2 ring-1 ring-white/3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
           >
-            <span className="text-sm font-semibold text-slate-100 wrap-anywhere">
+            <span className="wrap-break-word text-sm font-bold text-white">
               {part.name}
             </span>
 
             {part.cost ? (
-              <span className="text-sm font-semibold text-orange-200">
+              <span className="text-sm font-black text-primary">
                 {part.cost}
               </span>
             ) : null}
@@ -72,13 +72,13 @@ export function WorkOrderNotesValue({
       {lines.map((line, index) => (
         <li
           key={`${line}-${index.toString()}`}
-          className="flex gap-2 rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-2"
+          className="flex gap-2 rounded-xl border border-border bg-background/55 px-3 py-2 ring-1 ring-white/3"
         >
-          <span aria-hidden="true" className="text-orange-300">
+          <span aria-hidden="true" className="text-primary">
             •
           </span>
 
-          <span className="wrap-break-word text-sm font-semibold text-slate-100">
+          <span className="wrap-break-word text-sm font-bold text-white">
             {stripListPrefix(line)}
           </span>
         </li>

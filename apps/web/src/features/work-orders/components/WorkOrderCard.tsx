@@ -18,7 +18,7 @@ export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
   const customer = vehicle.customer;
 
   return (
-    <article className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 sm:p-6">
+    <article className="rounded-[1.35rem] border border-border bg-surface/80 p-5 shadow-(--shadow-industrial)-1 ring-white/3 transition hover:border-primary/40 sm:p-6">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-stretch lg:justify-between">
         <div className="min-w-0 flex-1">
           <div className="grid gap-3 md:grid-cols-2">
@@ -35,19 +35,23 @@ export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
             />
           </div>
 
-          <header className="mt-5 border-t border-slate-800 pt-4">
+          <header className="mt-5 border-t border-border pt-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-orange-300">
+                <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
                   Orden #{workOrder.orderNumber}
                 </p>
 
-                <h2 className="mt-2 wrap-break-word text-xl font-semibold tracking-tight text-white">
+                <h2 className="mt-2 wrap-break-word font-display text-xl font-black uppercase tracking-[0.04em] text-white">
                   {workOrder.reportedIssue}
                 </h2>
               </div>
 
-              <span className="inline-flex w-fit shrink-0 rounded-full border border-slate-700 bg-slate-950 px-4 py-2 text-sm font-semibold text-slate-100">
+              <span
+                className={`inline-flex w-fit shrink-0 rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.14em] ${getStatusBadgeClass(
+                  status,
+                )}`}
+              >
                 {formatWorkOrderStatus(status)}
               </span>
             </div>
@@ -55,31 +59,31 @@ export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
         </div>
 
         <aside className="w-full shrink-0 lg:w-48">
-          <div className="flex h-full flex-col gap-3 lg:border-l lg:border-slate-800 lg:pl-5">
+          <div className="flex h-full flex-col gap-3 lg:border-l lg:border-border lg:pl-5">
             <Link
               href={`/work-orders/${workOrder.id}`}
-              className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-orange-500 px-4 text-sm font-semibold text-white transition hover:bg-orange-400"
+              className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover"
             >
               Ver orden
             </Link>
 
             <Link
               href={`/work-orders/${workOrder.id}/edit`}
-              className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300"
+              className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated"
             >
               Editar orden
             </Link>
 
             <Link
               href={`/vehicles/${vehicle.id}`}
-              className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300"
+              className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated"
             >
               Ver ficha
             </Link>
 
             <Link
               href={`/customers/${customer.id}`}
-              className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300"
+              className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated"
             >
               Ver cliente
             </Link>
@@ -105,18 +109,32 @@ function SummaryContextBox({
   description,
 }: SummaryContextBoxProps) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+    <div className="rounded-xl border border-border bg-background/55 p-4 ring-1 ring-white/3">
+      <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
         {label}
       </p>
 
-      <p className="mt-2 wrap-break-word text-sm font-semibold text-slate-100">
+      <p className="mt-2 wrap-break-word text-sm font-bold text-white">
         {title}
       </p>
 
-      <p className="mt-1 wrap-break-word text-sm text-slate-400">
+      <p className="mt-1 wrap-break-word text-sm text-muted-foreground">
         {description}
       </p>
     </div>
   );
+}
+
+/**
+ * Maps work order statuses to the industrial product badge system.
+ */
+function getStatusBadgeClass(status: WorkOrder["status"]): string {
+  const statusClassMap: Record<WorkOrder["status"], string> = {
+    PENDING: "border-border-strong bg-surface-muted text-muted-foreground",
+    IN_PROGRESS: "border-primary/45 bg-primary/10 text-white",
+    READY: "border-warning/45 bg-warning/10 text-warning",
+    DELIVERED: "border-success/35 bg-success/10 text-success",
+  };
+
+  return statusClassMap[status];
 }

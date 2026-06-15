@@ -75,7 +75,7 @@ export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
       setErrorMessage("El costo de mano de obra debe ser un número válido.");
       return;
     }
-    
+
     if (partsValidationMessage) {
       setErrorMessage(partsValidationMessage);
       return;
@@ -117,12 +117,13 @@ export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
       className="mt-8 space-y-8"
       onSubmit={handleSubmit}
       aria-describedby={errorMessage ? errorId : undefined}
+      noValidate
     >
       {errorMessage ? (
         <p
           id={errorId}
           role="alert"
-          className="rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+          className="rounded-2xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-semibold text-white"
         >
           {errorMessage}
         </p>
@@ -130,11 +131,15 @@ export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
 
       <section
         aria-labelledby="edit-work-order-context-heading"
-        className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6"
+        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
       >
+        <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+          Orden #{workOrder.orderNumber}
+        </p>
+
         <h2
           id="edit-work-order-context-heading"
-          className="text-lg font-semibold text-white"
+          className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-white"
         >
           Contexto de la orden
         </h2>
@@ -158,7 +163,7 @@ export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
           />
         </div>
 
-        <p className="mt-5 text-sm leading-6 text-slate-400">
+        <p className="mt-5 max-w-3xl text-sm leading-6 text-muted-foreground">
           Esta pantalla edita solamente la información operativa de la orden. El
           estado se cambia desde el flujo específico de estado para mantener las
           responsabilidades separadas.
@@ -167,11 +172,15 @@ export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
 
       <section
         aria-labelledby="edit-work-order-details-heading"
-        className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6"
+        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
       >
+        <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+          Trabajo operativo
+        </p>
+
         <h2
           id="edit-work-order-details-heading"
-          className="text-lg font-semibold text-white"
+          className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-white"
         >
           Datos del trabajo
         </h2>
@@ -180,10 +189,11 @@ export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
           <div>
             <label
               htmlFor="reportedIssue"
-              className="text-sm font-medium text-slate-300"
+              className="text-sm font-bold text-white"
             >
               Problema reportado *
             </label>
+
             <textarea
               id="reportedIssue"
               name="reportedIssue"
@@ -191,17 +201,18 @@ export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
               rows={4}
               defaultValue={workOrder.reportedIssue}
               placeholder="Ej: El cliente reporta ruido en tren delantero al frenar."
-              className="mt-2 w-full resize-y rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-orange-400"
+              className="mt-2 w-full resize-y rounded-xl border border-border-strong bg-background/70 px-4 py-3 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
           <div>
             <label
               htmlFor="entryMileage"
-              className="text-sm font-medium text-slate-300"
+              className="text-sm font-bold text-white"
             >
               Kilometraje de ingreso
             </label>
+
             <input
               id="entryMileage"
               name="entryMileage"
@@ -210,7 +221,7 @@ export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
               step="1"
               defaultValue={toInputValue(workOrder.entryMileage)}
               placeholder="129200"
-              className="mt-2 h-11 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-orange-400"
+              className="mt-2 h-12 w-full rounded-xl border border-border-strong bg-background/70 px-4 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -218,34 +229,33 @@ export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
             <div>
               <label
                 htmlFor="diagnosis"
-                className="text-sm font-medium text-slate-300"
+                className="text-sm font-bold text-white"
               >
                 Diagnóstico
               </label>
+
               <textarea
                 id="diagnosis"
                 name="diagnosis"
                 rows={4}
                 defaultValue={workOrder.diagnosis ?? ""}
                 placeholder="Diagnóstico inicial del mecánico."
-                className="mt-2 w-full resize-y rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-orange-400"
+                className="mt-2 w-full resize-y rounded-xl border border-border-strong bg-background/70 px-4 py-3 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
             <div>
-              <label
-                htmlFor="workDone"
-                className="text-sm font-medium text-slate-300"
-              >
+              <label htmlFor="workDone" className="text-sm font-bold text-white">
                 Trabajo realizado
               </label>
+
               <textarea
                 id="workDone"
                 name="workDone"
                 rows={4}
                 defaultValue={workOrder.workDone ?? ""}
                 placeholder="Detalle del trabajo realizado."
-                className="mt-2 w-full resize-y rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-orange-400"
+                className="mt-2 w-full resize-y rounded-xl border border-border-strong bg-background/70 px-4 py-3 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </div>
           </div>
@@ -256,11 +266,15 @@ export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
 
       <section
         aria-labelledby="edit-work-order-costs-heading"
-        className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6"
+        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
       >
+        <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+          Presupuesto
+        </p>
+
         <h2
           id="edit-work-order-costs-heading"
-          className="text-lg font-semibold text-white"
+          className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-white"
         >
           Costos
         </h2>
@@ -285,7 +299,7 @@ export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <Link
           href={`/work-orders/${workOrder.id}`}
-          className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-700 px-5 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-900"
+          className="inline-flex h-11 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated"
         >
           Cancelar
         </Link>
@@ -293,7 +307,7 @@ export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex h-11 items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSubmitting ? "Guardando cambios..." : "Guardar cambios"}
         </button>
@@ -312,11 +326,12 @@ type ReadOnlyDetailProps = {
  */
 function ReadOnlyDetail({ label, value }: ReadOnlyDetailProps) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+    <div className="rounded-2xl border border-border bg-background/55 p-4 ring-1 ring-white/3">
+      <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
         {label}
       </p>
-      <p className="mt-2 wrap-break-words text-sm font-semibold text-slate-100">
+
+      <p className="mt-2 wrap-break-word text-sm font-bold text-white">
         {value}
       </p>
     </div>
@@ -345,10 +360,10 @@ function MoneyInput({
   placeholder,
 }: MoneyInputProps) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+    <div className="rounded-2xl border border-border bg-background/55 p-4 ring-1 ring-white/3">
       <label
         htmlFor={id}
-        className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500"
+        className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary"
       >
         {label}
       </label>
@@ -362,11 +377,12 @@ function MoneyInput({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="mt-3 h-10 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 text-sm font-semibold text-white outline-none transition placeholder:font-normal placeholder:text-slate-600 focus:border-orange-400"
+        className="mt-3 h-10 w-full rounded-xl border border-border-strong bg-background/70 px-3 text-sm font-bold text-white outline-none transition placeholder:font-normal placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20"
       />
     </div>
   );
 }
+
 type ReadOnlyMoneyProps = {
   label: string;
   value: number;
@@ -377,11 +393,12 @@ type ReadOnlyMoneyProps = {
  */
 function ReadOnlyMoney({ label, value }: ReadOnlyMoneyProps) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+    <div className="rounded-2xl border border-border bg-background/55 p-4 ring-1 ring-white/3">
+      <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
         {label}
       </p>
-      <p className="mt-2 text-sm font-semibold text-slate-100">
+
+      <p className="mt-2 font-display text-lg font-black text-white">
         {formatCurrency(value)}
       </p>
     </div>
@@ -437,6 +454,7 @@ function getNullableNumber(formData: FormData, key: string): number | null {
 
   return Number.isFinite(parsedValue) ? parsedValue : null;
 }
+
 /**
  * Converts unknown submit errors into a safe user-facing message.
  */

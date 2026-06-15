@@ -82,15 +82,16 @@ export function UpdateWorkOrderStatusForm({
 
   return (
     <form
-      className="mt-5 rounded-2xl border border-slate-800 bg-slate-950/70 p-4"
+      className="mt-5 rounded-[1.35rem] border border-border bg-surface/85 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3"
       onSubmit={handleSubmit}
       aria-describedby={errorMessage ? errorId : undefined}
+      noValidate
     >
       <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
         <div>
           <label
             htmlFor={selectId}
-            className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
+            className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary"
           >
             Cambiar estado
           </label>
@@ -103,7 +104,7 @@ export function UpdateWorkOrderStatusForm({
             onChange={(event) =>
               setSelectedStatus(event.target.value as WorkOrderStatus)
             }
-            className="mt-2 h-11 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm font-medium text-white outline-none transition focus:border-orange-400 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-2 h-11 w-full rounded-xl border border-border-strong bg-background/70 px-4 text-sm font-bold text-white outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {availableStatusOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -113,7 +114,7 @@ export function UpdateWorkOrderStatusForm({
           </select>
 
           {isDelivered ? (
-            <p className="mt-2 text-xs leading-5 text-slate-500">
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
               Esta orden ya fue entregada y no puede volver a estados anteriores.
             </p>
           ) : null}
@@ -122,7 +123,7 @@ export function UpdateWorkOrderStatusForm({
         <button
           type="submit"
           disabled={isSubmitting || isDelivered || !hasChangedStatus}
-          className="inline-flex h-11 items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSubmitting ? "Actualizando..." : "Actualizar estado"}
         </button>
@@ -132,7 +133,7 @@ export function UpdateWorkOrderStatusForm({
         <p
           id={errorId}
           role="alert"
-          className="mt-3 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+          className="mt-3 rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-semibold text-white"
         >
           {errorMessage}
         </p>

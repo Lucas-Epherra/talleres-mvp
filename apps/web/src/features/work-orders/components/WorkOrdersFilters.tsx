@@ -63,14 +63,15 @@ export function WorkOrdersFilters({
 
   return (
     <form
-      className="rounded-3xl border border-slate-800 bg-slate-900/70 p-5"
+      className="rounded-[1.35rem] border border-border bg-surface/85 p-5 shadow-(--shadow-industrial) ring-1 ring-white/3"
       onSubmit={handleSubmit}
+      noValidate
     >
       <div className="grid gap-4 lg:grid-cols-[1fr_260px_auto_auto] lg:items-end">
         <div>
           <label
             htmlFor="work-orders-search"
-            className="text-sm font-medium text-slate-300"
+            className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary"
           >
             Buscar
           </label>
@@ -81,14 +82,14 @@ export function WorkOrdersFilters({
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Patente, cliente, modelo, diagnóstico..."
-            className="mt-2 h-11 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-orange-400"
+            className="mt-2 h-11 w-full rounded-xl border border-border-strong bg-background/70 px-4 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
         </div>
 
         <div>
           <label
             htmlFor="work-orders-status"
-            className="text-sm font-medium text-slate-300"
+            className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary"
           >
             Estado
           </label>
@@ -99,7 +100,7 @@ export function WorkOrdersFilters({
             onChange={(event) =>
               setStatus(event.target.value as StatusFilterValue)
             }
-            className="mt-2 h-11 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm font-medium text-white outline-none transition focus:border-orange-400"
+            className="mt-2 h-11 w-full rounded-xl border border-border-strong bg-background/70 px-4 text-sm font-bold text-white outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
           >
             <option value="ALL">Todos</option>
 
@@ -114,14 +115,14 @@ export function WorkOrdersFilters({
         <button
           type="submit"
           disabled={isPending}
-          className="inline-flex h-11 items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isPending ? "Filtrando..." : "Aplicar filtros"}
         </button>
 
         <Link
           href="/work-orders"
-          className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-700 px-5 text-sm font-semibold text-slate-100 transition hover:border-slate-500 hover:bg-slate-900"
+          className="inline-flex h-11 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated"
         >
           Limpiar
         </Link>

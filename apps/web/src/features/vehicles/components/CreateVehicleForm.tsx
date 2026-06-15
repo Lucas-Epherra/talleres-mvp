@@ -105,24 +105,35 @@ export function CreateVehicleForm({
 
   if (!hasCustomers) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-950/60 p-6">
-        <h2 className="text-lg font-semibold text-white">
-          Primero necesitás crear un cliente
-        </h2>
+      <section className="relative overflow-hidden rounded-[1.35rem] border border-dashed border-border-strong bg-surface/75 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3">
+        <div
+          aria-hidden="true"
+          className="absolute right-0 top-0 h-28 w-28 translate-x-10 -translate-y-10 rounded-full bg-primary/15 blur-2xl"
+        />
 
-        <p className="mt-2 text-sm leading-6 text-slate-400">
-          El vehículo siempre debe estar asociado a un cliente. Creá el cliente
-          y después volvé a esta pantalla para cargar su vehículo.
-        </p>
+        <div className="relative">
+          <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+            Vehículos
+          </p>
 
-        <button
-          type="button"
-          onClick={() => router.push("/customers/new")}
-          className="mt-5 h-11 rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400"
-        >
-          Crear cliente
-        </button>
-      </div>
+          <h2 className="mt-3 font-display text-xl font-black uppercase tracking-[0.02em] text-white">
+            Primero necesitás crear un cliente
+          </h2>
+
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+            El vehículo siempre debe estar asociado a un cliente. Creá el
+            cliente y después volvé a esta pantalla para cargar su vehículo.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => router.push("/customers/new")}
+            className="mt-6 h-11 rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover"
+          >
+            Crear cliente
+          </button>
+        </div>
+      </section>
     );
   }
 
@@ -133,122 +144,147 @@ export function CreateVehicleForm({
       noValidate
       aria-describedby={state.message ? "create-vehicle-error" : undefined}
     >
-      <Field>
-        <Label htmlFor="customerId">Cliente *</Label>
+      <section
+        aria-labelledby="create-vehicle-main-heading"
+        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8"
+      >
+        <div className="border-b border-border pb-5">
+          <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+            Alta de vehículo
+          </p>
 
-        <select
-          id="customerId"
-          name="customerId"
-          defaultValue={defaultCustomerId ?? ""}
-          disabled={isLoading}
-          required
-          autoComplete="off"
-          className="h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <option value="">Seleccionar cliente</option>
+          <h2
+            id="create-vehicle-main-heading"
+            className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-white"
+          >
+            Datos principales
+          </h2>
 
-          {customers.map((customer) => (
-            <option key={customer.id} value={customer.id}>
-              {customer.fullName} · {customer.phone}
-            </option>
-          ))}
-        </select>
-      </Field>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            Cargá la identificación del vehículo y vinculalo con un cliente del
+            taller.
+          </p>
+        </div>
 
-      <div className="grid gap-5 md:grid-cols-2">
-        <Field>
-          <Label htmlFor="licensePlate">Patente *</Label>
-          <Input
-            id="licensePlate"
-            name="licensePlate"
-            placeholder="AD999ZZ"
-            disabled={isLoading}
-            required
-            maxLength={20}
-            autoCapitalize="characters"
-            autoComplete="off"
-          />
-          <HelpText>
-            Podés escribirla con espacios o guiones. Se guardará normalizada en
-            mayúsculas.
-          </HelpText>
-        </Field>
+        <div className="mt-6 space-y-5">
+          <Field>
+            <Label htmlFor="customerId">Cliente *</Label>
 
-        <Field>
-          <Label htmlFor="brand">Marca *</Label>
-          <Input
-            id="brand"
-            name="brand"
-            placeholder="Renault"
-            disabled={isLoading}
-            required
-            maxLength={80}
-            autoComplete="off"
-          />
-        </Field>
+            <select
+              id="customerId"
+              name="customerId"
+              defaultValue={defaultCustomerId ?? ""}
+              disabled={isLoading}
+              required
+              autoComplete="off"
+              className="h-12 w-full rounded-xl border border-border-strong bg-background/70 px-4 text-sm font-medium text-white outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <option value="">Seleccionar cliente</option>
 
-        <Field>
-          <Label htmlFor="model">Modelo *</Label>
-          <Input
-            id="model"
-            name="model"
-            placeholder="Kangoo"
-            disabled={isLoading}
-            required
-            maxLength={80}
-            autoComplete="off"
-          />
-        </Field>
+              {customers.map((customer) => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.fullName} · {customer.phone}
+                </option>
+              ))}
+            </select>
+          </Field>
 
-        <Field>
-          <Label htmlFor="year">Año</Label>
-          <Input
-            id="year"
-            name="year"
-            type="number"
-            placeholder="2018"
-            disabled={isLoading}
-            min={1900}
-            max={new Date().getFullYear() + 1}
-            step={1}
-            inputMode="numeric"
-          />
-        </Field>
+          <div className="grid gap-5 md:grid-cols-2">
+            <Field>
+              <Label htmlFor="licensePlate">Patente *</Label>
+              <Input
+                id="licensePlate"
+                name="licensePlate"
+                placeholder="AD999ZZ"
+                disabled={isLoading}
+                required
+                maxLength={20}
+                autoCapitalize="characters"
+                autoComplete="off"
+              />
+              <HelpText>
+                Podés escribirla con espacios o guiones. Se guardará
+                normalizada en mayúsculas.
+              </HelpText>
+            </Field>
 
-        <Field>
-          <Label htmlFor="mileage">Kilometraje actual</Label>
-          <Input
-            id="mileage"
-            name="mileage"
-            type="number"
-            placeholder="142000"
-            disabled={isLoading}
-            min={0}
-            max={2_000_000}
-            step={1}
-            inputMode="numeric"
-          />
-        </Field>
-      </div>
+            <Field>
+              <Label htmlFor="brand">Marca *</Label>
+              <Input
+                id="brand"
+                name="brand"
+                placeholder="Renault"
+                disabled={isLoading}
+                required
+                maxLength={80}
+                autoComplete="off"
+              />
+            </Field>
 
-      <Field>
-        <Label htmlFor="notes">Notas del vehículo</Label>
+            <Field>
+              <Label htmlFor="model">Modelo *</Label>
+              <Input
+                id="model"
+                name="model"
+                placeholder="Kangoo"
+                disabled={isLoading}
+                required
+                maxLength={80}
+                autoComplete="off"
+              />
+            </Field>
 
-        <textarea
-          id="notes"
-          name="notes"
-          rows={4}
-          placeholder="Estado general, detalles conocidos, observaciones..."
-          disabled={isLoading}
-          maxLength={800}
-          className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
-        />
-      </Field>
+            <Field>
+              <Label htmlFor="year">Año</Label>
+              <Input
+                id="year"
+                name="year"
+                type="number"
+                placeholder="2018"
+                disabled={isLoading}
+                min={1900}
+                max={new Date().getFullYear() + 1}
+                step={1}
+                inputMode="numeric"
+              />
+            </Field>
+
+            <Field>
+              <Label htmlFor="mileage">Kilometraje actual</Label>
+              <Input
+                id="mileage"
+                name="mileage"
+                type="number"
+                placeholder="142000"
+                disabled={isLoading}
+                min={0}
+                max={2_000_000}
+                step={1}
+                inputMode="numeric"
+              />
+            </Field>
+          </div>
+
+          <Field>
+            <Label htmlFor="notes">Notas del vehículo</Label>
+
+            <textarea
+              id="notes"
+              name="notes"
+              rows={4}
+              placeholder="Estado general, detalles conocidos, observaciones..."
+              disabled={isLoading}
+              maxLength={800}
+              className="w-full rounded-xl border border-border-strong bg-background/70 px-4 py-3 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+            />
+          </Field>
+        </div>
+      </section>
 
       {state.message ? (
         <p
           id="create-vehicle-error"
-          className="rounded-xl border border-red-900/60 bg-red-950/40 px-4 py-3 text-sm text-red-200"
+          className="rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-medium text-red-100"
           role="alert"
         >
           {state.message}
@@ -260,7 +296,7 @@ export function CreateVehicleForm({
           type="button"
           onClick={() => router.back()}
           disabled={isLoading}
-          className="h-11 rounded-xl border border-slate-700 px-5 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          className="h-11 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-60"
         >
           Cancelar
         </button>
@@ -268,7 +304,7 @@ export function CreateVehicleForm({
         <button
           type="submit"
           disabled={isLoading}
-          className="h-11 rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-60"
+          className="h-11 rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isLoading ? "Creando..." : "Crear vehículo"}
         </button>
@@ -300,7 +336,7 @@ function Label({ htmlFor, children }: LabelProps) {
   return (
     <label
       htmlFor={htmlFor}
-      className="block text-sm font-medium text-slate-200"
+      className="block text-sm font-bold text-white"
     >
       {children}
     </label>
@@ -315,7 +351,7 @@ type HelpTextProps = {
  * Small helper text for field-level instructions.
  */
 function HelpText({ children }: HelpTextProps) {
-  return <p className="text-xs leading-5 text-slate-500">{children}</p>;
+  return <p className="text-xs leading-5 text-muted-foreground">{children}</p>;
 }
 
 type InputProps = {
@@ -367,7 +403,7 @@ function Input({
       inputMode={inputMode}
       autoComplete={autoComplete}
       autoCapitalize={autoCapitalize}
-      className="h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+      className="h-12 w-full rounded-xl border border-border-strong bg-background/70 px-4 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
     />
   );
 }

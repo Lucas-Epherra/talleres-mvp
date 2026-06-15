@@ -95,19 +95,26 @@ export function EditCustomerForm({ customer }: EditCustomerFormProps) {
     >
       <section
         aria-labelledby="edit-customer-data-heading"
-        className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 sm:p-8"
+        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8"
       >
-        <h2
-          id="edit-customer-data-heading"
-          className="text-lg font-semibold text-white"
-        >
-          Datos del cliente
-        </h2>
+        <div className="border-b border-border pb-5">
+          <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+            Cliente
+          </p>
 
-        <p className="mt-2 text-sm leading-6 text-slate-400">
-          Actualizá la información de contacto y las notas internas del cliente.
-          Los vehículos asociados no se modifican desde esta pantalla.
-        </p>
+          <h2
+            id="edit-customer-data-heading"
+            className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-white"
+          >
+            Datos del cliente
+          </h2>
+
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            Actualizá la información de contacto y las notas internas del
+            cliente. Los vehículos asociados no se modifican desde esta
+            pantalla.
+          </p>
+        </div>
 
         <div className="mt-6 grid gap-5 md:grid-cols-2">
           <Field>
@@ -131,7 +138,7 @@ export function EditCustomerForm({ customer }: EditCustomerFormProps) {
               name="phone"
               type="tel"
               placeholder="2983 654321"
-              defaultValue={customer.phone ?? ""}
+              defaultValue={customer.phone}
               disabled={isLoading}
               required
               maxLength={18}
@@ -183,7 +190,7 @@ export function EditCustomerForm({ customer }: EditCustomerFormProps) {
             defaultValue={customer.notes ?? ""}
             disabled={isLoading}
             maxLength={800}
-            className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-xl border border-border-strong bg-background/70 px-4 py-3 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
           />
         </Field>
       </section>
@@ -191,7 +198,7 @@ export function EditCustomerForm({ customer }: EditCustomerFormProps) {
       {state.message ? (
         <p
           id={errorId}
-          className="rounded-xl border border-red-900/60 bg-red-950/40 px-4 py-3 text-sm text-red-200"
+          className="rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-medium text-red-100"
           role="alert"
         >
           {state.message}
@@ -201,7 +208,7 @@ export function EditCustomerForm({ customer }: EditCustomerFormProps) {
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <Link
           href={`/customers/${customer.id}`}
-          className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-700 px-5 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-800"
+          className="inline-flex h-11 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated"
         >
           Cancelar
         </Link>
@@ -209,7 +216,7 @@ export function EditCustomerForm({ customer }: EditCustomerFormProps) {
         <button
           type="submit"
           disabled={isLoading}
-          className="inline-flex h-11 items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isLoading ? "Guardando cambios..." : "Guardar cambios"}
         </button>
@@ -244,10 +251,7 @@ type LabelProps = {
  */
 function Label({ htmlFor, children }: LabelProps) {
   return (
-    <label
-      htmlFor={htmlFor}
-      className="block text-sm font-medium text-slate-200"
-    >
+    <label htmlFor={htmlFor} className="block text-sm font-bold text-white">
       {children}
     </label>
   );
@@ -261,7 +265,7 @@ type HelpTextProps = {
  * Small helper text for field-level instructions.
  */
 function HelpText({ children }: HelpTextProps) {
-  return <p className="text-xs leading-5 text-slate-500">{children}</p>;
+  return <p className="text-xs leading-5 text-muted-foreground">{children}</p>;
 }
 
 type InputProps = {
@@ -304,7 +308,7 @@ function Input({
       maxLength={maxLength}
       inputMode={inputMode}
       autoComplete={autoComplete}
-      className="h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+      className="h-12 w-full rounded-xl border border-border-strong bg-background/70 px-4 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
     />
   );
 }
