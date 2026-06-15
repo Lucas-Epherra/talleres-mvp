@@ -4,6 +4,7 @@ import {
   formatMileage,
   formatMoney,
   formatWorkOrderStatus,
+  type WorkOrderStatus,
 } from "../../../lib/format";
 import {
   DetailSheet,
@@ -37,20 +38,29 @@ export function VehicleWorkOrdersPanel({
   workOrders,
 }: VehicleWorkOrdersPanelProps) {
   return (
-    <section className="rounded-3xl border border-slate-800 bg-slate-900/70">
-      <div className="flex flex-col gap-3 border-b border-slate-800 p-6 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-white">{title}</h2>
-          <p className="mt-1 text-sm text-slate-400">{description}</p>
+    <section className="overflow-hidden rounded-3xl border border-border bg-surface/85 shadow-(--shadow-industrial) ring-1 ring-white/3">
+      <div className="flex flex-col gap-3 border-b border-border p-6 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+            Órdenes de trabajo
+          </p>
+
+          <h2 className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-white">
+            {title}
+          </h2>
+
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            {description}
+          </p>
         </div>
 
-        <p className="text-sm text-slate-400">
+        <p className="inline-flex w-fit rounded-full border border-border-strong bg-background/60 px-4 py-2 text-sm font-bold text-white">
           {workOrders.length} orden{workOrders.length === 1 ? "" : "es"}
         </p>
       </div>
 
       {workOrders.length > 0 ? (
-        <div className="divide-y divide-slate-800">
+        <div className="divide-y divide-border">
           {workOrders.map((workOrder) => {
             const isDelivered = workOrder.status === "DELIVERED";
 
@@ -60,18 +70,16 @@ export function VehicleWorkOrdersPanel({
                   <div className="min-w-0 space-y-5">
                     <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-orange-300">
+                        <p className="text-sm font-bold text-primary">
                           Orden #{workOrder.orderNumber}
                         </p>
 
-                        <h3 className="mt-2 wrap-break-word text-xl font-semibold tracking-tight text-white">
+                        <h3 className="mt-2 wrap-break-word font-display text-xl font-black uppercase tracking-[0.02em] text-white">
                           {workOrder.reportedIssue}
                         </h3>
                       </div>
 
-                      <span className="inline-flex w-fit shrink-0 rounded-full border border-slate-700 bg-slate-950 px-4 py-2 text-sm font-semibold text-slate-100">
-                        {formatWorkOrderStatus(workOrder.status)}
-                      </span>
+                      <StatusBadge status={workOrder.status} />
                     </header>
 
                     <DetailSheet
@@ -119,7 +127,7 @@ export function VehicleWorkOrdersPanel({
                     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                       <Link
                         href={`/work-orders/${workOrder.id}`}
-                        className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-orange-500 px-4 text-sm font-semibold text-white transition hover:bg-orange-400 sm:w-auto"
+                        className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover sm:w-auto"
                       >
                         Ver orden
                       </Link>
@@ -127,7 +135,7 @@ export function VehicleWorkOrdersPanel({
                       {!isDelivered ? (
                         <Link
                           href={`/work-orders/${workOrder.id}/edit`}
-                          className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-100 transition hover:border-orange-400 hover:text-orange-300 sm:w-auto"
+                          className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
                         >
                           Editar orden
                         </Link>
@@ -190,13 +198,49 @@ export function VehicleWorkOrdersPanel({
         </div>
       ) : (
         <div className="p-6">
-          <p className="rounded-2xl border border-dashed border-slate-700 p-6 text-sm text-slate-400">
+          <p className="rounded-2xl border border-dashed border-border-strong bg-background/45 p-6 text-sm leading-6 text-muted-foreground">
             {emptyMessage}
           </p>
         </div>
       )}
     </section>
   );
+}
+
+type StatusBadgeProps = {
+  status: WorkOrderStatus;
+};
+
+/**
+ * Renders a compact visual status badge for a work order.
+ */
+function StatusBadge({ status }: StatusBadgeProps) {
+  return (
+    <span
+      className={`${getStatusBadgeClassName(status)} inline-flex w-fit shrink-0 rounded-full border px-4 py-2 text-sm font-bold`}
+    >
+      {formatWorkOrderStatus(status)}
+    </span>
+  );
+}
+
+/**
+ * Maps order status to branded badge classes.
+ */
+function getStatusBadgeClassName(status: WorkOrderStatus): string {
+  if (status === "IN_PROGRESS") {
+    return "border-primary/40 bg-primary/10 text-white";
+  }
+
+  if (status === "READY") {
+    return "border-warning/40 bg-warning/10 text-white";
+  }
+
+  if (status === "DELIVERED") {
+    return "border-border-strong bg-background/60 text-muted-foreground";
+  }
+
+  return "border-border-strong bg-surface-muted text-white";
 }
 
 /**

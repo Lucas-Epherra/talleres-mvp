@@ -33,47 +33,55 @@ export function DetailSheet({
       aria-labelledby={headingId}
       className={getContainerClassName(className)}
     >
-      <div className="flex flex-col gap-3 border-b border-slate-800 p-5 sm:flex-row sm:items-center sm:justify-between">
-        <h2
-          id={headingId}
-          className={
-            titleSize === "sm"
-              ? "text-sm font-semibold text-white"
-              : "text-lg font-semibold text-white"
-          }
-        >
-          {title}
-        </h2>
+      <div className="flex flex-col gap-3 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="mb-2 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+            Ficha técnica
+          </p>
 
-        {action ? <div>{action}</div> : null}
+          <h2
+            id={headingId}
+            className={
+              titleSize === "sm"
+                ? "font-display text-sm font-black uppercase tracking-[0.04em] text-white"
+                : "font-display text-lg font-black uppercase tracking-[0.04em] text-white"
+            }
+          >
+            {title}
+          </h2>
+        </div>
+
+        {action ? <div className="shrink-0">{action}</div> : null}
       </div>
 
-      <dl className="divide-y divide-slate-800">{children}</dl>
+      <dl className="divide-y divide-border">{children}</dl>
     </section>
   );
 }
+
 /**
  * Single label/value row for DetailSheet.
  */
 export function DetailSheetRow({ label, value }: DetailSheetRowProps) {
   return (
-    <div className="grid min-w-0 md:grid-cols-[12rem_minmax(0,1fr)]">
-      <dt className="min-w-0 border-slate-800 bg-slate-950/60 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 md:border-r">
+    <div className="grid min-w-0 md:grid-cols-[13rem_minmax(0,1fr)]">
+      <dt className="min-w-0 border-border bg-background/45 px-4 py-3 text-[0.68rem] font-bold uppercase tracking-[0.18em] text-steel md:border-r">
         {label}
       </dt>
 
-      <dd className="min-w-0 px-4 py-3 text-sm font-medium leading-6 text-slate-100 break-words [overflow-wrap:anywhere]">
+      <dd className="min-w-0 wrap-break-word px-4 py-3 text-sm font-medium leading-6 text-white">
         {value}
       </dd>
     </div>
   );
 }
+
 /**
  * Joins the base sheet class with optional spacing/layout classes.
  */
 function getContainerClassName(className?: string): string {
   const baseClassName =
-    "rounded-2xl border border-slate-800 bg-slate-950/70";
+    "overflow-hidden rounded-[1.35rem] border border-border bg-surface/85 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03]";
 
   return className ? `${baseClassName} ${className}` : baseClassName;
 }

@@ -29,12 +29,12 @@ export function SearchForm({
 }: SearchFormProps) {
   return (
     <form
-      className="mt-6 rounded-2xl border border-slate-800 bg-slate-950/40 p-4"
+      className="mt-6 rounded-[1.35rem] border border-border bg-surface/80 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3"
       role="search"
     >
       <label
         htmlFor={id}
-        className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+        className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-muted-foreground"
       >
         {label}
       </label>
@@ -46,12 +46,12 @@ export function SearchForm({
           type="search"
           defaultValue={defaultValue}
           placeholder={placeholder}
-          className="h-12 min-h-12 w-full min-w-0 flex-1 appearance-none rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm leading-5 text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20"
+          className="h-12 min-h-12 w-full min-w-0 flex-1 appearance-none rounded-xl border border-border-strong bg-background/70 px-4 py-3 text-sm leading-5 text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
 
         <button
           type="submit"
-          className="h-12 w-full rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400 sm:w-auto"
+          className="h-12 w-full rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover sm:w-auto"
         >
           {submitLabel}
         </button>
@@ -59,7 +59,7 @@ export function SearchForm({
         {showClearAction ? (
           <Link
             href={clearHref}
-            className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-slate-700 px-5 text-sm font-semibold text-slate-100 transition hover:border-slate-500 hover:bg-slate-900 sm:w-auto"
+            className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
           >
             {clearLabel}
           </Link>

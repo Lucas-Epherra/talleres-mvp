@@ -26,35 +26,54 @@ export function EmptyState({
   actions = [],
 }: EmptyStateProps) {
   return (
-    <div className="rounded-3xl border border-dashed border-slate-700 bg-slate-900/40 p-6 sm:p-8">
-      {eyebrow ? (
-        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-orange-300">
-          {eyebrow}
-        </p>
-      ) : null}
+    <section className="relative overflow-hidden rounded-[1.35rem] border border-dashed border-border-strong bg-surface/75 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
+      <div
+        aria-hidden="true"
+        className="absolute right-0 top-0 h-28 w-28 translate-x-10 -translate-y-10 rounded-full bg-primary/15 blur-2xl"
+      />
 
-      <h2 className={eyebrow ? "mt-3 text-lg font-semibold text-white" : "text-lg font-semibold text-white"}>
-        {title}
-      </h2>
-
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-        {description}
-      </p>
-
-      {actions.length > 0 ? (
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          {actions.map((action) => (
-            <Link
-              key={`${action.href}-${action.label}`}
-              href={action.href}
-              className={getActionClassName(action.variant ?? "secondary")}
-            >
-              {action.label}
-            </Link>
-          ))}
+      <div className="relative">
+        <div className="mb-5 grid size-12 place-items-center rounded-2xl border border-border-strong bg-surface-elevated shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+          <span className="font-display text-sm font-black italic tracking-[-0.08em] text-primary">
+            M1
+          </span>
         </div>
-      ) : null}
-    </div>
+
+        {eyebrow ? (
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-primary">
+            {eyebrow}
+          </p>
+        ) : null}
+
+        <h2
+          className={
+            eyebrow
+              ? "mt-3 font-display text-xl font-black uppercase tracking-[0.02em] text-white"
+              : "font-display text-xl font-black uppercase tracking-[0.02em] text-white"
+          }
+        >
+          {title}
+        </h2>
+
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+          {description}
+        </p>
+
+        {actions.length > 0 ? (
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            {actions.map((action) => (
+              <Link
+                key={`${action.href}-${action.label}`}
+                href={action.href}
+                className={getActionClassName(action.variant ?? "secondary")}
+              >
+                {action.label}
+              </Link>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </section>
   );
 }
 
@@ -63,8 +82,8 @@ export function EmptyState({
  */
 function getActionClassName(variant: EmptyStateAction["variant"]): string {
   if (variant === "primary") {
-    return "inline-flex h-11 items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400";
+    return "inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover";
   }
 
-  return "inline-flex h-11 items-center justify-center rounded-xl border border-slate-700 px-5 text-sm font-semibold text-slate-100 transition hover:border-slate-500 hover:bg-slate-900";
+  return "inline-flex h-11 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated";
 }
