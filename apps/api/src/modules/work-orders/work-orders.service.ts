@@ -208,7 +208,7 @@ export class WorkOrdersService {
             include: this.getDefaultInclude(),
           });
 
-          if (data.entryMileage !== undefined) {
+          if (typeof data.entryMileage === 'number') {
             await this.updateVehicleMileageIfNeeded(
               workshopId,
               vehicle.id,
@@ -293,7 +293,7 @@ export class WorkOrdersService {
         include: this.getDefaultInclude(),
       });
 
-      if (dto.entryMileage !== undefined) {
+      if (typeof dto.entryMileage === 'number') {
         await this.updateVehicleMileageIfNeeded(
           workshopId,
           currentWorkOrder.vehicleId,
@@ -533,15 +533,19 @@ export class WorkOrdersService {
   /**
    * Normalizes optional nullable text on update operations.
    *
-   * Undefined means "do not update". Empty string means "clear value".
+   * Undefined means "do not update". Null or empty string means "clear value".
    */
   private normalizeOptionalNullableText(
-    value: string | undefined,
+    value: string | null | undefined,
     fieldName: string,
     maxLength: number,
   ): string | null | undefined {
     if (value === undefined) {
       return undefined;
+    }
+
+    if (value === null) {
+      return null;
     }
 
     const normalizedValue = value.trim().replace(/\s+/g, ' ');
@@ -561,10 +565,18 @@ export class WorkOrdersService {
 
   /**
    * Validates vehicle mileage received from a work order.
+   *
+   * Undefined means "do not update". Null means "clear value".
    */
-  private normalizeMileage(mileage: number | undefined): number | undefined {
+  private normalizeMileage(
+    mileage: number | null | undefined,
+  ): number | null | undefined {
     if (mileage === undefined) {
       return undefined;
+    }
+
+    if (mileage === null) {
+      return null;
     }
 
     if (!Number.isInteger(mileage) || mileage < 0 || mileage > MAX_MILEAGE) {
@@ -578,13 +590,19 @@ export class WorkOrdersService {
 
   /**
    * Validates and converts money values to Prisma Decimal.
+   *
+   * Undefined means "do not update". Null means "clear value".
    */
   private normalizeMoney(
-    value: number | undefined,
+    value: number | null | undefined,
     fieldName: string,
-  ): Prisma.Decimal | undefined {
+  ): Prisma.Decimal | null | undefined {
     if (value === undefined) {
       return undefined;
+    }
+
+    if (value === null) {
+      return null;
     }
 
     if (!Number.isFinite(value) || value < 0 || value > MAX_MONEY_VALUE) {
@@ -595,7 +613,6 @@ export class WorkOrdersService {
 
     return new Prisma.Decimal(value.toFixed(2));
   }
-
   /**
    * Checks if a Prisma error came from a unique constraint.
    */
