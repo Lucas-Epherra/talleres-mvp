@@ -24,7 +24,7 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
   const { vehicle, customer, currentStatus, summary } = profile;
 
   return (
-    <header className="relative overflow-hidden rounded-3xl border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
+    <header className="relative overflow-hidden rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8">
       <div
         aria-hidden="true"
         className="absolute right-0 top-0 h-56 w-56 translate-x-16 -translate-y-20 rounded-full bg-primary/15 blur-3xl"
@@ -39,15 +39,15 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
             ← Volver a vehículos
           </Link>
 
-          <p className="mt-6 text-[0.68rem] font-bold uppercase tracking-[0.24em] text-primary">
+          <p className="mt-6 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
             Ficha del vehículo
           </p>
 
-          <h1 className="mt-3 wrap-break-word font-display text-4xl font-black italic uppercase tracking-[-0.04em] text-white sm:text-5xl">
+          <h1 className="mt-3 break-words font-display text-4xl font-black italic uppercase tracking-[-0.04em] text-white [overflow-wrap:anywhere] sm:text-5xl">
             {vehicle.licensePlate}
           </h1>
 
-          <p className="mt-3 wrap-break-word text-lg font-semibold text-muted-foreground">
+          <p className="mt-3 break-words text-lg font-semibold text-muted-foreground [overflow-wrap:anywhere]">
             {vehicle.brand} {vehicle.model}
             {vehicle.year ? ` · ${vehicle.year}` : ""}
           </p>
@@ -57,7 +57,7 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
           </p>
         </div>
 
-        <div className="flex flex-col gap-4 lg:min-w-md">
+        <div className="flex flex-col gap-4 lg:min-w-[28rem]">
           <div className="grid gap-3 sm:grid-cols-3">
             <Metric
               label="Estado actual"
@@ -103,7 +103,10 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
           label="Kilometraje"
           value={formatMileage(vehicle.mileage)}
         />
-        <DetailSheetRow label="Notas" value={vehicle.notes ?? "Sin notas"} />
+        <DetailSheetRow
+          label="Notas"
+          value={<BreakableDetailValue value={vehicle.notes ?? "Sin notas"} />}
+        />
       </DetailSheet>
 
       <DetailSheet
@@ -121,13 +124,28 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
         }
       >
         <DetailSheetRow label="Nombre" value={customer.fullName} />
-        <DetailSheetRow label="Teléfono" value={customer.phone} />
-        <DetailSheetRow label="Email" value={customer.email ?? "Sin email"} />
+        <DetailSheetRow
+          label="Teléfono"
+          value={customer.phone ?? "Sin teléfono"}
+        />
+        <DetailSheetRow
+          label="Email"
+          value={
+            <BreakableDetailValue value={customer.email ?? "Sin email"} />
+          }
+        />
         <DetailSheetRow
           label="Dirección"
-          value={customer.address ?? "Sin dirección"}
+          value={
+            <BreakableDetailValue
+              value={customer.address ?? "Sin dirección"}
+            />
+          }
         />
-        <DetailSheetRow label="Notas" value={customer.notes ?? "Sin notas"} />
+        <DetailSheetRow
+          label="Notas"
+          value={<BreakableDetailValue value={customer.notes ?? "Sin notas"} />}
+        />
       </DetailSheet>
     </header>
   );
@@ -149,7 +167,7 @@ function Metric({ label, value, tone = "neutral" }: MetricProps) {
         {label}
       </p>
 
-      <p className="mt-2 wrap-break-word font-display text-xl font-black uppercase tracking-[0.02em] text-white">
+      <p className="mt-2 break-words font-display text-xl font-black uppercase tracking-[0.02em] text-white [overflow-wrap:anywhere]">
         {value}
       </p>
     </article>
@@ -197,4 +215,19 @@ function getMetricClassName(tone: MetricProps["tone"]): string {
   }
 
   return `${baseClassName} border-border bg-background/65`;
+}
+
+type BreakableDetailValueProps = {
+  value: string;
+};
+
+/**
+ * Prevents long vehicle/customer values from overflowing inside detail sheets.
+ */
+function BreakableDetailValue({ value }: BreakableDetailValueProps) {
+  return (
+    <span className="block min-w-0 max-w-full break-words [overflow-wrap:anywhere]">
+      {value}
+    </span>
+  );
 }
