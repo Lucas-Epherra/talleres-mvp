@@ -47,32 +47,36 @@ export default async function WorkOrderDetailPage({
 
   return (
     <section className="space-y-6">
-      <header className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 sm:p-8">
+      <header className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <Link
               href="/work-orders"
-              className="text-sm font-medium text-orange-300 transition hover:text-orange-200"
+              className="text-sm font-bold text-primary transition hover:text-primary-hover"
             >
               ← Volver a órdenes
             </Link>
 
-            <p className="mt-6 text-sm font-semibold uppercase tracking-[0.24em] text-orange-300">
+            <p className="mt-6 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
               Orden #{workOrder.orderNumber}
             </p>
 
-            <h1 className="mt-3 wrap-break-words text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+            <h1 className="mt-3 wrap-break-word font-display text-2xl font-black uppercase tracking-[0.04em] text-white sm:text-3xl">
               {workOrder.reportedIssue}
             </h1>
 
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
               Detalle operativo de la orden, vehículo asociado, cliente,
               costos, kilometraje y estado actual.
             </p>
           </div>
 
           <div className="shrink-0">
-            <span className="inline-flex w-fit rounded-full border border-slate-700 bg-slate-950 px-4 py-2 text-sm font-semibold text-slate-100">
+            <span
+              className={`inline-flex w-fit rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.14em] ${getStatusBadgeClass(
+                workOrder.status,
+              )}`}
+            >
               {formatWorkOrderStatus(workOrder.status)}
             </span>
           </div>
@@ -81,21 +85,21 @@ export default async function WorkOrderDetailPage({
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Link
             href={`/work-orders/${workOrder.id}/edit`}
-            className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400 sm:w-auto"
+            className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover sm:w-auto"
           >
             Editar orden
           </Link>
 
           <Link
             href={`/vehicles/${vehicle.id}`}
-            className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-slate-700 px-5 text-sm font-semibold text-slate-100 transition hover:border-slate-500 hover:bg-slate-900 sm:w-auto"
+            className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
           >
             Ver ficha del vehículo
           </Link>
 
           <Link
             href="/work-orders"
-            className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-slate-700 px-5 text-sm font-semibold text-slate-100 transition hover:border-slate-500 hover:bg-slate-900 sm:w-auto"
+            className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
           >
             Ver todas las órdenes
           </Link>
@@ -185,16 +189,20 @@ export default async function WorkOrderDetailPage({
           {workOrder.status !== "DELIVERED" ? (
             <section
               aria-labelledby="work-order-status-heading"
-              className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6"
+              className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
             >
+              <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+                Flujo operativo
+              </p>
+
               <h2
                 id="work-order-status-heading"
-                className="text-lg font-semibold text-white"
+                className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-white"
               >
                 Actualizar estado
               </h2>
 
-              <p className="mt-2 text-sm leading-6 text-slate-400">
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
                 Cambiá el estado de la orden cuando el trabajo avance dentro del
                 taller.
               </p>
@@ -214,7 +222,7 @@ export default async function WorkOrderDetailPage({
             action={
               <Link
                 href={`/vehicles/${vehicle.id}`}
-                className="text-xs font-semibold uppercase tracking-[0.14em] text-orange-300 transition hover:text-orange-200"
+                className="text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
               >
                 Abrir ficha
               </Link>
@@ -239,7 +247,7 @@ export default async function WorkOrderDetailPage({
             action={
               <Link
                 href={`/customers/${customer.id}`}
-                className="text-xs font-semibold uppercase tracking-[0.14em] text-orange-300 transition hover:text-orange-200"
+                className="text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
               >
                 Ver cliente
               </Link>
@@ -289,4 +297,18 @@ function getReadableText(value: string | null, fallback: string): string {
   }
 
   return value;
+}
+
+/**
+ * Maps work order statuses to the industrial product badge system.
+ */
+function getStatusBadgeClass(status: WorkOrder["status"]): string {
+  const statusClassMap: Record<WorkOrder["status"], string> = {
+    PENDING: "border-border-strong bg-surface-muted text-muted-foreground",
+    IN_PROGRESS: "border-primary/45 bg-primary/10 text-white",
+    READY: "border-warning/45 bg-warning/10 text-warning",
+    DELIVERED: "border-success/35 bg-success/10 text-success",
+  };
+
+  return statusClassMap[status];
 }

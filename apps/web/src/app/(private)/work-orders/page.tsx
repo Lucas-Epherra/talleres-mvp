@@ -57,18 +57,18 @@ export default async function WorkOrdersPage({
 
   return (
     <section className="space-y-6">
-      <div className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 sm:p-8">
+      <div className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-orange-300">
+            <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
               Órdenes
             </p>
 
-            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+            <h1 className="mt-3 font-display text-2xl font-black uppercase tracking-[0.04em] text-white sm:text-3xl">
               Órdenes de trabajo
             </h1>
 
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
               Vista operativa para consultar órdenes por estado, cliente,
               patente, vehículo o diagnóstico.
             </p>
@@ -76,7 +76,7 @@ export default async function WorkOrdersPage({
 
           <Link
             href="/vehicles"
-            className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400 sm:w-auto"
+            className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover sm:w-auto"
           >
             Crear desde vehículo
           </Link>
@@ -153,11 +153,14 @@ type SummaryItemProps = {
  */
 function SummaryItem({ label, value }: SummaryItemProps) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
-      <dt className="text-xs uppercase tracking-[0.14em] text-slate-500">
+    <div className="rounded-2xl border border-border bg-background/55 p-4 ring-1 ring-white/3">
+      <dt className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
         {label}
       </dt>
-      <dd className="mt-2 text-2xl font-semibold text-white">{value}</dd>
+
+      <dd className="mt-2 font-display text-2xl font-black text-white">
+        {value}
+      </dd>
     </div>
   );
 }

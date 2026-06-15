@@ -33,23 +33,23 @@ export default async function NewWorkOrderPage({
 
   if (!vehicleId) {
     return (
-      <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-8">
-        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-orange-300">
+      <section className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
+        <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
           Nueva orden
         </p>
 
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+        <h1 className="mt-3 font-display text-2xl font-black uppercase tracking-[0.04em] text-white sm:text-3xl">
           Falta seleccionar un vehículo
         </h1>
 
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
           Para crear una orden de trabajo en este flujo, primero entrá a la
           ficha de un vehículo y usá la acción “Nueva orden de trabajo”.
         </p>
 
         <Link
           href="/vehicles"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white transition hover:bg-orange-400"
+          className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover"
         >
           Ir a vehículos
         </Link>
@@ -61,23 +61,23 @@ export default async function NewWorkOrderPage({
 
   return (
     <section>
-      <div className="rounded-3xl border border-slate-800 bg-slate-900/70 p-8">
+      <div className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
         <Link
           href={`/vehicles/${vehicleProfile.vehicle.id}`}
-          className="text-sm font-medium text-orange-300 transition hover:text-orange-200"
+          className="text-sm font-bold text-primary transition hover:text-primary-hover"
         >
           ← Volver a la ficha del vehículo
         </Link>
 
-        <p className="mt-6 text-sm font-semibold uppercase tracking-[0.24em] text-orange-300">
+        <p className="mt-6 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
           Nueva orden
         </p>
 
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+        <h1 className="mt-3 font-display text-2xl font-black uppercase tracking-[0.04em] text-white sm:text-3xl">
           Crear orden de trabajo
         </h1>
 
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
           Registrá el problema reportado, kilometraje de ingreso, diagnóstico,
           trabajos, repuestos y costos asociados a este vehículo.
         </p>
