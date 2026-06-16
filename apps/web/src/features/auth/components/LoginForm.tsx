@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { type FormEvent, useId, useState } from "react";
 import { getApiErrorMessage } from "../../../lib/api";
 import { login } from "../auth.client";
 
@@ -20,6 +20,7 @@ type LoginFormState = {
  */
 export function LoginForm() {
   const router = useRouter();
+  const errorId = useId();
 
   const [state, setState] = useState<LoginFormState>({
     status: "idle",
@@ -71,22 +72,20 @@ export function LoginForm() {
       className="w-full space-y-5"
       onSubmit={handleSubmit}
       noValidate
-      aria-describedby={state.message ? "login-error" : undefined}
+      aria-describedby={state.message ? errorId : undefined}
     >
       <div className="space-y-2">
-        <label
-          htmlFor="email"
-          className="block text-sm font-medium text-slate-200"
-        >
+        <label htmlFor="email" className="block text-sm font-bold text-white">
           Email
         </label>
+
         <input
           id="email"
           name="email"
           type="email"
           autoComplete="email"
           placeholder="admin@taller.demo"
-          className="h-11 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20"
+          className="h-12 w-full rounded-xl border border-border-strong bg-background/70 px-4 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
           disabled={isLoading}
           required
         />
@@ -95,31 +94,36 @@ export function LoginForm() {
       <div className="space-y-2">
         <label
           htmlFor="password"
-          className="block text-sm font-medium text-slate-200"
+          className="block text-sm font-bold text-white"
         >
           Contraseña
         </label>
+
         <input
           id="password"
           name="password"
           type="password"
           autoComplete="current-password"
           placeholder="Admin123!"
-          className="h-11 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 text-sm text-slate-100 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20"
+          className="h-12 w-full rounded-xl border border-border-strong bg-background/70 px-4 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
           disabled={isLoading}
           required
         />
       </div>
 
       {state.message ? (
-        <p id="login-error" className="text-sm text-red-300" role="alert">
+        <p
+          id={errorId}
+          className="rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-semibold text-white"
+          role="alert"
+        >
           {state.message}
         </p>
       ) : null}
 
       <button
         type="submit"
-        className="h-11 w-full rounded-xl bg-orange-500 px-4 text-sm font-semibold text-white transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-60"
+        className="h-12 w-full rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         disabled={isLoading}
       >
         {isLoading ? "Ingresando..." : "Ingresar"}
