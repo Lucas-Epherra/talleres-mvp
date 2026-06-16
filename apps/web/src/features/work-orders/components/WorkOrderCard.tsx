@@ -118,7 +118,7 @@ function SummaryContextBox({
         {title}
       </p>
 
-      <p className="mt-1 wrap-anywhere text-sm text-muted-foreground">
+      <p className="mt-2 wrap-anywhere text-sm font-bold text-gray-300">
         {description}
       </p>
     </div>
