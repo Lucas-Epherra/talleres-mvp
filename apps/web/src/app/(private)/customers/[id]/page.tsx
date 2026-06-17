@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EmptyState } from "../../../../components/ui/EmptyState";
+import {
+  DetailSheet,
+  DetailSheetRow,
+} from "../../../../components/ui/DetailSheet";
+import { NotesValue } from "../../../../components/ui/NotesValue";
 import { ApiError } from "../../../../lib/api";
 import { getCustomer } from "../../../../features/customers/customers.server";
 import type { Customer } from "../../../../features/customers/types";
@@ -11,10 +16,6 @@ import type { VehicleListItem } from "../../../../features/vehicles/types";
 import { WorkOrderCard } from "../../../../features/work-orders/components/WorkOrderCard";
 import { getWorkOrders } from "../../../../features/work-orders/work-orders.server";
 import type { WorkOrder } from "../../../../features/work-orders/types";
-import {
-  DetailSheet,
-  DetailSheetRow,
-} from "../../../../components/ui/DetailSheet";
 
 type CustomerDetailPageProps = {
   params: Promise<{
@@ -50,7 +51,7 @@ export default async function CustomerDetailPage({
 
   return (
     <section className="space-y-6 sm:space-y-8">
-      <header className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8">
+      <header className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <Link
@@ -132,13 +133,13 @@ export default async function CustomerDetailPage({
         />
         <DetailSheetRow
           label="Notas"
-          value={<BreakableDetailValue value={customer.notes ?? "Sin notas"} />}
+          value={<NotesValue value={customer.notes} fallback="Sin notas" />}
         />
       </DetailSheet>
 
       <section
         aria-labelledby="customer-summary-heading"
-        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8"
+        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8"
       >
         <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
           Actividad
@@ -347,7 +348,7 @@ type SummaryMetricProps = {
  */
 function SummaryMetric({ label, value }: SummaryMetricProps) {
   return (
-    <div className="rounded-2xl border border-border bg-background/55 p-4 ring-1 ring-white/[0.03]">
+    <div className="rounded-2xl border border-border bg-background/55 p-4 ring-1 ring-white/3">
       <dt className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
         {label}
       </dt>
@@ -402,9 +403,5 @@ type BreakableDetailValueProps = {
  * inside detail sheet cells.
  */
 function BreakableDetailValue({ value }: BreakableDetailValueProps) {
-  return (
-    <span className="block min-w-0 max-w-full wrap-anywhere">
-      {value}
-    </span>
-  );
+  return <span className="block min-w-0 max-w-full wrap-anywhere">{value}</span>;
 }
