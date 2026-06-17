@@ -165,7 +165,7 @@ export class WorkOrdersService {
         'Trabajo realizado',
         1000,
       ),
-      partsUsed: this.normalizeNullableText(
+      partsUsed: this.normalizeNullableMultilineText(
         dto.partsUsed,
         'Repuestos usados',
         2000,
@@ -175,7 +175,7 @@ export class WorkOrdersService {
       partsCost: this.normalizeMoney(dto.partsCost, 'Repuestos'),
       estimatedTotal: this.normalizeMoney(dto.estimatedTotal, 'Total estimado'),
       finalTotal: this.normalizeMoney(dto.finalTotal, 'Total final'),
-      notes: this.normalizeNullableText(dto.notes, 'Notas', 800),
+      notes: this.normalizeNullableMultilineText(dto.notes, 'Notas', 800),
     };
 
     for (let attempt = 1; attempt <= CREATE_ORDER_MAX_ATTEMPTS; attempt += 1) {
@@ -273,7 +273,7 @@ export class WorkOrdersService {
             'Trabajo realizado',
             1000,
           ),
-          partsUsed: this.normalizeOptionalNullableText(
+          partsUsed: this.normalizeOptionalNullableMultilineText(
             dto.partsUsed,
             'Repuestos usados',
             2000,
@@ -288,7 +288,11 @@ export class WorkOrdersService {
           finalTotal: this.normalizeMoney(dto.finalTotal, 'Total final'),
           status: nextStatus,
           deliveryDate,
-          notes: this.normalizeOptionalNullableText(dto.notes, 'Notas', 800),
+          notes: this.normalizeOptionalNullableMultilineText(
+            dto.notes,
+            'Notas',
+            800,
+          ),
         },
         include: this.getDefaultInclude(),
       });
@@ -514,10 +518,13 @@ export class WorkOrdersService {
   }
 
   /**
-   * Normalizes optional nullable text on create operations.
+   * Normalizes nullable text on create operations.
+   *
+   * Empty strings are stored as null. Internal whitespace is collapsed because
+   * these fields are plain single-value text fields.
    */
   private normalizeNullableText(
-    value: string | undefined,
+    value: string | null | undefined,
     fieldName: string,
     maxLength: number,
   ): string | null {
@@ -534,6 +541,7 @@ export class WorkOrdersService {
    * Normalizes optional nullable text on update operations.
    *
    * Undefined means "do not update". Null or empty string means "clear value".
+   * Internal whitespace is collapsed because these fields are plain text fields.
    */
   private normalizeOptionalNullableText(
     value: string | null | undefined,
@@ -553,6 +561,65 @@ export class WorkOrdersService {
     if (!normalizedValue) {
       return null;
     }
+
+    if (normalizedValue.length > maxLength) {
+      throw new BadRequestException(
+        `${fieldName} no puede superar ${maxLength} caracteres.`,
+      );
+    }
+
+    return normalizedValue;
+  }
+
+  /**
+   * Normalizes nullable multiline text on create operations.
+   *
+   * It preserves line breaks because parts and notes are serialized as one item
+   * per line by the frontend forms.
+   */
+  private normalizeNullableMultilineText(
+    value: string | null | undefined,
+    fieldName: string,
+    maxLength: number,
+  ): string | null {
+    const normalizedValue = this.normalizeOptionalNullableMultilineText(
+      value,
+      fieldName,
+      maxLength,
+    );
+
+    return normalizedValue ?? null;
+  }
+
+  /**
+   * Normalizes optional nullable multiline text on update operations.
+   *
+   * Undefined means "do not update". Null or blank means "clear value".
+   * Line breaks are preserved so structured text fields keep one item per row.
+   */
+  private normalizeOptionalNullableMultilineText(
+    value: string | null | undefined,
+    fieldName: string,
+    maxLength: number,
+  ): string | null | undefined {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    if (value === null) {
+      return null;
+    }
+
+    const normalizedLines = value
+      .split(/\r?\n/u)
+      .map((line) => line.trim().replace(/[ \t]+/g, ' '))
+      .filter(Boolean);
+
+    if (normalizedLines.length === 0) {
+      return null;
+    }
+
+    const normalizedValue = normalizedLines.join('\n');
 
     if (normalizedValue.length > maxLength) {
       throw new BadRequestException(
@@ -613,6 +680,7 @@ export class WorkOrdersService {
 
     return new Prisma.Decimal(value.toFixed(2));
   }
+
   /**
    * Checks if a Prisma error came from a unique constraint.
    */
