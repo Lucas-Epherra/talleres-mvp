@@ -29,24 +29,24 @@ export function SearchForm({
 }: SearchFormProps) {
   return (
     <form
-      className="mt-6 rounded-[1.35rem] border border-border bg-surface/80 p-4 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03]"
+      className="mt-5 rounded-[1.1rem] border border-border bg-surface/80 p-3 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:mt-6 sm:rounded-[1.35rem] sm:p-4"
       role="search"
     >
       <label
         htmlFor={id}
-        className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-muted-foreground"
+        className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary sm:text-muted-foreground"
       >
         {label}
       </label>
 
-      <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+      <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
         <input
           id={id}
           name="search"
           type="search"
           defaultValue={defaultValue}
           placeholder={placeholder}
-          className="h-12 min-h-12 w-full min-w-0 flex-1 appearance-none rounded-xl border border-border-strong bg-background/70 px-4 py-3 text-sm leading-5 text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20"
+          className="h-12 min-h-12 w-full min-w-0 appearance-none rounded-xl border border-border-strong bg-background/70 px-4 py-3 text-sm leading-5 text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
 
         <button

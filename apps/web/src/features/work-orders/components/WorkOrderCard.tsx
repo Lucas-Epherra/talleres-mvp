@@ -18,7 +18,7 @@ export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
   const customer = vehicle.customer;
 
   return (
-    <article className="rounded-[1.35rem] border border-border bg-surface/80 p-5 shadow-[var(--shadow-industrial)]-1 ring-white/[0.03] transition hover:border-primary/40 sm:p-6">
+    <article className="rounded-[1.1rem] border border-border bg-surface/80 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 transition hover:border-primary/40 sm:rounded-[1.35rem] sm:p-6">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-stretch lg:justify-between">
         <div className="min-w-0 flex-1">
           <div className="grid gap-3 md:grid-cols-2">
@@ -35,14 +35,14 @@ export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
             />
           </div>
 
-          <header className="mt-5 border-t border-border pt-4">
+          <header className="mt-4 border-t border-border pt-4 sm:mt-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
                   Orden #{workOrder.orderNumber}
                 </p>
 
-                <h2 className="mt-2 wrap-anywhere font-display text-xl font-black uppercase tracking-[0.04em] text-white">
+                <h2 className="mt-2 wrap-anywhere font-display text-lg font-black uppercase tracking-[0.04em] text-white sm:text-xl">
                   {workOrder.reportedIssue}
                 </h2>
               </div>
@@ -59,7 +59,7 @@ export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
         </div>
 
         <aside className="w-full shrink-0 lg:w-48">
-          <div className="flex h-full flex-col gap-3 lg:border-l lg:border-border lg:pl-5">
+          <div className="grid gap-2 sm:grid-cols-2 lg:flex lg:h-full lg:flex-col lg:gap-3 lg:border-l lg:border-border lg:pl-5">
             <Link
               href={`/work-orders/${workOrder.id}`}
               className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover"
@@ -109,16 +109,16 @@ function SummaryContextBox({
   description,
 }: SummaryContextBoxProps) {
   return (
-    <div className="rounded-xl border border-border bg-background/55 p-4 ring-1 ring-white/[0.03]">
+    <div className="rounded-xl border border-border bg-background/55 p-3 ring-1 ring-white/3 sm:p-4">
       <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
         {label}
       </p>
 
-      <p className="mt-2 wrap-anywhere text-sm font-bold text-white">
+      <p className="mt-2 wrap-anywhere text-sm font-black text-white sm:text-base">
         {title}
       </p>
 
-      <p className="mt-2 wrap-anywhere text-sm font-bold text-gray-300">
+      <p className="mt-1 wrap-anywhere text-sm font-bold text-white/85 sm:text-base">
         {description}
       </p>
     </div>
