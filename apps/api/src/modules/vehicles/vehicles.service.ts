@@ -258,7 +258,7 @@ export class VehiclesService {
           model: this.normalizeRequiredText(dto.model, 'Modelo'),
           year: this.normalizeYear(dto.year),
           mileage: this.normalizeMileage(dto.mileage),
-          notes: this.normalizeNullableText(dto.notes, 'Notas'),
+          notes: this.normalizeNullableMultilineText(dto.notes, 'Notas'),
         },
         include: {
           customer: {
@@ -318,7 +318,10 @@ export class VehiclesService {
               : undefined,
           year: this.normalizeYear(dto.year),
           mileage: this.normalizeMileage(dto.mileage),
-          notes: this.normalizeOptionalNullableText(dto.notes, 'Notas'),
+          notes: this.normalizeOptionalNullableMultilineText(
+            dto.notes,
+            'Notas',
+          ),
         },
         include: {
           customer: {
@@ -459,13 +462,16 @@ export class VehiclesService {
   }
 
   /**
-   * Normalizes optional nullable text on create operations.
+   * Normalizes nullable multiline text on create operations.
+   *
+   * It preserves line breaks because vehicle notes are stored as one item per
+   * line by the shared NotesEditor component.
    */
-  private normalizeNullableText(
-    value: string | undefined,
+  private normalizeNullableMultilineText(
+    value: string | null | undefined,
     fieldName: string,
   ): string | null {
-    const normalizedValue = this.normalizeOptionalNullableText(
+    const normalizedValue = this.normalizeOptionalNullableMultilineText(
       value,
       fieldName,
     );
@@ -474,23 +480,33 @@ export class VehiclesService {
   }
 
   /**
-   * Normalizes optional nullable text on update operations.
+   * Normalizes optional nullable multiline text on update operations.
    *
-   * Undefined means "do not update". Empty string means "clear value".
+   * Undefined means "do not update". Null or blank means "clear value".
+   * Line breaks are preserved so structured notes keep one item per row.
    */
-  private normalizeOptionalNullableText(
-    value: string | undefined,
+  private normalizeOptionalNullableMultilineText(
+    value: string | null | undefined,
     fieldName: string,
   ): string | null | undefined {
     if (value === undefined) {
       return undefined;
     }
 
-    const normalizedValue = value.trim().replace(/\s+/g, ' ');
-
-    if (!normalizedValue) {
+    if (value === null) {
       return null;
     }
+
+    const normalizedLines = value
+      .split(/\r?\n/u)
+      .map((line) => line.trim().replace(/[ \t]+/g, ' '))
+      .filter(Boolean);
+
+    if (normalizedLines.length === 0) {
+      return null;
+    }
+
+    const normalizedValue = normalizedLines.join('\n');
 
     if (normalizedValue.length > MAX_NOTES_LENGTH) {
       throw new BadRequestException(

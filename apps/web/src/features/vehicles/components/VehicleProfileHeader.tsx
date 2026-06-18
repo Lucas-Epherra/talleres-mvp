@@ -1,13 +1,14 @@
 import Link from "next/link";
 import {
+  DetailSheet,
+  DetailSheetRow,
+} from "../../../components/ui/DetailSheet";
+import { NotesValue } from "../../../components/ui/NotesValue";
+import {
   formatMileage,
   formatWorkOrderStatus,
   type WorkOrderStatus,
 } from "../../../lib/format";
-import {
-  DetailSheet,
-  DetailSheetRow,
-} from "../../../components/ui/DetailSheet";
 import type { VehicleProfile } from "../types";
 
 type VehicleProfileHeaderProps = {
@@ -24,7 +25,7 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
   const { vehicle, customer, currentStatus, summary } = profile;
 
   return (
-    <header className="relative overflow-hidden rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8">
+    <header className="relative overflow-hidden rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
       <div
         aria-hidden="true"
         className="absolute right-0 top-0 h-56 w-56 translate-x-16 -translate-y-20 rounded-full bg-primary/15 blur-3xl"
@@ -105,7 +106,9 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
         />
         <DetailSheetRow
           label="Notas"
-          value={<BreakableDetailValue value={vehicle.notes ?? "Sin notas"} />}
+          value={
+            <NotesValue value={vehicle.notes} fallback="Sin notas del vehículo" />
+          }
         />
       </DetailSheet>
 
@@ -144,7 +147,7 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
         />
         <DetailSheetRow
           label="Notas"
-          value={<BreakableDetailValue value={customer.notes ?? "Sin notas"} />}
+          value={<NotesValue value={customer.notes} fallback="Sin notas" />}
         />
       </DetailSheet>
     </header>
@@ -225,9 +228,5 @@ type BreakableDetailValueProps = {
  * Prevents long vehicle/customer values from overflowing inside detail sheets.
  */
 function BreakableDetailValue({ value }: BreakableDetailValueProps) {
-  return (
-    <span className="block min-w-0 max-w-full wrap-anywhere">
-      {value}
-    </span>
-  );
+  return <span className="block min-w-0 max-w-full wrap-anywhere">{value}</span>;
 }

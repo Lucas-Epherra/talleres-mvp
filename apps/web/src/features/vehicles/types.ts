@@ -41,7 +41,7 @@ export type UpdateVehicleInput = {
   model?: string;
   year?: number;
   mileage?: number;
-  notes?: string;
+  notes?: string | null;
 };
 
 export type VehicleProfileCustomer = VehicleCustomer & {

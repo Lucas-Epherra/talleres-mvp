@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, type ReactNode, useId, useState } from "react";
+import { NotesEditor } from "../../../components/ui/NotesEditor";
 import { getApiErrorMessage } from "../../../lib/api";
 import { updateVehicle } from "../vehicles.client";
 import type { UpdateVehicleInput, VehicleProfile } from "../types";
@@ -68,7 +69,7 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
       model: data.model,
       year: data.year ?? undefined,
       mileage: data.mileage ?? undefined,
-      notes: data.notes ?? "",
+      notes: data.notes,
     };
 
     try {
@@ -91,14 +92,14 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
 
   return (
     <form
-      className="space-y-8"
+      className="space-y-6 sm:space-y-8"
       onSubmit={handleSubmit}
       noValidate
       aria-describedby={state.message ? errorId : undefined}
     >
       <section
         aria-labelledby="edit-vehicle-context-heading"
-        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8"
+        className="rounded-[1.1rem] border border-border bg-surface/85 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-8"
       >
         <div className="border-b border-border pb-5">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
@@ -128,7 +129,7 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
 
       <section
         aria-labelledby="edit-vehicle-data-heading"
-        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8"
+        className="rounded-[1.1rem] border border-border bg-surface/85 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-8"
       >
         <div className="border-b border-border pb-5">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
@@ -224,20 +225,16 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
           </Field>
         </div>
 
-        <Field className="mt-5">
-          <Label htmlFor="notes">Notas del vehículo</Label>
-
-          <textarea
-            id="notes"
+        <div className="mt-5">
+          <NotesEditor
             name="notes"
-            rows={4}
-            placeholder="Estado general, detalles conocidos, observaciones..."
-            defaultValue={vehicle.notes ?? ""}
+            label="Notas del vehículo"
+            defaultValue={vehicle.notes}
             disabled={isLoading}
             maxLength={800}
-            className="w-full rounded-xl border border-border-strong bg-background/70 px-4 py-3 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+            placeholder="Ej: Tiene un golpe leve en la puerta derecha."
           />
-        </Field>
+        </div>
       </section>
 
       {state.message ? (
@@ -250,21 +247,21 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
         </p>
       ) : null}
 
-      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-        <Link
-          href={`/vehicles/${vehicle.id}`}
-          className="inline-flex h-11 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated"
-        >
-          Cancelar
-        </Link>
-
+      <div className="grid gap-3 sm:flex sm:flex-row-reverse sm:justify-start">
         <button
           type="submit"
           disabled={isLoading}
-          className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-12 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 sm:h-11"
         >
           {isLoading ? "Guardando cambios..." : "Guardar cambios"}
         </button>
+
+        <Link
+          href={`/vehicles/${vehicle.id}`}
+          className="inline-flex h-12 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated sm:h-11"
+        >
+          Cancelar
+        </Link>
       </div>
     </form>
   );
@@ -318,10 +315,7 @@ type LabelProps = {
  */
 function Label({ htmlFor, children }: LabelProps) {
   return (
-    <label
-      htmlFor={htmlFor}
-      className="block text-sm font-bold text-white"
-    >
+    <label htmlFor={htmlFor} className="block text-sm font-bold text-white">
       {children}
     </label>
   );
