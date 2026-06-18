@@ -16,14 +16,14 @@ export type DashboardVehicle = {
   customer: DashboardVehicleCustomer;
 };
 
-export type DashboardLatestWorkOrder = {
+export type DashboardWorkOrder = {
   id: string;
   orderNumber: number;
   reportedIssue: string;
   status: WorkOrderStatus;
   entryMileage: number | null;
-  estimatedTotal: number | null;
-  finalTotal: number | null;
+  estimatedTotal: number | string | null;
+  finalTotal: number | string | null;
   entryDate: string;
   deliveryDate: string | null;
   createdAt: string;
@@ -44,5 +44,6 @@ export type DashboardSummary = {
     delivered: number;
     active: number;
   };
-  latestWorkOrders: DashboardLatestWorkOrder[];
+  attentionWorkOrders: DashboardWorkOrder[];
+  latestWorkOrders: DashboardWorkOrder[];
 };

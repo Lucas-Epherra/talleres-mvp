@@ -22,6 +22,7 @@ export class DashboardService {
       totalWorkOrders,
       activeVehicles,
       statusGroups,
+      attentionWorkOrders,
       latestWorkOrders,
     ] = await Promise.all([
       this.prisma.customer.count({
@@ -67,40 +68,34 @@ export class DashboardService {
       this.prisma.workOrder.findMany({
         where: {
           workshopId,
+          status: {
+            in: [
+              WorkOrderStatus.READY,
+              WorkOrderStatus.IN_PROGRESS,
+              WorkOrderStatus.PENDING,
+            ],
+          },
+        },
+        orderBy: [
+          {
+            status: 'desc',
+          },
+          {
+            createdAt: 'desc',
+          },
+        ],
+        take: 6,
+        select: this.getDashboardWorkOrderSelect(),
+      }),
+      this.prisma.workOrder.findMany({
+        where: {
+          workshopId,
         },
         orderBy: {
           createdAt: 'desc',
         },
         take: 6,
-        select: {
-          id: true,
-          orderNumber: true,
-          reportedIssue: true,
-          status: true,
-          entryMileage: true,
-          estimatedTotal: true,
-          finalTotal: true,
-          entryDate: true,
-          deliveryDate: true,
-          createdAt: true,
-          vehicle: {
-            select: {
-              id: true,
-              licensePlate: true,
-              brand: true,
-              model: true,
-              year: true,
-              mileage: true,
-              customer: {
-                select: {
-                  id: true,
-                  fullName: true,
-                  phone: true,
-                },
-              },
-            },
-          },
-        },
+        select: this.getDashboardWorkOrderSelect(),
       }),
     ]);
 
@@ -121,7 +116,43 @@ export class DashboardService {
         active:
           statusCounts.PENDING + statusCounts.IN_PROGRESS + statusCounts.READY,
       },
+      attentionWorkOrders,
       latestWorkOrders,
+    };
+  }
+
+  /**
+   * Returns the shared select shape for dashboard work order previews.
+   */
+  private getDashboardWorkOrderSelect() {
+    return {
+      id: true,
+      orderNumber: true,
+      reportedIssue: true,
+      status: true,
+      entryMileage: true,
+      estimatedTotal: true,
+      finalTotal: true,
+      entryDate: true,
+      deliveryDate: true,
+      createdAt: true,
+      vehicle: {
+        select: {
+          id: true,
+          licensePlate: true,
+          brand: true,
+          model: true,
+          year: true,
+          mileage: true,
+          customer: {
+            select: {
+              id: true,
+              fullName: true,
+              phone: true,
+            },
+          },
+        },
+      },
     };
   }
 
