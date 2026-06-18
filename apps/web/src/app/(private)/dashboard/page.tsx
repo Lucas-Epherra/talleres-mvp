@@ -25,7 +25,7 @@ export default async function DashboardPage() {
 
   return (
     <section className="space-y-6 sm:space-y-8">
-      <header className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
+      <header className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8">
         <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
           Resumen operativo
         </p>
@@ -125,7 +125,7 @@ export default async function DashboardPage() {
 
       <section
         aria-labelledby="latest-work-orders-heading"
-        className="overflow-hidden rounded-[1.35rem] border border-border bg-surface/85 shadow-(--shadow-industrial) ring-1 ring-white/3"
+        className="overflow-hidden rounded-[1.35rem] border border-border bg-surface/85 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03]"
       >
         <div className="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div>
@@ -200,7 +200,7 @@ export default async function DashboardPage() {
                           #{workOrder.orderNumber}
                         </p>
 
-                        <p className="mt-1 max-w-xs wrap-break-word text-sm leading-6 text-muted-foreground">
+                        <p className="mt-1 max-w-xs wrap-anywhere text-sm leading-6 text-muted-foreground">
                           {workOrder.reportedIssue}
                         </p>
                       </td>
@@ -210,7 +210,7 @@ export default async function DashboardPage() {
                           {workOrder.vehicle.licensePlate}
                         </p>
 
-                        <p className="mt-1 wrap-break-word text-sm text-muted-foreground">
+                        <p className="mt-1 wrap-anywhere text-sm text-muted-foreground">
                           {workOrder.vehicle.brand} {workOrder.vehicle.model}
                         </p>
 
@@ -220,7 +220,7 @@ export default async function DashboardPage() {
                       </td>
 
                       <td className="px-6 py-5">
-                        <p className="wrap-break-word text-sm font-bold text-white">
+                        <p className="wrap-anywhere text-sm font-bold text-white">
                           {workOrder.vehicle.customer.fullName}
                         </p>
 
@@ -390,7 +390,7 @@ type LatestWorkOrderCardProps = {
  */
 function LatestWorkOrderCard({ workOrder }: LatestWorkOrderCardProps) {
   return (
-    <article className="rounded-2xl border border-border bg-background/55 p-5 ring-1 ring-white/3">
+    <article className="rounded-2xl border border-border bg-background/55 p-5 ring-1 ring-white/[0.03]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <p className="text-sm font-bold text-primary">
@@ -450,12 +450,12 @@ type SmallDetailProps = {
  */
 function SmallDetail({ label, value }: SmallDetailProps) {
   return (
-    <div className="rounded-xl border border-border bg-surface/70 p-3 ring-1 ring-white/3">
+    <div className="rounded-xl border border-border bg-surface/70 p-3 ring-1 ring-white/[0.03]">
       <p className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-primary">
         {label}
       </p>
 
-      <p className="mt-2 wrap-break-word text-sm font-bold text-white">
+      <p className="mt-2 wrap-anywhere text-sm font-bold text-white">
         {value}
       </p>
     </div>

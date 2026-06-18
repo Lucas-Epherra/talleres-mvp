@@ -21,26 +21,26 @@ export function CustomerCard({ customer, vehicles }: CustomerCardProps) {
   const hiddenVehiclesCount = Math.max(vehicles.length - MAX_VISIBLE_VEHICLES, 0);
 
   return (
-    <article className="rounded-[1.35rem] border border-border bg-surface/80 p-5 shadow-(--shadow-industrial) ring-1 ring-white/3 transition hover:border-primary/45 hover:bg-surface sm:p-6">
+    <article className="rounded-[1.1rem] border border-border bg-surface/80 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 transition hover:border-primary/45 hover:bg-surface sm:rounded-[1.35rem] sm:p-6">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-stretch lg:justify-between">
         <div className="min-w-0 flex-1">
-          <header className="flex flex-col gap-5 border-b border-border pb-5 md:flex-row md:items-start md:justify-between">
+          <header className="flex flex-col gap-4 border-b border-border pb-4 md:flex-row md:items-start md:justify-between md:pb-5">
             <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+              <p className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-primary">
                 Cliente
               </p>
 
-              <h2 className="mt-2 wrap-break-word font-display text-2xl font-black uppercase tracking-[0.02em] text-white">
+              <h2 className="mt-2 wrap-anywhere font-display text-xl font-black uppercase tracking-[0.02em] text-white sm:text-2xl">
                 {customer.fullName}
               </h2>
             </div>
 
             <div className="min-w-0 md:max-w-xs md:text-right">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="text-[0.68rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                 Teléfono
               </p>
 
-              <p className="mt-2 wrap-break-word text-xl font-bold text-white sm:text-2xl">
+              <p className="mt-2 wrap-anywhere text-lg font-black text-white sm:text-2xl">
                 {customer.phone}
               </p>
             </div>
@@ -48,14 +48,14 @@ export function CustomerCard({ customer, vehicles }: CustomerCardProps) {
 
           <section
             aria-labelledby={`customer-vehicles-preview-${customer.id}`}
-            className="mt-4 h-12 overflow-hidden"
+            className="mt-4 min-h-12 overflow-hidden"
           >
             <h3 id={`customer-vehicles-preview-${customer.id}`} className="sr-only">
               Vehículos asociados
             </h3>
 
             {vehicles.length > 0 ? (
-              <div className="flex h-full flex-wrap items-center gap-2 overflow-hidden">
+              <div className="flex flex-wrap items-center gap-2 overflow-hidden">
                 {visibleVehicles.map((vehicle) => (
                   <Link
                     key={vehicle.id}
@@ -78,7 +78,7 @@ export function CustomerCard({ customer, vehicles }: CustomerCardProps) {
                 ) : null}
               </div>
             ) : (
-              <p className="flex h-full items-center text-sm text-muted-foreground">
+              <p className="flex min-h-10 items-center text-sm text-muted-foreground">
                 Sin vehículos asociados
               </p>
             )}
@@ -86,7 +86,7 @@ export function CustomerCard({ customer, vehicles }: CustomerCardProps) {
         </div>
 
         <aside className="w-full shrink-0 lg:w-56">
-          <div className="flex h-full flex-col gap-3 lg:justify-center lg:border-l lg:border-border lg:pl-5">
+          <div className="grid gap-2 sm:grid-cols-3 lg:flex lg:h-full lg:flex-col lg:justify-center lg:gap-3 lg:border-l lg:border-border lg:pl-5">
             <Link
               href={`/customers/${customer.id}`}
               className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover"

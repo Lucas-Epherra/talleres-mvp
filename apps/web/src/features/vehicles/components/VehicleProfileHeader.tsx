@@ -1,13 +1,14 @@
 import Link from "next/link";
 import {
+  DetailSheet,
+  DetailSheetRow,
+} from "../../../components/ui/DetailSheet";
+import { NotesValue } from "../../../components/ui/NotesValue";
+import {
   formatMileage,
   formatWorkOrderStatus,
   type WorkOrderStatus,
 } from "../../../lib/format";
-import {
-  DetailSheet,
-  DetailSheetRow,
-} from "../../../components/ui/DetailSheet";
 import type { VehicleProfile } from "../types";
 
 type VehicleProfileHeaderProps = {
@@ -43,11 +44,11 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
             Ficha del vehículo
           </p>
 
-          <h1 className="mt-3 wrap-break-word font-display text-4xl font-black italic uppercase tracking-[-0.04em] text-white sm:text-5xl">
+          <h1 className="mt-3 wrap-anywhere font-display text-4xl font-black italic uppercase tracking-[-0.04em] text-white sm:text-5xl">
             {vehicle.licensePlate}
           </h1>
 
-          <p className="mt-3 wrap-break-word text-lg font-semibold text-muted-foreground">
+          <p className="mt-3 wrap-anywhere text-lg font-semibold text-muted-foreground">
             {vehicle.brand} {vehicle.model}
             {vehicle.year ? ` · ${vehicle.year}` : ""}
           </p>
@@ -105,7 +106,9 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
         />
         <DetailSheetRow
           label="Notas"
-          value={<BreakableDetailValue value={vehicle.notes ?? "Sin notas"} />}
+          value={
+            <NotesValue value={vehicle.notes} fallback="Sin notas del vehículo" />
+          }
         />
       </DetailSheet>
 
@@ -144,7 +147,7 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
         />
         <DetailSheetRow
           label="Notas"
-          value={<BreakableDetailValue value={customer.notes ?? "Sin notas"} />}
+          value={<NotesValue value={customer.notes} fallback="Sin notas" />}
         />
       </DetailSheet>
     </header>
@@ -167,7 +170,7 @@ function Metric({ label, value, tone = "neutral" }: MetricProps) {
         {label}
       </p>
 
-      <p className="mt-2 wrap-break-word font-display text-xl font-black uppercase tracking-[0.02em] text-white">
+      <p className="mt-2 wrap-anywhere font-display text-xl font-black uppercase tracking-[0.02em] text-white">
         {value}
       </p>
     </article>
@@ -225,9 +228,5 @@ type BreakableDetailValueProps = {
  * Prevents long vehicle/customer values from overflowing inside detail sheets.
  */
 function BreakableDetailValue({ value }: BreakableDetailValueProps) {
-  return (
-    <span className="block min-w-0 max-w-full wrap-break-word">
-      {value}
-    </span>
-  );
+  return <span className="block min-w-0 max-w-full wrap-anywhere">{value}</span>;
 }

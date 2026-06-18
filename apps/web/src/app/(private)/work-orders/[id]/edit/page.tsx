@@ -30,7 +30,7 @@ export default async function EditWorkOrderPage({
 
   return (
     <section className="space-y-6">
-      <header className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
+      <header className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8">
         <div className="max-w-3xl">
           <Link
             href={`/work-orders/${workOrder.id}`}

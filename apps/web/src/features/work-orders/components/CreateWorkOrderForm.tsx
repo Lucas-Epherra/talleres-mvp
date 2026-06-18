@@ -120,7 +120,7 @@ export function CreateWorkOrderForm({ vehicle }: CreateWorkOrderFormProps) {
 
   return (
     <form
-      className="mt-8 space-y-8"
+      className="mt-6 space-y-5 sm:mt-8 sm:space-y-8"
       onSubmit={handleSubmit}
       aria-describedby={errorMessage ? errorId : undefined}
       noValidate
@@ -137,7 +137,7 @@ export function CreateWorkOrderForm({ vehicle }: CreateWorkOrderFormProps) {
 
       <section
         aria-labelledby="selected-vehicle-heading"
-        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
+        className="rounded-[1.1rem] border border-border bg-surface/85 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-6"
       >
         <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
           Nueva orden
@@ -145,7 +145,7 @@ export function CreateWorkOrderForm({ vehicle }: CreateWorkOrderFormProps) {
 
         <h2
           id="selected-vehicle-heading"
-          className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-white"
+          className="mt-2 font-display text-lg font-black uppercase tracking-[0.04em] text-white sm:text-xl"
         >
           Vehículo seleccionado
         </h2>
@@ -155,7 +155,7 @@ export function CreateWorkOrderForm({ vehicle }: CreateWorkOrderFormProps) {
           iniciaste la orden.
         </p>
 
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
+        <div className="mt-5 grid gap-3 sm:gap-4 md:grid-cols-2">
           <ReadOnlyDetail label="Patente" value={vehicle.licensePlate} />
 
           <ReadOnlyDetail
@@ -174,7 +174,7 @@ export function CreateWorkOrderForm({ vehicle }: CreateWorkOrderFormProps) {
 
       <section
         aria-labelledby="work-order-details-heading"
-        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
+        className="rounded-[1.1rem] border border-border bg-surface/85 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-6"
       >
         <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
           Diagnóstico inicial
@@ -182,12 +182,12 @@ export function CreateWorkOrderForm({ vehicle }: CreateWorkOrderFormProps) {
 
         <h2
           id="work-order-details-heading"
-          className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-white"
+          className="mt-2 font-display text-lg font-black uppercase tracking-[0.04em] text-white sm:text-xl"
         >
           Datos de la orden
         </h2>
 
-        <div className="mt-6 grid gap-5">
+        <div className="mt-5 grid gap-5 sm:mt-6">
           <div>
             <label
               htmlFor="reportedIssue"
@@ -264,7 +264,7 @@ export function CreateWorkOrderForm({ vehicle }: CreateWorkOrderFormProps) {
 
       <section
         aria-labelledby="work-order-costs-heading"
-        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
+        className="rounded-[1.1rem] border border-border bg-surface/85 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-6"
       >
         <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
           Presupuesto
@@ -272,12 +272,12 @@ export function CreateWorkOrderForm({ vehicle }: CreateWorkOrderFormProps) {
 
         <h2
           id="work-order-costs-heading"
-          className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-white"
+          className="mt-2 font-display text-lg font-black uppercase tracking-[0.04em] text-white sm:text-xl"
         >
           Costos
         </h2>
 
-        <div className="mt-6 grid gap-5 md:grid-cols-3">
+        <div className="mt-5 grid gap-3 sm:mt-6 sm:gap-5 md:grid-cols-3">
           <MoneyInput
             id="laborCost"
             label="Costo mano de obra"
@@ -294,21 +294,21 @@ export function CreateWorkOrderForm({ vehicle }: CreateWorkOrderFormProps) {
 
       <WorkOrderNotesEditor notes={notes} onChange={setNotes} />
 
-      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-        <button
-          type="button"
-          onClick={() => router.push(`/vehicles/${vehicleId}`)}
-          className="inline-flex h-11 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated"
-        >
-          Cancelar
-        </button>
-
+      <div className="grid gap-3 sm:flex sm:flex-row-reverse sm:justify-start">
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-12 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 sm:h-11"
         >
           {isSubmitting ? "Creando orden..." : "Crear orden de trabajo"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => router.push(`/vehicles/${vehicleId}`)}
+          className="inline-flex h-12 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated sm:h-11"
+        >
+          Cancelar
         </button>
       </div>
     </form>
@@ -326,12 +326,12 @@ type ReadOnlyDetailProps = {
  */
 function ReadOnlyDetail({ label, value }: ReadOnlyDetailProps) {
   return (
-    <div className="rounded-2xl border border-border bg-background/55 p-4 ring-1 ring-white/3">
+    <div className="rounded-2xl border border-border bg-background/55 p-3 ring-1 ring-white/3 sm:p-4">
       <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
         {label}
       </p>
 
-      <p className="mt-2 wrap-break-word text-sm font-bold text-white">
+      <p className="mt-2 wrap-anywhere text-sm font-bold text-white">
         {value}
       </p>
     </div>
@@ -360,7 +360,7 @@ function MoneyInput({
   placeholder,
 }: MoneyInputProps) {
   return (
-    <div className="rounded-2xl border border-border bg-background/55 p-4 ring-1 ring-white/3">
+    <div className="rounded-2xl border border-border bg-background/55 p-3 ring-1 ring-white/3 sm:p-4">
       <label
         htmlFor={id}
         className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary"
@@ -377,7 +377,7 @@ function MoneyInput({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="mt-3 h-10 w-full rounded-xl border border-border-strong bg-background/70 px-3 text-sm font-bold text-white outline-none transition placeholder:font-normal placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20"
+        className="mt-3 h-12 w-full rounded-xl border border-border-strong bg-background/70 px-3 text-sm font-bold text-white outline-none transition placeholder:font-normal placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 sm:h-10"
       />
     </div>
   );
@@ -393,7 +393,7 @@ type ReadOnlyMoneyProps = {
  */
 function ReadOnlyMoney({ label, value }: ReadOnlyMoneyProps) {
   return (
-    <div className="rounded-2xl border border-border bg-background/55 p-4 ring-1 ring-white/3">
+    <div className="rounded-2xl border border-border bg-background/55 p-3 ring-1 ring-white/3 sm:p-4">
       <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
         {label}
       </p>

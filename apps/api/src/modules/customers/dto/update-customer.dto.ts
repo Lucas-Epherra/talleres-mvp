@@ -44,5 +44,5 @@ export class UpdateCustomerDto {
   @IsOptional()
   @IsString()
   @MaxLength(800)
-  notes?: string;
+  notes?: string | null;
 }

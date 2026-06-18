@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EmptyState } from "../../../../components/ui/EmptyState";
+import {
+  DetailSheet,
+  DetailSheetRow,
+} from "../../../../components/ui/DetailSheet";
+import { NotesValue } from "../../../../components/ui/NotesValue";
 import { ApiError } from "../../../../lib/api";
 import { getCustomer } from "../../../../features/customers/customers.server";
 import type { Customer } from "../../../../features/customers/types";
@@ -11,10 +16,6 @@ import type { VehicleListItem } from "../../../../features/vehicles/types";
 import { WorkOrderCard } from "../../../../features/work-orders/components/WorkOrderCard";
 import { getWorkOrders } from "../../../../features/work-orders/work-orders.server";
 import type { WorkOrder } from "../../../../features/work-orders/types";
-import {
-  DetailSheet,
-  DetailSheetRow,
-} from "../../../../components/ui/DetailSheet";
 
 type CustomerDetailPageProps = {
   params: Promise<{
@@ -64,7 +65,7 @@ export default async function CustomerDetailPage({
               Ficha del cliente
             </p>
 
-            <h1 className="mt-3 wrap-break-word font-display text-2xl font-black uppercase tracking-[0.04em] text-white sm:text-3xl">
+            <h1 className="mt-3 wrap-anywhere font-display text-2xl font-black uppercase tracking-[0.04em] text-white sm:text-3xl">
               {customer.fullName}
             </h1>
 
@@ -132,7 +133,7 @@ export default async function CustomerDetailPage({
         />
         <DetailSheetRow
           label="Notas"
-          value={<BreakableDetailValue value={customer.notes ?? "Sin notas"} />}
+          value={<NotesValue value={customer.notes} fallback="Sin notas" />}
         />
       </DetailSheet>
 
@@ -402,9 +403,5 @@ type BreakableDetailValueProps = {
  * inside detail sheet cells.
  */
 function BreakableDetailValue({ value }: BreakableDetailValueProps) {
-  return (
-    <span className="block min-w-0 max-w-full wrap-break-word">
-      {value}
-    </span>
-  );
+  return <span className="block min-w-0 max-w-full wrap-anywhere">{value}</span>;
 }

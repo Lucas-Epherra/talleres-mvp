@@ -269,16 +269,19 @@ function normalizeOptionalText(value: string | undefined): string | null {
 
 /**
  * Normalizes optional multiline text fields.
+ *
+ * Undefined or null clears the value in create/update flows. Line breaks are
+ * preserved so internal notes keep one item per row.
  */
 function normalizeOptionalMultilineText(
-  value: string | undefined,
+  value: string | null | undefined,
 ): string | null {
-  if (value === undefined) {
+  if (value === undefined || value === null) {
     return null;
   }
 
   const normalizedValue = value
-    .split('\n')
+    .split(/\r?\n/u)
     .map((line) => normalizeHumanText(line))
     .filter(Boolean)
     .join('\n');

@@ -63,5 +63,5 @@ export class UpdateVehicleDto {
   @IsOptional()
   @IsString()
   @MaxLength(800)
-  notes?: string;
+  notes?: string | null;
 }

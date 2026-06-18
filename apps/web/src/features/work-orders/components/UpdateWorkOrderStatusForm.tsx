@@ -82,7 +82,7 @@ export function UpdateWorkOrderStatusForm({
 
   return (
     <form
-      className="mt-5 rounded-[1.35rem] border border-border bg-surface/85 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3"
+      className="mt-5 rounded-[1.35rem] border border-border bg-surface/85 p-4 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03]"
       onSubmit={handleSubmit}
       aria-describedby={errorMessage ? errorId : undefined}
       noValidate

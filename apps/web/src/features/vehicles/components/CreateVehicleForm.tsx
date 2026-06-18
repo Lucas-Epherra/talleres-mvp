@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { type FormEvent, type ReactNode, useState } from "react";
+import { NotesEditor } from "../../../components/ui/NotesEditor";
 import { getApiErrorMessage } from "../../../lib/api";
 import type { Customer } from "../../customers/types";
 import { createVehicle } from "../vehicles.client";
@@ -146,7 +147,7 @@ export function CreateVehicleForm({
     >
       <section
         aria-labelledby="create-vehicle-main-heading"
-        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8"
+        className="rounded-[1.1rem] border border-border bg-surface/85 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-8"
       >
         <div className="border-b border-border pb-5">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
@@ -265,19 +266,13 @@ export function CreateVehicleForm({
             </Field>
           </div>
 
-          <Field>
-            <Label htmlFor="notes">Notas del vehículo</Label>
-
-            <textarea
-              id="notes"
-              name="notes"
-              rows={4}
-              placeholder="Estado general, detalles conocidos, observaciones..."
-              disabled={isLoading}
-              maxLength={800}
-              className="w-full rounded-xl border border-border-strong bg-background/70 px-4 py-3 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
-            />
-          </Field>
+          <NotesEditor
+            name="notes"
+            label="Notas del vehículo"
+            disabled={isLoading}
+            maxLength={800}
+            placeholder="Ej: Tiene un golpe leve en la puerta derecha."
+          />
         </div>
       </section>
 
@@ -291,22 +286,22 @@ export function CreateVehicleForm({
         </p>
       ) : null}
 
-      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+      <div className="grid gap-3 sm:flex sm:flex-row-reverse sm:justify-start">
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="h-12 rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 sm:h-11"
+        >
+          {isLoading ? "Creando..." : "Crear vehículo"}
+        </button>
+
         <button
           type="button"
           onClick={() => router.back()}
           disabled={isLoading}
-          className="h-11 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-60"
+          className="h-12 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-60 sm:h-11"
         >
           Cancelar
-        </button>
-
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="h-11 rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isLoading ? "Creando..." : "Crear vehículo"}
         </button>
       </div>
     </form>
@@ -334,10 +329,7 @@ type LabelProps = {
  */
 function Label({ htmlFor, children }: LabelProps) {
   return (
-    <label
-      htmlFor={htmlFor}
-      className="block text-sm font-bold text-white"
-    >
+    <label htmlFor={htmlFor} className="block text-sm font-bold text-white">
       {children}
     </label>
   );
