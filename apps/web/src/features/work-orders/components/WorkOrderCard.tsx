@@ -47,13 +47,7 @@ export function WorkOrderCard({ workOrder }: WorkOrderCardProps) {
                 </h2>
               </div>
 
-              <span
-                className={`inline-flex w-fit shrink-0 rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.14em] ${getStatusBadgeClass(
-                  status,
-                )}`}
-              >
-                {formatWorkOrderStatus(status)}
-              </span>
+              <StatusIndicator status={status} />
             </div>
           </header>
         </div>
@@ -125,15 +119,63 @@ function SummaryContextBox({
   );
 }
 
+type StatusIndicatorProps = {
+  status: WorkOrder["status"];
+};
+
 /**
- * Maps work order statuses to the industrial product badge system.
+ * Renders a non-interactive work order status indicator.
+ *
+ * It intentionally avoids pill borders/backgrounds so users do not confuse the
+ * status with an actionable button.
  */
-function getStatusBadgeClass(status: WorkOrder["status"]): string {
-  const statusClassMap: Record<WorkOrder["status"], string> = {
-    PENDING: "border-border-strong bg-surface-muted text-muted-foreground",
-    IN_PROGRESS: "border-primary/45 bg-primary/10 text-white",
-    READY: "border-warning/45 bg-warning/10 text-warning",
-    DELIVERED: "border-success/35 bg-success/10 text-success",
+function StatusIndicator({ status }: StatusIndicatorProps) {
+  const classes = getStatusIndicatorClasses(status);
+
+  return (
+    <div
+      className={`${classes.text} inline-flex w-fit shrink-0 items-center gap-2 text-[0.68rem] font-black uppercase tracking-[0.16em]`}
+      aria-label={`Estado: ${formatWorkOrderStatus(status)}`}
+    >
+      <span
+        aria-hidden="true"
+        className={`${classes.dot} size-2 rounded-full shadow-[0_0_14px_currentColor]`}
+      />
+      <span>Estado: {formatWorkOrderStatus(status)}</span>
+    </div>
+  );
+}
+
+/**
+ * Maps work order statuses to non-clickable status indicator classes.
+ */
+function getStatusIndicatorClasses(status: WorkOrder["status"]): {
+  text: string;
+  dot: string;
+} {
+  const statusClassMap: Record<
+    WorkOrder["status"],
+    {
+      text: string;
+      dot: string;
+    }
+  > = {
+    PENDING: {
+      text: "text-muted-foreground",
+      dot: "bg-steel text-steel",
+    },
+    IN_PROGRESS: {
+      text: "text-white",
+      dot: "bg-primary text-primary",
+    },
+    READY: {
+      text: "text-warning",
+      dot: "bg-warning text-warning",
+    },
+    DELIVERED: {
+      text: "text-success",
+      dot: "bg-success text-success",
+    },
   };
 
   return statusClassMap[status];

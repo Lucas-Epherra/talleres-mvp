@@ -38,7 +38,7 @@ export function VehicleWorkOrdersPanel({
   workOrders,
 }: VehicleWorkOrdersPanelProps) {
   return (
-    <section className="overflow-hidden rounded-[1.35rem] border border-border bg-surface/85 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03]">
+    <section className="overflow-hidden rounded-[1.35rem] border border-border bg-surface/85 shadow-(--shadow-industrial) ring-1 ring-white/3">
       <div className="flex flex-col gap-3 border-b border-border p-6 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
@@ -79,7 +79,7 @@ export function VehicleWorkOrdersPanel({
                         </h3>
                       </div>
 
-                      <StatusBadge status={workOrder.status} />
+                      <StatusIndicator status={workOrder.status} />
                     </header>
 
                     <DetailSheet
@@ -158,7 +158,7 @@ export function VehicleWorkOrdersPanel({
                   >
                     <DetailSheetRow
                       label="Estado"
-                      value={formatWorkOrderStatus(workOrder.status)}
+                      value={<StatusText status={workOrder.status} />}
                     />
 
                     <DetailSheetRow
@@ -207,40 +207,79 @@ export function VehicleWorkOrdersPanel({
   );
 }
 
-type StatusBadgeProps = {
+type StatusIndicatorProps = {
   status: WorkOrderStatus;
 };
 
 /**
- * Renders a compact visual status badge for a work order.
+ * Renders a non-interactive work order status indicator.
+ *
+ * It intentionally avoids pill borders/backgrounds so users do not confuse the
+ * status with an actionable button.
  */
-function StatusBadge({ status }: StatusBadgeProps) {
+function StatusIndicator({ status }: StatusIndicatorProps) {
+  const classes = getStatusIndicatorClasses(status);
+
   return (
-    <span
-      className={`${getStatusBadgeClassName(status)} inline-flex w-fit shrink-0 rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.14em]`}
+    <div
+      className={`${classes.text} inline-flex w-fit shrink-0 items-center gap-2 text-[0.68rem] font-black uppercase tracking-[0.16em]`}
+      aria-label={`Estado: ${formatWorkOrderStatus(status)}`}
     >
+      <span
+        aria-hidden="true"
+        className={`${classes.dot} size-2 rounded-full shadow-[0_0_14px_currentColor]`}
+      />
+      <span>Estado: {formatWorkOrderStatus(status)}</span>
+    </div>
+  );
+}
+
+/**
+ * Renders plain status text inside detail sheets.
+ */
+function StatusText({ status }: StatusIndicatorProps) {
+  const classes = getStatusIndicatorClasses(status);
+
+  return (
+    <span className={`${classes.text} font-bold`}>
       {formatWorkOrderStatus(status)}
     </span>
   );
 }
 
 /**
- * Maps order status to branded badge classes.
+ * Maps work order statuses to non-clickable status indicator classes.
  */
-function getStatusBadgeClassName(status: WorkOrderStatus): string {
-  if (status === "IN_PROGRESS") {
-    return "border-primary/40 bg-primary/10 text-white";
-  }
+function getStatusIndicatorClasses(status: WorkOrderStatus): {
+  text: string;
+  dot: string;
+} {
+  const statusClassMap: Record<
+    WorkOrderStatus,
+    {
+      text: string;
+      dot: string;
+    }
+  > = {
+    PENDING: {
+      text: "text-muted-foreground",
+      dot: "bg-steel text-steel",
+    },
+    IN_PROGRESS: {
+      text: "text-white",
+      dot: "bg-primary text-primary",
+    },
+    READY: {
+      text: "text-warning",
+      dot: "bg-warning text-warning",
+    },
+    DELIVERED: {
+      text: "text-success",
+      dot: "bg-success text-success",
+    },
+  };
 
-  if (status === "READY") {
-    return "border-warning/40 bg-warning/10 text-warning";
-  }
-
-  if (status === "DELIVERED") {
-    return "border-success/35 bg-success/10 text-success";
-  }
-
-  return "border-border-strong bg-surface-muted text-muted-foreground";
+  return statusClassMap[status];
 }
 
 /**
