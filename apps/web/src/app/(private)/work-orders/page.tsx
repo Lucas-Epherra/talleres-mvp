@@ -1,22 +1,26 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { EmptyState } from "../../../components/ui/EmptyState";
+import { Pagination } from "../../../components/ui/Pagination";
 import {
   normalizeSearchParam,
   type WorkOrderStatus,
 } from "../../../lib/format";
 import { WorkOrderCard } from "../../../features/work-orders/components/WorkOrderCard";
 import { WorkOrdersFilters } from "../../../features/work-orders/components/WorkOrdersFilters";
-import { getWorkOrders } from "../../../features/work-orders/work-orders.server";
+import { getPaginatedWorkOrders } from "../../../features/work-orders/work-orders.server";
 
 export const metadata: Metadata = {
   title: "Órdenes de trabajo",
 };
 
+const WORK_ORDERS_PAGE_LIMIT = 10;
+
 type WorkOrdersPageProps = {
   searchParams: Promise<{
     search?: string | string[];
     status?: string | string[];
+    page?: string | string[];
   }>;
 };
 
@@ -30,8 +34,8 @@ const WORK_ORDER_STATUSES: WorkOrderStatus[] = [
 /**
  * Work orders list page.
  *
- * This route fetches data server-side and forwards the httpOnly cookie through
- * apiServerFetch, keeping auth tokens out of the browser runtime.
+ * This route fetches paginated data server-side and forwards the httpOnly
+ * cookie through apiServerFetch, keeping auth tokens out of the browser runtime.
  */
 export default async function WorkOrdersPage({
   searchParams,
@@ -41,23 +45,29 @@ export default async function WorkOrdersPage({
   const status = getValidWorkOrderStatus(
     normalizeSearchParam(resolvedSearchParams.status),
   );
+  const page = normalizePageParam(resolvedSearchParams.page);
 
-  const workOrders = await getWorkOrders({
-    search,
+  const workOrdersPage = await getPaginatedWorkOrders({
+    search: search || undefined,
     status,
+    page,
+    limit: WORK_ORDERS_PAGE_LIMIT,
   });
 
-  const activeCount = workOrders.filter(
+  const workOrders = workOrdersPage.data;
+  const meta = workOrdersPage.meta;
+  const pageActiveCount = workOrders.filter(
     (workOrder) => workOrder.status !== "DELIVERED",
   ).length;
-  const deliveredCount = workOrders.filter(
+  const pageDeliveredCount = workOrders.filter(
     (workOrder) => workOrder.status === "DELIVERED",
   ).length;
   const hasFilters = Boolean(search || status);
+  const hasWorkOrders = workOrders.length > 0;
 
   return (
     <section className="space-y-6">
-      <div className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8">
+      <div className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
@@ -83,20 +93,48 @@ export default async function WorkOrdersPage({
         </div>
 
         <dl className="mt-6 grid gap-3 sm:mt-8 sm:grid-cols-3">
-          <SummaryItem label="Resultados" value={workOrders.length} />
-          <SummaryItem label="Activas" value={activeCount} />
-          <SummaryItem label="Entregadas" value={deliveredCount} />
+          <SummaryItem label="Resultados" value={meta.totalItems} />
+          <SummaryItem label="Activas en página" value={pageActiveCount} />
+          <SummaryItem
+            label="Entregadas en página"
+            value={pageDeliveredCount}
+          />
         </dl>
       </div>
 
       <WorkOrdersFilters currentSearch={search} currentStatus={status} />
 
-      {workOrders.length > 0 ? (
-        <div className="space-y-4">
-          {workOrders.map((workOrder) => (
-            <WorkOrderCard key={workOrder.id} workOrder={workOrder} />
-          ))}
-        </div>
+      {hasWorkOrders ? (
+        <>
+          <div className="space-y-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm font-semibold text-muted-foreground">
+                Página{" "}
+                <span className="font-black text-white">{meta.page}</span> de{" "}
+                <span className="font-black text-white">{meta.totalPages}</span>
+              </p>
+
+              <p className="text-sm font-semibold text-muted-foreground">
+                Mostrando {workOrders.length} de {meta.totalItems}
+              </p>
+            </div>
+
+            {workOrders.map((workOrder) => (
+              <WorkOrderCard key={workOrder.id} workOrder={workOrder} />
+            ))}
+          </div>
+
+          <Pagination
+            basePath="/work-orders"
+            currentPage={meta.page}
+            totalPages={meta.totalPages}
+            searchParams={{
+              search: search || undefined,
+              status,
+            }}
+            ariaLabel="Paginación de órdenes de trabajo"
+          />
+        </>
       ) : (
         <EmptyState
           eyebrow={hasFilters ? "Sin resultados" : "Primera orden"}
@@ -143,17 +181,12 @@ export default async function WorkOrdersPage({
   );
 }
 
-type SummaryItemProps = {
-  label: string;
-  value: number;
-};
-
 /**
  * Summary metric for the filtered work orders result set.
  */
-function SummaryItem({ label, value }: SummaryItemProps) {
+function SummaryItem({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-border bg-background/55 p-4 ring-1 ring-white/[0.03]">
+    <div className="rounded-2xl border border-border bg-background/55 p-4 ring-1 ring-white/3">
       <dt className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
         {label}
       </dt>
@@ -174,4 +207,18 @@ function getValidWorkOrderStatus(value: string): WorkOrderStatus | undefined {
   }
 
   return undefined;
+}
+
+/**
+ * Normalizes a page search param into a safe positive integer.
+ */
+function normalizePageParam(value: string | string[] | undefined): number {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  const parsedValue = rawValue ? Number(rawValue) : 1;
+
+  if (!Number.isInteger(parsedValue) || parsedValue < 1) {
+    return 1;
+  }
+
+  return parsedValue;
 }

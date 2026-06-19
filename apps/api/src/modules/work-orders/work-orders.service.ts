@@ -9,12 +9,25 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { UpdateWorkOrderStatusDto } from './dto/update-work-order-status.dto';
 import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
+import { FindWorkOrdersQueryDto } from './dto/find-work-orders-query.dto';
 
 const INITIAL_ORDER_NUMBER = 1000;
 const CREATE_ORDER_MAX_ATTEMPTS = 3;
 const MAX_SEARCH_LENGTH = 80;
 const MAX_MILEAGE = 2000000;
 const MAX_MONEY_VALUE = 9999999999.99;
+
+const DEFAULT_WORK_ORDERS_PAGE = 1;
+const DEFAULT_WORK_ORDERS_LIMIT = 10;
+
+type PaginationMeta = {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+};
 
 type WorkOrdersPrismaClient = PrismaService | Prisma.TransactionClient;
 
@@ -29,19 +42,22 @@ export class WorkOrdersService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Returns work orders for the authenticated user's workshop.
+   * Returns paginated work orders for the authenticated user's workshop.
    *
    * Search matches issue, diagnosis, vehicle data and customer data.
    */
-  async findAll(workshopId: string, search?: string, status?: WorkOrderStatus) {
-    const normalizedSearch = this.normalizeSearch(search);
+  async findAll(workshopId: string, query: FindWorkOrdersQueryDto = {}) {
+    const page = query.page ?? DEFAULT_WORK_ORDERS_PAGE;
+    const limit = query.limit ?? DEFAULT_WORK_ORDERS_LIMIT;
+    const skip = (page - 1) * limit;
+    const normalizedSearch = this.normalizeSearch(query.search);
     const normalizedLicensePlateSearch =
       this.normalizeLicensePlateSearch(normalizedSearch);
     const searchedOrderNumber = this.parseOrderNumberSearch(normalizedSearch);
 
     const where: Prisma.WorkOrderWhereInput = {
       workshopId,
-      ...(status ? { status } : {}),
+      ...(query.status ? { status: query.status } : {}),
       ...(normalizedSearch
         ? {
             OR: [
@@ -117,13 +133,35 @@ export class WorkOrdersService {
         : {}),
     };
 
-    return this.prisma.workOrder.findMany({
-      where,
-      orderBy: {
-        createdAt: 'desc',
-      },
-      include: this.getDefaultInclude(),
-    });
+    const [totalItems, data] = await this.prisma.$transaction([
+      this.prisma.workOrder.count({
+        where,
+      }),
+      this.prisma.workOrder.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+        include: this.getDefaultInclude(),
+      }),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / limit);
+    const meta: PaginationMeta = {
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasPreviousPage: page > 1,
+      hasNextPage: page < totalPages,
+    };
+
+    return {
+      data,
+      meta,
+    };
   }
 
   /**

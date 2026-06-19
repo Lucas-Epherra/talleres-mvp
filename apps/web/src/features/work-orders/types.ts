@@ -70,3 +70,24 @@ export type WorkOrder = {
   updatedAt: string;
   vehicle: WorkOrderVehicle;
 };
+
+export type PaginationMeta = {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+};
+
+export type PaginatedResponse<TItem> = {
+  data: TItem[];
+  meta: PaginationMeta;
+};
+
+export type WorkOrdersQuery = {
+  search?: string;
+  status?: WorkOrderStatus;
+  page?: number;
+  limit?: number;
+};

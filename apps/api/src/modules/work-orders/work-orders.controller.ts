@@ -28,18 +28,14 @@ export class WorkOrdersController {
   constructor(private readonly workOrdersService: WorkOrdersService) {}
 
   /**
-   * Lists work orders for the authenticated user's workshop.
+   * Lists paginated work orders for the authenticated user's workshop.
    */
   @Get()
   findAll(
     @CurrentUser() user: AuthUser,
     @Query() query: FindWorkOrdersQueryDto,
   ) {
-    return this.workOrdersService.findAll(
-      user.workshopId,
-      query.search,
-      query.status,
-    );
+    return this.workOrdersService.findAll(user.workshopId, query);
   }
 
   /**

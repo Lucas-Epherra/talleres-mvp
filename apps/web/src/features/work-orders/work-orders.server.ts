@@ -1,6 +1,6 @@
 import type { WorkOrderStatus } from "../../lib/format";
 import { apiServerFetch } from "../../lib/api.server";
-import type { WorkOrder } from "./types";
+import type { PaginatedResponse, WorkOrder, WorkOrdersQuery } from "./types";
 
 type GetWorkOrdersParams = {
   search?: string;
@@ -8,29 +8,54 @@ type GetWorkOrdersParams = {
 };
 
 /**
- * Fetches work orders for the authenticated workshop.
+ * Fetches paginated work orders for the authenticated workshop.
  *
- * This function runs on the server and relies on apiServerFetch to forward the
- * incoming httpOnly cookie to the backend API.
+ * Use this function in list screens that need pagination metadata.
  */
-export function getWorkOrders({
-  search,
-  status,
-}: GetWorkOrdersParams = {}): Promise<WorkOrder[]> {
+export function getPaginatedWorkOrders(
+  query: WorkOrdersQuery = {},
+): Promise<PaginatedResponse<WorkOrder>> {
   const searchParams = new URLSearchParams();
 
-  if (search) {
-    searchParams.set("search", search);
+  if (query.search) {
+    searchParams.set("search", query.search);
   }
 
-  if (status) {
-    searchParams.set("status", status);
+  if (query.status) {
+    searchParams.set("status", query.status);
+  }
+
+  if (query.page && query.page > 1) {
+    searchParams.set("page", String(query.page));
+  }
+
+  if (query.limit) {
+    searchParams.set("limit", String(query.limit));
   }
 
   const queryString = searchParams.toString();
   const path = queryString ? `/work-orders?${queryString}` : "/work-orders";
 
-  return apiServerFetch<WorkOrder[]>(path);
+  return apiServerFetch<PaginatedResponse<WorkOrder>>(path);
+}
+
+/**
+ * Fetches work orders for the authenticated workshop as a plain array.
+ *
+ * This keeps backwards compatibility with screens that do not need pagination
+ * metadata.
+ */
+export async function getWorkOrders({
+  search,
+  status,
+}: GetWorkOrdersParams = {}): Promise<WorkOrder[]> {
+  const workOrdersPage = await getPaginatedWorkOrders({
+    search,
+    status,
+    limit: 50,
+  });
+
+  return workOrdersPage.data;
 }
 
 /**
