@@ -1,46 +1,51 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "../../../components/ui/EmptyState";
+import { Pagination } from "../../../components/ui/Pagination";
 import { SearchForm } from "../../../components/ui/SearchForm";
 import { CustomerCard } from "../../../features/customers/components/CustomerCard";
-import { getCustomers } from "../../../features/customers/customers.server";
-import type { Customer } from "../../../features/customers/types";
-import { getVehicles } from "../../../features/vehicles/vehicles.server";
-import type { VehicleListItem } from "../../../features/vehicles/types";
+import { getPaginatedCustomers } from "../../../features/customers/customers.server";
 
 export const metadata: Metadata = {
   title: "Clientes",
 };
 
+const CUSTOMERS_PAGE_LIMIT = 10;
+
 type CustomersPageProps = {
   searchParams: Promise<{
     search?: string | string[];
+    page?: string | string[];
   }>;
 };
 
 /**
  * Customers list page.
  *
- * Provides the minimum operational customer view required before creating
- * vehicles associated with customers. Search is handled server-side over the
- * already fetched customer list to avoid expanding backend scope at MVP stage.
+ * Search and pagination are handled server-side by the API so the list remains
+ * performant when the workshop starts accumulating real operational data.
  */
 export default async function CustomersPage({
   searchParams,
 }: CustomersPageProps) {
-  const [customers, vehicles, resolvedSearchParams] = await Promise.all([
-    getCustomers(),
-    getVehicles(),
-    searchParams,
-  ]);
-
+  const resolvedSearchParams = await searchParams;
   const search = normalizeSearchParam(resolvedSearchParams.search);
-  const filteredCustomers = filterCustomers(customers, search);
+  const page = normalizePageParam(resolvedSearchParams.page);
+
+  const customersPage = await getPaginatedCustomers({
+    search: search || undefined,
+    page,
+    limit: CUSTOMERS_PAGE_LIMIT,
+  });
+
+  const customers = customersPage.data;
+  const meta = customersPage.meta;
   const hasSearch = search.length > 0;
+  const hasCustomers = customers.length > 0;
 
   return (
     <section className="space-y-6 sm:space-y-8">
-      <header className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8">
+      <header className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
@@ -75,31 +80,49 @@ export default async function CustomersPage({
         />
       </header>
 
-      <section aria-labelledby="customers-results-heading" className="space-y-4">
-        <div className="flex items-center justify-between gap-4">
-          <h2
-            id="customers-results-heading"
-            className="font-display text-lg font-black uppercase tracking-[0.04em] text-white"
-          >
-            {hasSearch ? "Resultados" : "Registrados"}
-          </h2>
+      <section
+        aria-labelledby="customers-results-heading"
+        className="space-y-4"
+      >
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div>
+            <h2
+              id="customers-results-heading"
+              className="font-display text-lg font-black uppercase tracking-[0.04em] text-white"
+            >
+              {hasSearch ? "Resultados" : "Registrados"}
+            </h2>
+
+            {meta.totalItems > 0 ? (
+              <p className="mt-1 text-sm text-muted-foreground">
+                Página {meta.page} de {meta.totalPages}
+              </p>
+            ) : null}
+          </div>
 
           <p className="shrink-0 text-sm font-semibold text-muted-foreground">
-            {filteredCustomers.length} cliente
-            {filteredCustomers.length === 1 ? "" : "s"}
+            {meta.totalItems} cliente{meta.totalItems === 1 ? "" : "s"}
           </p>
         </div>
 
-        {filteredCustomers.length > 0 ? (
-          <div className="grid gap-4">
-            {filteredCustomers.map((customer) => (
-              <CustomerCard
-                key={customer.id}
-                customer={customer}
-                vehicles={getCustomerVehicles(vehicles, customer.id)}
-              />
-            ))}
-          </div>
+        {hasCustomers ? (
+          <>
+            <div className="grid gap-4">
+              {customers.map((customer) => (
+                <CustomerCard key={customer.id} customer={customer} />
+              ))}
+            </div>
+
+            <Pagination
+              basePath="/customers"
+              currentPage={meta.page}
+              totalPages={meta.totalPages}
+              searchParams={{
+                search: search || undefined,
+              }}
+              ariaLabel="Paginación de clientes"
+            />
+          </>
         ) : (
           <EmptyState
             eyebrow={hasSearch ? "Sin resultados" : "Primer paso"}
@@ -159,56 +182,15 @@ function normalizeSearchParam(value: string | string[] | undefined): string {
 }
 
 /**
- * Filters customers by the current search value.
+ * Normalizes a page search param into a safe positive integer.
  */
-function filterCustomers(customers: Customer[], search: string): Customer[] {
-  if (!search) {
-    return customers;
+function normalizePageParam(value: string | string[] | undefined): number {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  const parsedValue = rawValue ? Number(rawValue) : 1;
+
+  if (!Number.isInteger(parsedValue) || parsedValue < 1) {
+    return 1;
   }
 
-  const normalizedSearch = normalizeText(search);
-
-  return customers.filter((customer) =>
-    matchesCustomerSearch(customer, normalizedSearch),
-  );
-}
-
-/**
- * Checks if a customer matches the normalized search term.
- */
-function matchesCustomerSearch(
-  customer: Customer,
-  normalizedSearch: string,
-): boolean {
-  const searchableValues = [
-    customer.fullName,
-    customer.phone,
-    customer.email,
-    customer.address,
-    customer.notes,
-  ];
-
-  return searchableValues.some((value) =>
-    normalizeText(value ?? "").includes(normalizedSearch),
-  );
-}
-
-/**
- * Normalizes text for case-insensitive and accent-insensitive search.
- */
-function normalizeText(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
-
-/**
- * Returns the vehicles associated with the selected customer.
- */
-function getCustomerVehicles(
-  vehicles: VehicleListItem[],
-  customerId: string,
-): VehicleListItem[] {
-  return vehicles.filter((vehicle) => vehicle.customer.id === customerId);
+  return parsedValue;
 }

@@ -13,6 +13,7 @@ import { AuthGuard } from '../auth/guards/auth.guard';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
+import { FindCustomersQueryDto } from './dto/find-customers-query.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 
 /**
@@ -27,11 +28,14 @@ export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
   /**
-   * Lists customers for the authenticated user's workshop.
+   * Lists paginated customers for the authenticated user's workshop.
    */
   @Get()
-  findAll(@CurrentUser() user: AuthUser, @Query('search') search?: string) {
-    return this.customersService.findAll(user.workshopId, search);
+  findAll(
+    @CurrentUser() user: AuthUser,
+    @Query() query: FindCustomersQueryDto,
+  ) {
+    return this.customersService.findAll(user.workshopId, query);
   }
 
   /**

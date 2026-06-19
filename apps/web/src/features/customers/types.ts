@@ -10,6 +10,32 @@ export type Customer = {
   updatedAt: string;
 };
 
+export type CustomerListItem = Customer & {
+  _count: {
+    vehicles: number;
+  };
+};
+
+export type PaginationMeta = {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+};
+
+export type PaginatedResponse<TItem> = {
+  data: TItem[];
+  meta: PaginationMeta;
+};
+
+export type CustomersQuery = {
+  search?: string;
+  page?: number;
+  limit?: number;
+};
+
 export type CreateCustomerInput = {
   fullName: string;
   phone: string;

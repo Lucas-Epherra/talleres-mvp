@@ -7,7 +7,11 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
+import { FindCustomersQueryDto } from './dto/find-customers-query.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
+
+const DEFAULT_CUSTOMERS_PAGE = 1;
+const DEFAULT_CUSTOMERS_LIMIT = 10;
 
 type NormalizedCustomerCreateData = {
   fullName: string;
@@ -25,6 +29,20 @@ type NormalizedCustomerUpdateData = {
   notes?: string | null;
 };
 
+type PaginationMeta = {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+};
+
+type CustomerSearchTerms = {
+  text: string;
+  formattedPhone?: string;
+};
+
 /**
  * Handles customer persistence and lookup operations.
  *
@@ -36,54 +54,60 @@ export class CustomersService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Returns customers for the provided workshop.
+   * Returns paginated customers for the provided workshop.
    *
-   * Search matches customer name, phone or email.
+   * Search matches customer name, phone, email, address or internal notes.
    */
-  async findAll(workshopId: string, search?: string) {
-    const normalizedSearch = normalizeSearch(search);
+  async findAll(workshopId: string, query: FindCustomersQueryDto = {}) {
+    const page = query.page ?? DEFAULT_CUSTOMERS_PAGE;
+    const limit = query.limit ?? DEFAULT_CUSTOMERS_LIMIT;
+    const skip = (page - 1) * limit;
+    const searchTerms = normalizeSearch(query.search);
 
     const where: Prisma.CustomerWhereInput = {
       workshopId,
-      ...(normalizedSearch
+      ...(searchTerms
         ? {
-            OR: [
-              {
-                fullName: {
-                  contains: normalizedSearch,
-                  mode: Prisma.QueryMode.insensitive,
-                },
-              },
-              {
-                phone: {
-                  contains: normalizedSearch,
-                  mode: Prisma.QueryMode.insensitive,
-                },
-              },
-              {
-                email: {
-                  contains: normalizedSearch,
-                  mode: Prisma.QueryMode.insensitive,
-                },
-              },
-            ],
+            OR: buildCustomerSearchConditions(searchTerms),
           }
         : {}),
     };
 
-    return this.prisma.customer.findMany({
-      where,
-      orderBy: {
-        createdAt: 'desc',
-      },
-      include: {
-        _count: {
-          select: {
-            vehicles: true,
+    const [totalItems, data] = await this.prisma.$transaction([
+      this.prisma.customer.count({
+        where,
+      }),
+      this.prisma.customer.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+        include: {
+          _count: {
+            select: {
+              vehicles: true,
+            },
           },
         },
-      },
-    });
+      }),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / limit);
+    const meta: PaginationMeta = {
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasPreviousPage: page > 1,
+      hasNextPage: page < totalPages,
+    };
+
+    return {
+      data,
+      meta,
+    };
   }
 
   /**
@@ -190,6 +214,60 @@ export class CustomersService {
       );
     }
   }
+}
+
+/**
+ * Builds Prisma search conditions for customer list filtering.
+ */
+function buildCustomerSearchConditions(
+  searchTerms: CustomerSearchTerms,
+): Prisma.CustomerWhereInput[] {
+  const conditions: Prisma.CustomerWhereInput[] = [
+    {
+      fullName: {
+        contains: searchTerms.text,
+        mode: Prisma.QueryMode.insensitive,
+      },
+    },
+    {
+      phone: {
+        contains: searchTerms.text,
+        mode: Prisma.QueryMode.insensitive,
+      },
+    },
+    {
+      email: {
+        contains: searchTerms.text,
+        mode: Prisma.QueryMode.insensitive,
+      },
+    },
+    {
+      address: {
+        contains: searchTerms.text,
+        mode: Prisma.QueryMode.insensitive,
+      },
+    },
+    {
+      notes: {
+        contains: searchTerms.text,
+        mode: Prisma.QueryMode.insensitive,
+      },
+    },
+  ];
+
+  if (
+    searchTerms.formattedPhone &&
+    searchTerms.formattedPhone !== searchTerms.text
+  ) {
+    conditions.push({
+      phone: {
+        contains: searchTerms.formattedPhone,
+        mode: Prisma.QueryMode.insensitive,
+      },
+    });
+  }
+
+  return conditions;
 }
 
 /**
@@ -354,17 +432,23 @@ function normalizeHumanText(value: string): string {
 }
 
 /**
- * Normalizes search text. Phone-like searches are reduced to digits so users can
- * search with or without spaces.
+ * Normalizes customer search text and adds a phone-friendly variant.
  */
-function normalizeSearch(search?: string): string | undefined {
+function normalizeSearch(search?: string): CustomerSearchTerms | undefined {
   const normalizedSearch = search?.trim();
 
   if (!normalizedSearch) {
     return undefined;
   }
 
-  return normalizedSearch;
+  const digits = normalizedSearch.replace(/\D/g, '');
+  const formattedPhone =
+    digits.length > 4 ? `${digits.slice(0, 4)} ${digits.slice(4)}` : undefined;
+
+  return {
+    text: normalizedSearch,
+    formattedPhone,
+  };
 }
 
 /**

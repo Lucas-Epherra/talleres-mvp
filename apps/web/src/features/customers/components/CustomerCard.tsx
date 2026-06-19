@@ -1,24 +1,19 @@
 import Link from "next/link";
-import type { VehicleListItem } from "../../vehicles/types";
-import type { Customer } from "../types";
+import type { CustomerListItem } from "../types";
 
 type CustomerCardProps = {
-  customer: Customer;
-  vehicles: VehicleListItem[];
+  customer: CustomerListItem;
 };
-
-const MAX_VISIBLE_VEHICLES = 2;
 
 /**
  * Displays a compact customer summary for large customer lists.
  *
  * Full customer contact, vehicle and work order details are available from the
  * customer detail page, so this card only exposes key scanning information and
- * a small fixed-height vehicle preview.
+ * the vehicle count returned by the paginated backend endpoint.
  */
-export function CustomerCard({ customer, vehicles }: CustomerCardProps) {
-  const visibleVehicles = vehicles.slice(0, MAX_VISIBLE_VEHICLES);
-  const hiddenVehiclesCount = Math.max(vehicles.length - MAX_VISIBLE_VEHICLES, 0);
+export function CustomerCard({ customer }: CustomerCardProps) {
+  const vehicleCount = customer._count.vehicles;
 
   return (
     <article className="rounded-[1.1rem] border border-border bg-surface/80 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 transition hover:border-primary/45 hover:bg-surface sm:rounded-[1.35rem] sm:p-6">
@@ -47,41 +42,27 @@ export function CustomerCard({ customer, vehicles }: CustomerCardProps) {
           </header>
 
           <section
-            aria-labelledby={`customer-vehicles-preview-${customer.id}`}
-            className="mt-4 min-h-12 overflow-hidden"
+            aria-labelledby={`customer-summary-${customer.id}`}
+            className="mt-4 grid gap-3 sm:grid-cols-3"
           >
-            <h3 id={`customer-vehicles-preview-${customer.id}`} className="sr-only">
-              Vehículos asociados
+            <h3 id={`customer-summary-${customer.id}`} className="sr-only">
+              Resumen del cliente
             </h3>
 
-            {vehicles.length > 0 ? (
-              <div className="flex flex-wrap items-center gap-2 overflow-hidden">
-                {visibleVehicles.map((vehicle) => (
-                  <Link
-                    key={vehicle.id}
-                    href={`/vehicles/${vehicle.id}`}
-                    className="inline-flex max-w-full items-center rounded-full border border-border-strong bg-background/60 px-3 py-1.5 text-xs font-bold text-white transition hover:border-primary/60 hover:text-primary"
-                  >
-                    <span className="truncate">
-                      {vehicle.licensePlate} · {vehicle.brand} {vehicle.model}
-                    </span>
-                  </Link>
-                ))}
+            <CustomerSummaryItem
+              label="Vehículos"
+              value={`${vehicleCount} asociado${vehicleCount === 1 ? "" : "s"}`}
+            />
 
-                {hiddenVehiclesCount > 0 ? (
-                  <Link
-                    href={`/customers/${customer.id}#customer-vehicles-heading`}
-                    className="inline-flex items-center rounded-full border border-border-strong bg-background/60 px-3 py-1.5 text-xs font-bold text-muted-foreground transition hover:border-primary/60 hover:text-primary"
-                  >
-                    +{hiddenVehiclesCount} más
-                  </Link>
-                ) : null}
-              </div>
-            ) : (
-              <p className="flex min-h-10 items-center text-sm text-muted-foreground">
-                Sin vehículos asociados
-              </p>
-            )}
+            <CustomerSummaryItem
+              label="Email"
+              value={customer.email ?? "Sin cargar"}
+            />
+
+            <CustomerSummaryItem
+              label="Dirección"
+              value={customer.address ?? "Sin cargar"}
+            />
           </section>
         </div>
 
@@ -111,5 +92,26 @@ export function CustomerCard({ customer, vehicles }: CustomerCardProps) {
         </aside>
       </div>
     </article>
+  );
+}
+
+/**
+ * Renders a small customer summary datum.
+ */
+function CustomerSummaryItem({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-background/45 p-3">
+      <p className="text-[0.65rem] font-bold uppercase tracking-[0.18em] text-primary">
+        {label}
+      </p>
+
+      <p className="mt-2 wrap-anywhere text-sm font-bold text-white">{value}</p>
+    </div>
   );
 }

@@ -1,13 +1,51 @@
 import { apiServerFetch } from "../../lib/api.server";
-import type { Customer } from "./types";
+import type {
+  Customer,
+  CustomerListItem,
+  CustomersQuery,
+  PaginatedResponse,
+} from "./types";
 
 /**
- * Fetches customers for the authenticated workshop.
+ * Fetches paginated customers for the authenticated workshop.
  *
- * Runs on the server and forwards the incoming httpOnly cookie to the backend.
+ * Use this function only in customer list screens that need pagination metadata.
  */
-export function getCustomers(): Promise<Customer[]> {
-  return apiServerFetch<Customer[]>("/customers");
+export function getPaginatedCustomers(
+  query: CustomersQuery = {},
+): Promise<PaginatedResponse<CustomerListItem>> {
+  const params = new URLSearchParams();
+
+  if (query.search) {
+    params.set("search", query.search);
+  }
+
+  if (query.page && query.page > 1) {
+    params.set("page", String(query.page));
+  }
+
+  if (query.limit) {
+    params.set("limit", String(query.limit));
+  }
+
+  const queryString = params.toString();
+  const path = queryString ? `/customers?${queryString}` : "/customers";
+
+  return apiServerFetch<PaginatedResponse<CustomerListItem>>(path);
+}
+
+/**
+ * Fetches customer options for forms that need a plain customer array.
+ *
+ * This keeps backwards compatibility with existing vehicle/work-order creation
+ * screens while the customers index page uses server-side pagination.
+ */
+export async function getCustomers(): Promise<CustomerListItem[]> {
+  const customersPage = await getPaginatedCustomers({
+    limit: 50,
+  });
+
+  return customersPage.data;
 }
 
 /**
