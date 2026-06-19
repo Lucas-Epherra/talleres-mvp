@@ -12,6 +12,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
+import { FindVehiclesQueryDto } from './dto/find-vehicles-query.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { VehiclesService } from './vehicles.service';
 
@@ -26,17 +27,17 @@ export class VehiclesController {
   constructor(private readonly vehiclesService: VehiclesService) {}
 
   /**
-   * Lists vehicles for the authenticated user's workshop.
+   * Lists paginated vehicles for the authenticated user's workshop.
    */
   @Get()
-  findAll(@CurrentUser() user: AuthUser, @Query('search') search?: string) {
-    return this.vehiclesService.findAll(user.workshopId, search);
+  findAll(@CurrentUser() user: AuthUser, @Query() query: FindVehiclesQueryDto) {
+    return this.vehiclesService.findAll(user.workshopId, query);
   }
 
   /**
    * Returns the complete operational vehicle profile.
    *
-   * This route feeds the future "Ficha del vehículo" screen.
+   * This route feeds the "Ficha del vehículo" screen.
    */
   @Get(':id/profile')
   findProfile(@CurrentUser() user: AuthUser, @Param('id') id: string) {

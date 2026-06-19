@@ -25,6 +25,26 @@ export type VehicleListItem = {
   };
 };
 
+export type PaginationMeta = {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+};
+
+export type PaginatedResponse<TItem> = {
+  data: TItem[];
+  meta: PaginationMeta;
+};
+
+export type VehiclesQuery = {
+  search?: string;
+  page?: number;
+  limit?: number;
+};
+
 export type CreateVehicleInput = {
   customerId: string;
   licensePlate: string;

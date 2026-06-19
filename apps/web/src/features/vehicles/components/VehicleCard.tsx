@@ -97,9 +97,7 @@ function VehicleMetaItem({ label, value }: VehicleMetaItemProps) {
         {label}
       </p>
 
-      <p className="mt-2 wrap-anywhere text-sm font-bold text-white">
-        {value}
-      </p>
+      <p className="mt-2 wrap-anywhere text-sm font-bold text-white">{value}</p>
     </div>
   );
 }

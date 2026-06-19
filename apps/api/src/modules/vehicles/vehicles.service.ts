@@ -7,6 +7,7 @@ import {
 import { Prisma, WorkOrderStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
+import { FindVehiclesQueryDto } from './dto/find-vehicles-query.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 
 const MIN_VEHICLE_YEAR = 1900;
@@ -14,6 +15,23 @@ const MAX_MILEAGE = 2000000;
 const MAX_TEXT_LENGTH = 80;
 const MAX_NOTES_LENGTH = 800;
 const NORMALIZED_LICENSE_PLATE_PATTERN = /^[A-Z0-9]{5,10}$/;
+const DEFAULT_VEHICLES_PAGE = 1;
+const DEFAULT_VEHICLES_LIMIT = 10;
+
+type PaginationMeta = {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+};
+
+type VehicleSearchTerms = {
+  text: string;
+  normalizedLicensePlate?: string;
+  formattedPhone?: string;
+};
 
 /**
  * Handles vehicle persistence and lookup operations.
@@ -26,84 +44,68 @@ export class VehiclesService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Returns vehicles for the authenticated user's workshop.
+   * Returns paginated vehicles for the authenticated user's workshop.
    *
    * Search matches license plate, brand, model, customer name or customer phone.
    */
-  async findAll(workshopId: string, search?: string) {
-    const normalizedSearch = this.normalizeSearch(search);
-    const normalizedLicensePlateSearch =
-      this.normalizeLicensePlateSearch(normalizedSearch);
+  async findAll(workshopId: string, query: FindVehiclesQueryDto = {}) {
+    const page = query.page ?? DEFAULT_VEHICLES_PAGE;
+    const limit = query.limit ?? DEFAULT_VEHICLES_LIMIT;
+    const skip = (page - 1) * limit;
+    const searchTerms = this.normalizeSearch(query.search);
 
     const where: Prisma.VehicleWhereInput = {
       workshopId,
-      ...(normalizedSearch
+      ...(searchTerms
         ? {
-            OR: [
-              ...(normalizedLicensePlateSearch
-                ? [
-                    {
-                      licensePlate: {
-                        contains: normalizedLicensePlateSearch,
-                        mode: Prisma.QueryMode.insensitive,
-                      },
-                    },
-                  ]
-                : []),
-              {
-                brand: {
-                  contains: normalizedSearch,
-                  mode: Prisma.QueryMode.insensitive,
-                },
-              },
-              {
-                model: {
-                  contains: normalizedSearch,
-                  mode: Prisma.QueryMode.insensitive,
-                },
-              },
-              {
-                customer: {
-                  fullName: {
-                    contains: normalizedSearch,
-                    mode: Prisma.QueryMode.insensitive,
-                  },
-                },
-              },
-              {
-                customer: {
-                  phone: {
-                    contains: normalizedSearch,
-                    mode: Prisma.QueryMode.insensitive,
-                  },
-                },
-              },
-            ],
+            OR: this.buildVehicleSearchConditions(searchTerms),
           }
         : {}),
     };
 
-    return this.prisma.vehicle.findMany({
-      where,
-      orderBy: {
-        createdAt: 'desc',
-      },
-      include: {
-        customer: {
-          select: {
-            id: true,
-            fullName: true,
-            phone: true,
-            email: true,
+    const [totalItems, data] = await this.prisma.$transaction([
+      this.prisma.vehicle.count({
+        where,
+      }),
+      this.prisma.vehicle.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+        include: {
+          customer: {
+            select: {
+              id: true,
+              fullName: true,
+              phone: true,
+              email: true,
+            },
+          },
+          _count: {
+            select: {
+              workOrders: true,
+            },
           },
         },
-        _count: {
-          select: {
-            workOrders: true,
-          },
-        },
-      },
-    });
+      }),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / limit);
+    const meta: PaginationMeta = {
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasPreviousPage: page > 1,
+      hasNextPage: page < totalPages,
+    };
+
+    return {
+      data,
+      meta,
+    };
   }
 
   /**
@@ -340,6 +342,69 @@ export class VehiclesService {
   }
 
   /**
+   * Builds Prisma search conditions for vehicle list filtering.
+   */
+  private buildVehicleSearchConditions(
+    searchTerms: VehicleSearchTerms,
+  ): Prisma.VehicleWhereInput[] {
+    const conditions: Prisma.VehicleWhereInput[] = [
+      {
+        brand: {
+          contains: searchTerms.text,
+          mode: Prisma.QueryMode.insensitive,
+        },
+      },
+      {
+        model: {
+          contains: searchTerms.text,
+          mode: Prisma.QueryMode.insensitive,
+        },
+      },
+      {
+        customer: {
+          fullName: {
+            contains: searchTerms.text,
+            mode: Prisma.QueryMode.insensitive,
+          },
+        },
+      },
+      {
+        customer: {
+          phone: {
+            contains: searchTerms.text,
+            mode: Prisma.QueryMode.insensitive,
+          },
+        },
+      },
+    ];
+
+    if (searchTerms.normalizedLicensePlate) {
+      conditions.push({
+        licensePlate: {
+          contains: searchTerms.normalizedLicensePlate,
+          mode: Prisma.QueryMode.insensitive,
+        },
+      });
+    }
+
+    if (
+      searchTerms.formattedPhone &&
+      searchTerms.formattedPhone !== searchTerms.text
+    ) {
+      conditions.push({
+        customer: {
+          phone: {
+            contains: searchTerms.formattedPhone,
+            mode: Prisma.QueryMode.insensitive,
+          },
+        },
+      });
+    }
+
+    return conditions;
+  }
+
+  /**
    * Ensures the customer exists inside the authenticated user's workshop.
    */
   private async ensureCustomerBelongsToWorkshop(
@@ -418,16 +483,28 @@ export class VehiclesService {
   }
 
   /**
-   * Normalizes search text and caps it to avoid unnecessarily expensive queries.
+   * Normalizes search text and adds plate/phone-friendly variants.
    */
-  private normalizeSearch(search?: string): string | undefined {
+  private normalizeSearch(search?: string): VehicleSearchTerms | undefined {
     const normalizedSearch = search?.trim().replace(/\s+/g, ' ');
 
     if (!normalizedSearch) {
       return undefined;
     }
 
-    return normalizedSearch.slice(0, MAX_TEXT_LENGTH);
+    const text = normalizedSearch.slice(0, MAX_TEXT_LENGTH);
+    const normalizedLicensePlate = this.normalizeLicensePlateSearch(text);
+    const digits = text.replace(/\D/g, '');
+    const formattedPhone =
+      digits.length > 4
+        ? `${digits.slice(0, 4)} ${digits.slice(4)}`
+        : undefined;
+
+    return {
+      text,
+      normalizedLicensePlate,
+      formattedPhone,
+    };
   }
 
   /**

@@ -1,22 +1,54 @@
 import { apiServerFetch } from "../../lib/api.server";
-import type { VehicleListItem, VehicleProfile } from "./types";
-
-type GetVehiclesParams = {
-  search?: string;
-};
+import type {
+  PaginatedResponse,
+  VehicleListItem,
+  VehicleProfile,
+  VehiclesQuery,
+} from "./types";
 
 /**
- * Fetches vehicles for the authenticated workshop.
+ * Fetches paginated vehicles for the authenticated workshop.
  *
- * Runs on the server and relies on apiServerFetch to forward the incoming
- * httpOnly cookie to the backend API.
+ * Use this function in vehicle list screens that need pagination metadata.
  */
-export function getVehicles({
-  search,
-}: GetVehiclesParams = {}): Promise<VehicleListItem[]> {
-  const query = search ? `?search=${encodeURIComponent(search)}` : "";
+export function getPaginatedVehicles(
+  query: VehiclesQuery = {},
+): Promise<PaginatedResponse<VehicleListItem>> {
+  const params = new URLSearchParams();
 
-  return apiServerFetch<VehicleListItem[]>(`/vehicles${query}`);
+  if (query.search) {
+    params.set("search", query.search);
+  }
+
+  if (query.page && query.page > 1) {
+    params.set("page", String(query.page));
+  }
+
+  if (query.limit) {
+    params.set("limit", String(query.limit));
+  }
+
+  const queryString = params.toString();
+  const path = queryString ? `/vehicles?${queryString}` : "/vehicles";
+
+  return apiServerFetch<PaginatedResponse<VehicleListItem>>(path);
+}
+
+/**
+ * Fetches vehicle options for forms that need a plain vehicle array.
+ *
+ * This keeps backwards compatibility with existing work-order creation screens
+ * while the vehicles index page uses server-side pagination.
+ */
+export async function getVehicles(
+  query: Omit<VehiclesQuery, "page" | "limit"> = {},
+): Promise<VehicleListItem[]> {
+  const vehiclesPage = await getPaginatedVehicles({
+    search: query.search,
+    limit: 50,
+  });
+
+  return vehiclesPage.data;
 }
 
 /**

@@ -1,36 +1,52 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "../../../components/ui/EmptyState";
+import { Pagination } from "../../../components/ui/Pagination";
 import { SearchForm } from "../../../components/ui/SearchForm";
 import { VehicleCard } from "../../../features/vehicles/components/VehicleCard";
-import { getVehicles } from "../../../features/vehicles/vehicles.server";
+import { getPaginatedVehicles } from "../../../features/vehicles/vehicles.server";
 import { normalizeSearchParam } from "../../../lib/format";
 
 export const metadata: Metadata = {
   title: "Vehículos",
 };
 
+const VEHICLES_PAGE_LIMIT = 10;
+
 type VehiclesPageProps = {
   searchParams: Promise<{
     search?: string | string[];
+    page?: string | string[];
   }>;
 };
 
 /**
  * Vehicles list page.
  *
- * Uses server-side search through the backend API. This keeps the route simple,
- * bookmarkable and compatible with httpOnly cookie authentication.
+ * Search and pagination are handled server-side by the API so the list remains
+ * performant when the workshop starts accumulating real operational data.
  */
-export default async function VehiclesPage({ searchParams }: VehiclesPageProps) {
+export default async function VehiclesPage({
+  searchParams,
+}: VehiclesPageProps) {
   const resolvedSearchParams = await searchParams;
   const search = normalizeSearchParam(resolvedSearchParams.search);
-  const vehicles = await getVehicles({ search });
+  const page = normalizePageParam(resolvedSearchParams.page);
+
+  const vehiclesPage = await getPaginatedVehicles({
+    search: search || undefined,
+    page,
+    limit: VEHICLES_PAGE_LIMIT,
+  });
+
+  const vehicles = vehiclesPage.data;
+  const meta = vehiclesPage.meta;
   const hasSearch = Boolean(search);
+  const hasVehicles = vehicles.length > 0;
 
   return (
     <section className="space-y-6 sm:space-y-8">
-      <header className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8">
+      <header className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
@@ -66,25 +82,45 @@ export default async function VehiclesPage({ searchParams }: VehiclesPageProps) 
       </header>
 
       <section aria-labelledby="vehicles-results-heading" className="space-y-4">
-        <div className="flex items-center justify-between gap-4">
-          <h2
-            id="vehicles-results-heading"
-            className="font-display text-lg font-black uppercase tracking-[0.04em] text-white"
-          >
-            Resultados
-          </h2>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div>
+            <h2
+              id="vehicles-results-heading"
+              className="font-display text-lg font-black uppercase tracking-[0.04em] text-white"
+            >
+              {hasSearch ? "Resultados" : "Registrados"}
+            </h2>
+
+            {meta.totalItems > 0 ? (
+              <p className="mt-1 text-sm text-muted-foreground">
+                Página {meta.page} de {meta.totalPages}
+              </p>
+            ) : null}
+          </div>
 
           <p className="shrink-0 text-sm font-semibold text-muted-foreground">
-            {vehicles.length} vehículo{vehicles.length === 1 ? "" : "s"}
+            {meta.totalItems} vehículo{meta.totalItems === 1 ? "" : "s"}
           </p>
         </div>
 
-        {vehicles.length > 0 ? (
-          <div className="grid gap-4">
-            {vehicles.map((vehicle) => (
-              <VehicleCard key={vehicle.id} vehicle={vehicle} />
-            ))}
-          </div>
+        {hasVehicles ? (
+          <>
+            <div className="grid gap-4">
+              {vehicles.map((vehicle) => (
+                <VehicleCard key={vehicle.id} vehicle={vehicle} />
+              ))}
+            </div>
+
+            <Pagination
+              basePath="/vehicles"
+              currentPage={meta.page}
+              totalPages={meta.totalPages}
+              searchParams={{
+                search: search || undefined,
+              }}
+              ariaLabel="Paginación de vehículos"
+            />
+          </>
         ) : (
           <EmptyState
             eyebrow={hasSearch ? "Sin resultados" : "Primer vehículo"}
@@ -130,4 +166,18 @@ export default async function VehiclesPage({ searchParams }: VehiclesPageProps) 
       </section>
     </section>
   );
+}
+
+/**
+ * Normalizes a page search param into a safe positive integer.
+ */
+function normalizePageParam(value: string | string[] | undefined): number {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  const parsedValue = rawValue ? Number(rawValue) : 1;
+
+  if (!Number.isInteger(parsedValue) || parsedValue < 1) {
+    return 1;
+  }
+
+  return parsedValue;
 }
