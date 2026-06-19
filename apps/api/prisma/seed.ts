@@ -7,6 +7,9 @@ const prisma = new PrismaClient();
 const WORKSHOP_ID = '11111111-1111-4111-8111-111111111111';
 const ADMIN_USER_ID = '22222222-2222-4222-8222-222222222222';
 
+const OWNER_WORKSHOP_ID = '12121212-1212-4121-8121-121212121212';
+const OWNER_USER_ID = '23232323-2323-4232-8232-232323232323';
+
 const CUSTOMER_JUAN_PEREZ_ID = '33333333-3333-4333-8333-333333333333';
 const CUSTOMER_MARIA_GONZALEZ_ID = '44444444-4444-4444-8444-444444444444';
 const CUSTOMER_CARLOS_RAMIREZ_ID = '88888888-8888-4888-8888-888888888888';
@@ -22,6 +25,7 @@ const VEHICLE_307_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 const VEHICLE_MAZDA_RX_ID = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
 
 const DEFAULT_DEMO_ADMIN_PASSWORD = 'Admin123!';
+const DEFAULT_DEMO_OWNER_PASSWORD = 'test123!';
 
 /**
  * Prevents destructive demo seeding from running accidentally in production.
@@ -44,19 +48,31 @@ function getDemoAdminPassword(): string {
   return process.env.DEMO_ADMIN_PASSWORD ?? DEFAULT_DEMO_ADMIN_PASSWORD;
 }
 
+/**
+ * Reads the secondary demo owner password from environment variables.
+ */
+function getDemoOwnerPassword(): string {
+  return process.env.DEMO_OWNER_PASSWORD ?? DEFAULT_DEMO_OWNER_PASSWORD;
+}
 
 /**
- * Creates deterministic demo data for local development.
+ * Creates deterministic demo data for local development and staging.
  *
- * This seed intentionally resets operational demo data for the workshop-demo
- * tenant before recreating customers, vehicles and work orders. That avoids
- * stale manually-created records with broken encoding.
+ * This seed intentionally resets operational demo data only for the
+ * `taller-demo` tenant before recreating customers, vehicles and work orders.
+ * Auth, workshop and membership records are preserved through upserts.
  */
 async function main(): Promise<void> {
-assertSeedCanRun();
+  assertSeedCanRun();
 
-const demoAdminPassword = getDemoAdminPassword();
-const passwordHash = await bcrypt.hash(demoAdminPassword, 10);
+  const demoAdminPassword = getDemoAdminPassword();
+  const demoOwnerPassword = getDemoOwnerPassword();
+
+  const [adminPasswordHash, ownerPasswordHash] = await Promise.all([
+    bcrypt.hash(demoAdminPassword, 10),
+    bcrypt.hash(demoOwnerPassword, 10),
+  ]);
+
   const workshop = await prisma.workshop.upsert({
     where: {
       slug: 'taller-demo',
@@ -77,13 +93,13 @@ const passwordHash = await bcrypt.hash(demoAdminPassword, 10);
     },
     update: {
       name: 'Admin Demo',
-      passwordHash,
+      passwordHash: adminPasswordHash,
     },
     create: {
       id: ADMIN_USER_ID,
       name: 'Admin Demo',
       email: 'admin@taller.demo',
-      passwordHash,
+      passwordHash: adminPasswordHash,
     },
   });
 
@@ -100,6 +116,53 @@ const passwordHash = await bcrypt.hash(demoAdminPassword, 10);
     create: {
       workshopId: workshop.id,
       userId: admin.id,
+      role: WorkshopRole.OWNER,
+    },
+  });
+
+  const ownerWorkshop = await prisma.workshop.upsert({
+    where: {
+      slug: 'taller-dueno',
+    },
+    update: {
+      name: 'Taller Dueño',
+    },
+    create: {
+      id: OWNER_WORKSHOP_ID,
+      name: 'Taller Dueño',
+      slug: 'taller-dueno',
+    },
+  });
+
+  const owner = await prisma.user.upsert({
+    where: {
+      email: 'dueno@taller.com',
+    },
+    update: {
+      name: 'Dueño Taller',
+      passwordHash: ownerPasswordHash,
+    },
+    create: {
+      id: OWNER_USER_ID,
+      name: 'Dueño Taller',
+      email: 'dueno@taller.com',
+      passwordHash: ownerPasswordHash,
+    },
+  });
+
+  await prisma.workshopMember.upsert({
+    where: {
+      workshopId_userId: {
+        workshopId: ownerWorkshop.id,
+        userId: owner.id,
+      },
+    },
+    update: {
+      role: WorkshopRole.OWNER,
+    },
+    create: {
+      workshopId: ownerWorkshop.id,
+      userId: owner.id,
       role: WorkshopRole.OWNER,
     },
   });
@@ -433,18 +496,51 @@ const passwordHash = await bcrypt.hash(demoAdminPassword, 10);
     }),
   ]);
 
+  const [ownerCustomersCount, ownerVehiclesCount, ownerWorkOrdersCount] =
+    await Promise.all([
+      prisma.customer.count({
+        where: {
+          workshopId: ownerWorkshop.id,
+        },
+      }),
+      prisma.vehicle.count({
+        where: {
+          workshopId: ownerWorkshop.id,
+        },
+      }),
+      prisma.workOrder.count({
+        where: {
+          workshopId: ownerWorkshop.id,
+        },
+      }),
+    ]);
+
   console.log('Seed completed successfully.');
   console.log('Demo summary:');
+  console.log(`Workshop: ${workshop.name}`);
   console.log(`Customers: ${customersCount}`);
   console.log(`Vehicles: ${vehiclesCount}`);
   console.log(`Work orders: ${workOrdersCount}`);
   console.log('Demo credentials:');
   console.log('Email: admin@taller.demo');
-console.log(
-  `Password: ${
-    process.env.DEMO_ADMIN_PASSWORD ? '[from DEMO_ADMIN_PASSWORD]' : '[local default]'
-  }`,
-);}
+  console.log(
+    `Password: ${
+      process.env.DEMO_ADMIN_PASSWORD ? '[from DEMO_ADMIN_PASSWORD]' : '[local default]'
+    }`,
+  );
+  console.log('Secondary workshop summary:');
+  console.log(`Workshop: ${ownerWorkshop.name}`);
+  console.log(`Customers: ${ownerCustomersCount}`);
+  console.log(`Vehicles: ${ownerVehiclesCount}`);
+  console.log(`Work orders: ${ownerWorkOrdersCount}`);
+  console.log('Secondary workshop credentials:');
+  console.log('Email: dueno@taller.com');
+  console.log(
+    `Password: ${
+      process.env.DEMO_OWNER_PASSWORD ? '[from DEMO_OWNER_PASSWORD]' : '[local default]'
+    }`,
+  );
+}
 
 /**
  * Deletes operational records for the demo workshop.
