@@ -13,12 +13,85 @@
 
   --primary: #d62828;
   --primary-hover: #ef3838;
+  --primary-foreground: #ffffff;
   --primary-muted: rgba(214, 40, 40, 0.12);
 
   --steel: #6f7277;
   --carbon: #2e3136;
   --muted: #6f7277;
   --muted-foreground: #c7c9cc;
+  --subtle-foreground: #e5e7eb;
+
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #d62828;
+
+  --shadow-industrial: 0 24px 80px rgba(0, 0, 0, 0.35);
+}
+
+/**
+ * Light workspace theme.
+ *
+ * This is scoped from the private layout instead of changing :root globally.
+ * Public/auth screens keep the current dark brand until they are intentionally
+ * migrated.
+ */
+.theme-light {
+  --background: #e9edf0;
+  --foreground: #1a1c1f;
+
+  --surface: #fbfcfd;
+  --surface-muted: #eef2f5;
+  --surface-elevated: #f5f7f9;
+
+  --border: #d3d9df;
+  --border-strong: #bcc5cd;
+
+  --primary: #d62828;
+  --primary-hover: #b91c1c;
+  --primary-foreground: #ffffff;
+  --primary-muted: rgba(214, 40, 40, 0.1);
+
+  --steel: #6f7277;
+  --carbon: #2e3136;
+  --muted: #6f7277;
+  --muted-foreground: #4a4f55;
+  --subtle-foreground: #2e3136;
+
+  --success: #15803d;
+  --warning: #b45309;
+  --danger: #b91c1c;
+
+  --shadow-industrial: 0 18px 48px rgba(26, 28, 31, 0.1);
+}
+
+/**
+ * Dark shell theme.
+ *
+ * Used inside the private app for header, sidebar and footer so the product
+ * keeps the industrial brand while the operational workspace becomes lighter.
+ */
+.theme-dark-shell {
+  --background: #111316;
+  --foreground: #f5f5f5;
+
+  --surface: #1a1c1f;
+  --surface-muted: #202327;
+  --surface-elevated: #2e3136;
+
+  --border: rgba(199, 201, 204, 0.12);
+  --border-strong: rgba(199, 201, 204, 0.22);
+
+  --primary: #d62828;
+  --primary-hover: #ef3838;
+  --primary-foreground: #ffffff;
+  --primary-muted: rgba(214, 40, 40, 0.12);
+
+  --steel: #6f7277;
+  --carbon: #2e3136;
+  --muted: #6f7277;
+  --muted-foreground: #c7c9cc;
+  --subtle-foreground: #e5e7eb;
 
   --success: #22c55e;
   --warning: #f59e0b;
@@ -37,11 +110,13 @@
   --color-border-strong: var(--border-strong);
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
   --color-primary-muted: var(--primary-muted);
   --color-steel: var(--steel);
   --color-carbon: var(--carbon);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
@@ -62,8 +137,16 @@ html {
 body {
   min-height: 100%;
   background:
-    radial-gradient(circle at top left, rgba(214, 40, 40, 0.16), transparent 34rem),
-    radial-gradient(circle at top right, rgba(111, 114, 119, 0.12), transparent 28rem),
+    radial-gradient(
+      circle at top left,
+      rgba(214, 40, 40, 0.16),
+      transparent 34rem
+    ),
+    radial-gradient(
+      circle at top right,
+      rgba(111, 114, 119, 0.12),
+      transparent 28rem
+    ),
     linear-gradient(135deg, #111316 0%, #1a1c1f 48%, #0b0c0e 100%);
   color: var(--foreground);
   font-family: var(--font-montserrat), Arial, Helvetica, sans-serif;
@@ -91,7 +174,7 @@ a {
 }
 
 ::selection {
-  background: rgba(214, 40, 40, 0.35);
+  background: rgba(214, 40, 40, 0.28);
   color: #ffffff;
 }
 
@@ -100,20 +183,118 @@ a {
   outline-offset: 3px;
 }
 
+/**
+ * Transitional light-workspace compatibility layer.
+ *
+ * Many existing MVP components still use text-white because the first visual
+ * system was dark-only. These scoped overrides make existing private screens
+ * readable on light surfaces without rewriting every page in the first block.
+ */
+.theme-light #main-content .text-white {
+  color: var(--foreground);
+}
+
+.theme-light #main-content .text-white\/85 {
+  color: var(--subtle-foreground);
+}
+
+.theme-light #main-content .text-white\/80 {
+  color: var(--subtle-foreground);
+}
+
+.theme-light #main-content .text-white\/70 {
+  color: var(--muted-foreground);
+}
+
+.theme-light #main-content .text-white\/60 {
+  color: var(--muted-foreground);
+}
+
+.theme-light #main-content .bg-primary.text-white,
+.theme-light #main-content .bg-primary .text-white {
+  color: var(--primary-foreground);
+}
+
+.theme-light #main-content .hover\:text-white:hover {
+  color: var(--foreground);
+}
+
+.theme-light #main-content input,
+.theme-light #main-content textarea,
+.theme-light #main-content select {
+  color: var(--foreground);
+}
+
+.theme-light #main-content input::placeholder,
+.theme-light #main-content textarea::placeholder {
+  color: #8a9097;
+}
+
+/**
+ * Light workspace surface tuning.
+ *
+ * These scoped rules reduce the amount of pure white in operational screens
+ * while keeping text contrast high and preserving the red brand accents.
+ */
+.theme-light #main-content .bg-surface\/85,
+.theme-light #main-content .bg-surface\/80,
+.theme-light #main-content .bg-surface\/75 {
+  background-color: rgba(251, 252, 253, 0.94);
+}
+
+.theme-light #main-content .bg-background\/55,
+.theme-light #main-content .bg-background\/60,
+.theme-light #main-content .bg-background\/70 {
+  background-color: rgba(238, 242, 245, 0.92);
+}
+
+.theme-light #main-content .bg-surface-muted {
+  background-color: #eef2f5;
+}
+
+.theme-light #main-content .bg-surface-elevated {
+  background-color: #f5f7f9;
+}
+
+.theme-light #main-content .border-border {
+  border-color: #d3d9df;
+}
+
+.theme-light #main-content .border-border-strong {
+  border-color: #bcc5cd;
+}
+
+.theme-light #main-content .shadow-\[var\(--shadow-industrial\)\],
+.theme-light #main-content .shadow-\(--shadow-industrial\) {
+  box-shadow: var(--shadow-industrial);
+}
+
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #111316;
+  background: var(--background);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #3a3d43;
+  background: #aeb4ba;
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
+  background: #6f7277;
+}
+
+.theme-dark-shell ::-webkit-scrollbar-track {
+  background: #111316;
+}
+
+.theme-dark-shell ::-webkit-scrollbar-thumb {
+  background: #3a3d43;
+}
+
+.theme-dark-shell ::-webkit-scrollbar-thumb:hover {
   background: #6f7277;
 }

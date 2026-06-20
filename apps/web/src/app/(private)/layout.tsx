@@ -9,8 +9,9 @@ import { PrivateNavigation } from "./_components/PrivateNavigation";
 /**
  * Private application layout.
  *
- * Blocks unauthenticated access and exposes the authenticated user context
- * at layout level.
+ * Blocks unauthenticated access and exposes the authenticated user context at
+ * layout level. The shell keeps the industrial dark identity while the main
+ * workspace uses the lighter operational theme.
  */
 export default async function PrivateLayout({
   children,
@@ -24,8 +25,8 @@ export default async function PrivateLayout({
   }
 
   return (
-    <div className="flex min-h-screen flex-col overflow-x-hidden bg-background text-foreground">
-      <header className="border-b border-border bg-background/95 shadow-[0_16px_50px_rgba(0,0,0,0.25)] backdrop-blur">
+    <div className="theme-light flex min-h-screen flex-col overflow-x-hidden bg-background text-foreground">
+      <header className="theme-dark-shell border-b border-border bg-background/95 shadow-[0_16px_50px_rgba(0,0,0,0.25)] backdrop-blur">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-3 py-3 sm:gap-4 sm:px-6 sm:py-4">
           <div className="min-w-0">
             <Link
@@ -65,7 +66,7 @@ export default async function PrivateLayout({
       </header>
 
       <div className="mx-auto grid w-full max-w-7xl flex-1 gap-4 px-3 py-4 sm:gap-5 sm:px-6 sm:py-6 lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-6 lg:py-8">
-        <aside className="min-w-0 overflow-hidden rounded-[1.1rem] border border-border bg-surface/85 p-2.5 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-3 lg:p-4">
+        <aside className="theme-dark-shell min-w-0 overflow-hidden rounded-[1.1rem] border border-border bg-surface/90 p-2.5 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-3 lg:p-4">
           <PrivateNavigation />
         </aside>
 
