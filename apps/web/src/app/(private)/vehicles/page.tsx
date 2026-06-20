@@ -46,14 +46,24 @@ export default async function VehiclesPage({
 
   return (
     <section className="space-y-6 sm:space-y-8">
-      <header className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+      <header className="relative overflow-hidden rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
+        <div
+          aria-hidden="true"
+          className="absolute right-0 top-0 h-36 w-36 translate-x-12 -translate-y-14 rounded-full bg-primary/10 blur-3xl"
+        />
+
+        <div
+          aria-hidden="true"
+          className="absolute bottom-0 left-0 h-24 w-48 -translate-x-16 translate-y-12 rounded-full bg-carbon/10 blur-3xl"
+        />
+
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
               Vehículos
             </p>
 
-            <h1 className="mt-3 font-display text-2xl font-black uppercase tracking-[0.04em] text-white sm:text-3xl">
+            <h1 className="mt-3 font-display text-2xl font-black uppercase tracking-[0.04em] text-foreground sm:text-3xl">
               Fichas del taller
             </h1>
 
@@ -71,14 +81,16 @@ export default async function VehiclesPage({
           </Link>
         </div>
 
-        <SearchForm
-          id="vehicles-search"
-          label="Buscar"
-          defaultValue={search}
-          placeholder="Buscar por patente, cliente o teléfono..."
-          clearHref="/vehicles"
-          showClearAction={hasSearch}
-        />
+        <div className="relative">
+          <SearchForm
+            id="vehicles-search"
+            label="Buscar"
+            defaultValue={search}
+            placeholder="Buscar por patente, cliente o teléfono..."
+            clearHref="/vehicles"
+            showClearAction={hasSearch}
+          />
+        </div>
       </header>
 
       <section aria-labelledby="vehicles-results-heading" className="space-y-4">
@@ -86,7 +98,7 @@ export default async function VehiclesPage({
           <div>
             <h2
               id="vehicles-results-heading"
-              className="font-display text-lg font-black uppercase tracking-[0.04em] text-white"
+              className="font-display text-lg font-black uppercase tracking-[0.04em] text-foreground"
             >
               {hasSearch ? "Resultados" : "Registrados"}
             </h2>
@@ -106,8 +118,12 @@ export default async function VehiclesPage({
         {hasVehicles ? (
           <>
             <div className="grid gap-4">
-              {vehicles.map((vehicle) => (
-                <VehicleCard key={vehicle.id} vehicle={vehicle} />
+              {vehicles.map((vehicle, index) => (
+                <VehicleCard
+                  key={vehicle.id}
+                  vehicle={vehicle}
+                  variant={index % 2 === 0 ? "accent" : "neutral"}
+                />
               ))}
             </div>
 
