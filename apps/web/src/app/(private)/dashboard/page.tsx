@@ -14,19 +14,30 @@ export const metadata: Metadata = {
 /**
  * Private dashboard page.
  *
- * Shows the authenticated workshop operational summary using server-side data
+ * Shows the authenticated workshop operational cockpit using server-side data
  * fetching and httpOnly cookie forwarding.
  */
 export default async function DashboardPage() {
   const summary = await getDashboardSummary();
 
   return (
-    <section className="space-y-6 sm:space-y-8">
+    <section className="space-y-4 sm:space-y-5">
       <DashboardHeader />
+
       <DashboardTotalsGrid summary={summary} />
-      <DashboardWorkOrderStatusGrid summary={summary} />
-      <DashboardQuickActions />
+
       <AttentionWorkOrdersPanel workOrders={summary.attentionWorkOrders} />
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start 2xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="min-w-0">
+          <DashboardWorkOrderStatusGrid summary={summary} />
+        </div>
+
+        <aside className="min-w-0">
+          <DashboardQuickActions />
+        </aside>
+      </div>
+
       <LatestWorkOrdersPanel workOrders={summary.latestWorkOrders} />
     </section>
   );

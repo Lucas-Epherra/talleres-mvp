@@ -11,15 +11,24 @@ type DashboardTotalsGridProps = {
  */
 export function DashboardTotalsGrid({ summary }: DashboardTotalsGridProps) {
   return (
-    <section aria-labelledby="totals-heading" className="space-y-4">
-      <DashboardSectionHeading
-        headingId="totals-heading"
-        eyebrow="Base operativa"
-        title="Totales generales"
-        description="Estado global del taller y volumen actual de registros."
-      />
+    <section
+      aria-labelledby="totals-heading"
+      className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface-elevated via-surface to-surface p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-5"
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <DashboardSectionHeading
+          headingId="totals-heading"
+          eyebrow="Base operativa"
+          title="Totales generales"
+          description="Estado global del taller y volumen actual de registros."
+        />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <p className="w-fit rounded-full border border-border-strong bg-surface-muted px-3 py-1.5 text-[0.66rem] font-black uppercase tracking-[0.18em] text-muted-foreground">
+          KPI cards
+        </p>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <DashboardMetricCard
           label="Clientes"
           value={summary.totals.customers}

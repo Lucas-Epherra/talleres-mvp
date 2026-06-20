@@ -13,15 +13,24 @@ export function DashboardWorkOrderStatusGrid({
   summary,
 }: DashboardWorkOrderStatusGridProps) {
   return (
-    <section aria-labelledby="work-orders-heading" className="space-y-4">
-      <DashboardSectionHeading
-        headingId="work-orders-heading"
-        eyebrow="Flujo de trabajo"
-        title="Estado de órdenes"
-        description="Distribución actual de órdenes según avance operativo."
-      />
+    <section
+      aria-labelledby="work-orders-heading"
+      className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-5"
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <DashboardSectionHeading
+          headingId="work-orders-heading"
+          eyebrow="Flujo de trabajo"
+          title="Estado de órdenes"
+          description="Distribución actual de órdenes según avance operativo."
+        />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <p className="w-fit rounded-full border border-border-strong bg-surface-muted px-3 py-1.5 text-[0.66rem] font-black uppercase tracking-[0.18em] text-muted-foreground">
+          Workflow
+        </p>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 2xl:grid-cols-5">
         <DashboardMetricCard
           label="Activas"
           value={summary.workOrders.active}

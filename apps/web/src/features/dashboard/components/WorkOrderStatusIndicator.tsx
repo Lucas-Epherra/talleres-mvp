@@ -22,7 +22,7 @@ export function WorkOrderStatusIndicator({
 
   return (
     <div
-      className={`${classes.text} inline-flex w-fit shrink-0 items-center gap-2 text-[0.68rem] font-black uppercase tracking-[0.16em]`}
+      className={`${classes.text} inline-flex w-fit shrink-0 items-center gap-2 text-[0.62rem] font-black uppercase tracking-[0.14em]`}
       aria-label={`Estado: ${formatWorkOrderStatus(status)}`}
     >
       <span
@@ -56,7 +56,7 @@ function getStatusIndicatorClasses(status: WorkOrderStatus): {
       dot: "bg-steel text-steel",
     },
     IN_PROGRESS: {
-      text: "text-white",
+      text: "text-primary",
       dot: "bg-primary text-primary",
     },
     READY: {

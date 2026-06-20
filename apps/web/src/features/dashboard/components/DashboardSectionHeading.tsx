@@ -16,18 +16,18 @@ export function DashboardSectionHeading({
 }: DashboardSectionHeadingProps) {
   return (
     <div>
-      <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+      <p className="text-[0.66rem] font-bold uppercase tracking-[0.22em] text-primary">
         {eyebrow}
       </p>
 
       <h2
         id={headingId}
-        className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-white"
+        className="mt-1.5 font-display text-lg font-black uppercase tracking-[0.04em] text-foreground"
       >
         {title}
       </h2>
 
-      <p className="mt-1 text-sm leading-6 text-muted-foreground">
+      <p className="mt-1 text-sm leading-5 text-muted-foreground">
         {description}
       </p>
     </div>

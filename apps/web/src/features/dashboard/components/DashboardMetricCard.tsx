@@ -12,7 +12,7 @@ type DashboardMetricCardProps = {
  * Small reusable metric card for dashboard summary values.
  *
  * When href is provided, the card becomes a navigable dashboard shortcut while
- * keeping a metric-card visual language.
+ * keeping a compact cockpit visual language.
  */
 export function DashboardMetricCard({
   label,
@@ -23,23 +23,28 @@ export function DashboardMetricCard({
 }: DashboardMetricCardProps) {
   const content = (
     <>
-      <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-        {label}
-      </p>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+          {label}
+        </p>
 
-      <p className="mt-3 font-display text-3xl font-black text-white">
+        {href ? (
+          <span
+            aria-hidden="true"
+            className="grid size-6 shrink-0 place-items-center rounded-lg border border-border bg-surface-elevated text-[0.62rem] font-black text-primary transition group-hover:border-primary/50"
+          >
+            →
+          </span>
+        ) : null}
+      </div>
+
+      <p className="mt-2 font-display text-3xl font-black leading-none text-foreground">
         {value}
       </p>
 
-      <p className="mt-2 text-sm leading-5 text-muted-foreground">
+      <p className="mt-2 text-xs leading-5 text-muted-foreground">
         {description}
       </p>
-
-      {href ? (
-        <p className="mt-4 text-xs font-black uppercase tracking-[0.14em] text-primary">
-          Abrir
-        </p>
-      ) : null}
     </>
   );
 
@@ -65,12 +70,14 @@ export function DashboardMetricCard({
 /**
  * Maps dashboard metric tones to branded card classes.
  */
-function getMetricCardClassName(tone: DashboardMetricCardProps["tone"]): string {
+function getMetricCardClassName(
+  tone: DashboardMetricCardProps["tone"],
+): string {
   const baseClassName =
-    "group rounded-2xl border p-5 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] transition";
+    "group min-h-32 rounded-2xl border p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition";
 
   if (tone === "primary") {
-    return `${baseClassName} border-primary/35 bg-primary/10 hover:border-primary/60`;
+    return `${baseClassName} border-primary/30 bg-primary/10 hover:border-primary/55`;
   }
 
   if (tone === "warning") {
@@ -81,5 +88,5 @@ function getMetricCardClassName(tone: DashboardMetricCardProps["tone"]): string 
     return `${baseClassName} border-success/35 bg-success/10 hover:border-success/60`;
   }
 
-  return `${baseClassName} border-border bg-surface/85 hover:border-primary/40 hover:bg-surface-elevated`;
+  return `${baseClassName} border-border bg-surface-muted/85 hover:border-primary/40 hover:bg-surface-elevated`;
 }
