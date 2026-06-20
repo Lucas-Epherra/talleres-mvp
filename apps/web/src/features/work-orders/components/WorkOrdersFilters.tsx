@@ -63,7 +63,7 @@ export function WorkOrdersFilters({
 
   return (
     <form
-      className="rounded-[1.35rem] border border-border bg-surface/85 p-5 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03]"
+      className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface-elevated via-surface to-surface p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-5"
       onSubmit={handleSubmit}
       noValidate
     >
@@ -82,7 +82,7 @@ export function WorkOrdersFilters({
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Patente, cliente, modelo, diagnóstico..."
-            className="mt-2 h-11 w-full rounded-xl border border-border-strong bg-background/70 px-4 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20"
+            className="mt-2 h-11 w-full rounded-xl border border-border-strong bg-surface-muted/90 px-4 text-sm text-foreground outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
         </div>
 
@@ -100,7 +100,7 @@ export function WorkOrdersFilters({
             onChange={(event) =>
               setStatus(event.target.value as StatusFilterValue)
             }
-            className="mt-2 h-11 w-full rounded-xl border border-border-strong bg-background/70 px-4 text-sm font-bold text-white outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+            className="mt-2 h-11 w-full rounded-xl border border-border-strong bg-surface-muted/90 px-4 text-sm font-bold text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
           >
             <option value="ALL">Todos</option>
 
@@ -122,7 +122,7 @@ export function WorkOrdersFilters({
 
         <Link
           href="/work-orders"
-          className="inline-flex h-11 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated"
+          className="inline-flex h-11 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
         >
           Limpiar
         </Link>

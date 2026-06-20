@@ -66,15 +66,25 @@ export default async function WorkOrdersPage({
   const hasWorkOrders = workOrders.length > 0;
 
   return (
-    <section className="space-y-6">
-      <div className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+    <section className="space-y-6 sm:space-y-8">
+      <header className="relative overflow-hidden rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
+        <div
+          aria-hidden="true"
+          className="absolute right-0 top-0 h-36 w-36 translate-x-12 -translate-y-14 rounded-full bg-primary/10 blur-3xl"
+        />
+
+        <div
+          aria-hidden="true"
+          className="absolute bottom-0 left-0 h-24 w-48 -translate-x-16 translate-y-12 rounded-full bg-carbon/10 blur-3xl"
+        />
+
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
               Órdenes
             </p>
 
-            <h1 className="mt-3 font-display text-2xl font-black uppercase tracking-[0.04em] text-white sm:text-3xl">
+            <h1 className="mt-3 font-display text-2xl font-black uppercase tracking-[0.04em] text-foreground sm:text-3xl">
               Órdenes de trabajo
             </h1>
 
@@ -92,7 +102,7 @@ export default async function WorkOrdersPage({
           </Link>
         </div>
 
-        <dl className="mt-6 grid gap-3 sm:mt-8 sm:grid-cols-3">
+        <dl className="relative mt-6 grid gap-3 sm:mt-8 sm:grid-cols-3">
           <SummaryItem label="Resultados" value={meta.totalItems} />
           <SummaryItem label="Activas en página" value={pageActiveCount} />
           <SummaryItem
@@ -100,29 +110,46 @@ export default async function WorkOrdersPage({
             value={pageDeliveredCount}
           />
         </dl>
-      </div>
+      </header>
 
       <WorkOrdersFilters currentSearch={search} currentStatus={status} />
 
       {hasWorkOrders ? (
         <>
-          <div className="space-y-4">
+          <section
+            aria-labelledby="work-orders-results-heading"
+            className="space-y-4"
+          >
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm font-semibold text-muted-foreground">
-                Página{" "}
-                <span className="font-black text-white">{meta.page}</span> de{" "}
-                <span className="font-black text-white">{meta.totalPages}</span>
-              </p>
+              <div>
+                <h2
+                  id="work-orders-results-heading"
+                  className="font-display text-lg font-black uppercase tracking-[0.04em] text-foreground"
+                >
+                  {hasFilters ? "Resultados" : "Registradas"}
+                </h2>
+
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Página <span className="font-black">{meta.page}</span> de{" "}
+                  <span className="font-black">{meta.totalPages}</span>
+                </p>
+              </div>
 
               <p className="text-sm font-semibold text-muted-foreground">
                 Mostrando {workOrders.length} de {meta.totalItems}
               </p>
             </div>
 
-            {workOrders.map((workOrder) => (
-              <WorkOrderCard key={workOrder.id} workOrder={workOrder} />
-            ))}
-          </div>
+            <div className="grid gap-4">
+              {workOrders.map((workOrder, index) => (
+                <WorkOrderCard
+                  key={workOrder.id}
+                  workOrder={workOrder}
+                  variant={index % 2 === 0 ? "accent" : "neutral"}
+                />
+              ))}
+            </div>
+          </section>
 
           <Pagination
             basePath="/work-orders"
@@ -186,12 +213,12 @@ export default async function WorkOrdersPage({
  */
 function SummaryItem({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-border bg-background/55 p-4 ring-1 ring-white/3">
+    <div className="rounded-2xl border border-border bg-surface-muted/85 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
       <dt className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
         {label}
       </dt>
 
-      <dd className="mt-2 font-display text-2xl font-black text-white">
+      <dd className="mt-2 font-display text-2xl font-black text-foreground">
         {value}
       </dd>
     </div>

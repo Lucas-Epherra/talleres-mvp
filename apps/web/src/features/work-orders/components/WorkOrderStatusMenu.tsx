@@ -25,9 +25,9 @@ type StatusAction = {
 /**
  * Interactive work order status indicator.
  *
- * The visible status keeps the same visual style as the static indicator.
- * When opened, the menu expands inside the card instead of floating over the
- * next card or being clipped near the footer.
+ * The visible status keeps a compact indicator style. When opened, the menu
+ * expands inside the card instead of floating over the next card or being
+ * clipped near the footer.
  */
 export function WorkOrderStatusMenu({
   workOrderId,
@@ -159,12 +159,12 @@ export function WorkOrderStatusMenu({
           role="menu"
           className="mt-3 w-full max-w-64 overflow-hidden rounded-xl border border-border-strong bg-surface-elevated text-left shadow-(--shadow-industrial) ring-1 ring-white/3"
         >
-          <div className="border-b border-border px-4 py-3">
+          <div className="border-b border-border bg-surface-muted/70 px-4 py-3">
             <p className="text-[0.62rem] font-black uppercase tracking-[0.18em] text-primary">
               Estado actual
             </p>
 
-            <p className="mt-1 text-sm font-bold text-white">
+            <p className="mt-1 text-sm font-bold text-foreground">
               {formattedCurrentStatus}
             </p>
           </div>
@@ -174,13 +174,13 @@ export function WorkOrderStatusMenu({
             role="menuitem"
             disabled={isSubmitting}
             onClick={handleStatusUpdate}
-            className="group w-full px-4 py-3 text-left transition hover:bg-background/55 disabled:cursor-not-allowed disabled:opacity-60"
+            className="group w-full px-4 py-3 text-left transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
           >
             <span
               className={
                 action.nextStatus === "DELIVERED"
                   ? "block text-sm font-black text-primary"
-                  : "block text-sm font-black text-white group-hover:text-primary"
+                  : "block text-sm font-black text-foreground group-hover:text-primary"
               }
             >
               {action.label}
@@ -195,7 +195,7 @@ export function WorkOrderStatusMenu({
 
       {errorMessage ? (
         <p
-          className="mt-2 max-w-xs rounded-xl border border-primary/40 bg-primary/10 px-3 py-2 text-left text-xs font-semibold leading-5 text-white"
+          className="mt-2 max-w-xs rounded-xl border border-primary/40 bg-primary/10 px-3 py-2 text-left text-xs font-semibold leading-5 text-foreground"
           role="alert"
         >
           {errorMessage}
@@ -213,7 +213,7 @@ type StatusVisualProps = {
 };
 
 /**
- * Renders the original status indicator visual style.
+ * Renders the status indicator visual style.
  *
  * When interactive, it adds a very small dropdown chevron without changing the
  * apparent text size or weight of the status label.
@@ -298,7 +298,7 @@ function getStatusIndicatorClasses(status: WorkOrderStatus): {
       dot: "bg-steel text-steel",
     },
     IN_PROGRESS: {
-      text: "text-white",
+      text: "text-primary",
       dot: "bg-primary text-primary",
     },
     READY: {
