@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -31,17 +32,13 @@ export default async function EditCustomerPage({
   return (
     <section className="space-y-8">
       <header className="relative overflow-hidden rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
-        <div
-          aria-hidden="true"
-          className="absolute right-0 top-0 h-40 w-40 translate-x-14 -translate-y-16 rounded-full bg-primary/10 blur-3xl"
-        />
-
         <div className="relative">
           <Link
             href={`/customers/${customer.id}`}
-            className="text-sm font-bold text-primary transition hover:text-primary-hover"
+            className="inline-flex items-center gap-2 text-sm font-bold text-primary transition hover:text-primary-hover"
           >
-            ← Volver a la ficha
+            <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
+            Volver a la ficha
           </Link>
 
           <p className="mt-6 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">

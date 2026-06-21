@@ -21,7 +21,7 @@ type PrivateNavigationItem = {
 const PRIVATE_NAVIGATION_ITEMS: PrivateNavigationItem[] = [
   {
     href: "/dashboard",
-    label: "Dashboard",
+    label: "Panel de control",
     icon: LayoutGrid,
   },
   {

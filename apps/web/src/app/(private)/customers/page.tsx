@@ -1,3 +1,4 @@
+import { UserPlus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "../../../components/ui/EmptyState";
@@ -46,16 +47,6 @@ export default async function CustomersPage({
   return (
     <section className="space-y-6 sm:space-y-8">
       <header className="relative overflow-hidden rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
-        <div
-          aria-hidden="true"
-          className="absolute right-0 top-0 h-36 w-36 translate-x-12 -translate-y-14 rounded-full bg-primary/10 blur-3xl"
-        />
-
-        <div
-          aria-hidden="true"
-          className="absolute bottom-0 left-0 h-24 w-48 -translate-x-16 translate-y-12 rounded-full bg-carbon/10 blur-3xl"
-        />
-
         <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
@@ -74,8 +65,9 @@ export default async function CustomersPage({
 
           <Link
             href="/customers/new"
-            className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
           >
+            <UserPlus className="size-4 shrink-0" aria-hidden="true" />
             Nuevo cliente
           </Link>
         </div>
