@@ -22,32 +22,42 @@ export const metadata: Metadata = {
  * Fetches the current vehicle profile server-side and delegates interactive
  * PATCH behavior to the edit vehicle form leaf Client Component.
  */
-export default async function EditVehiclePage({ params }: EditVehiclePageProps) {
+export default async function EditVehiclePage({
+  params,
+}: EditVehiclePageProps) {
   const { id } = await params;
   const profile = await resolveVehicleProfile(id);
 
   return (
     <section className="space-y-8">
-      <header className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8">
-        <Link
-          href={`/vehicles/${profile.vehicle.id}`}
-          className="text-sm font-bold text-primary transition hover:text-primary-hover"
-        >
-          ← Volver a la ficha
-        </Link>
+      <header className="relative overflow-hidden rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
+        <div
+          aria-hidden="true"
+          className="absolute right-0 top-0 h-40 w-40 translate-x-14 -translate-y-16 rounded-full bg-primary/10 blur-3xl"
+        />
 
-        <p className="mt-6 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
-          Editar vehículo
-        </p>
+        <div className="relative">
+          <Link
+            href={`/vehicles/${profile.vehicle.id}`}
+            className="text-sm font-bold text-primary transition hover:text-primary-hover"
+          >
+            ← Volver a la ficha
+          </Link>
 
-        <h1 className="mt-3 wrap-anywhere font-display text-2xl font-black uppercase tracking-[0.04em] text-white sm:text-3xl">
-          {profile.vehicle.licensePlate}
-        </h1>
+          <p className="mt-6 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+            Editar vehículo
+          </p>
 
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Corregí patente, marca, modelo, año, kilometraje o notas internas del
-          vehículo. El cliente asociado no se modifica desde esta pantalla.
-        </p>
+          <h1 className="mt-3 wrap-anywhere font-display text-2xl font-black uppercase tracking-[0.04em] text-foreground sm:text-3xl">
+            {profile.vehicle.licensePlate}
+          </h1>
+
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+            Corregí patente, marca, modelo, año, kilometraje o notas internas
+            del vehículo. El cliente asociado no se modifica desde esta
+            pantalla.
+          </p>
+        </div>
       </header>
 
       <EditVehicleForm profile={profile} />

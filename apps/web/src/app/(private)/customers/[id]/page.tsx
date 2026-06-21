@@ -51,8 +51,18 @@ export default async function CustomerDetailPage({
 
   return (
     <section className="space-y-6 sm:space-y-8">
-      <header className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+      <header className="relative overflow-hidden rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
+        <div
+          aria-hidden="true"
+          className="absolute right-0 top-0 h-40 w-40 translate-x-14 -translate-y-16 rounded-full bg-primary/10 blur-3xl"
+        />
+
+        <div
+          aria-hidden="true"
+          className="absolute bottom-0 left-0 h-24 w-48 -translate-x-16 translate-y-12 rounded-full bg-carbon/10 blur-3xl"
+        />
+
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <Link
               href="/customers"
@@ -65,7 +75,7 @@ export default async function CustomerDetailPage({
               Ficha del cliente
             </p>
 
-            <h1 className="mt-3 wrap-anywhere font-display text-2xl font-black uppercase tracking-[0.04em] text-white sm:text-3xl">
+            <h1 className="mt-3 wrap-anywhere font-display text-2xl font-black uppercase tracking-[0.04em] text-foreground sm:text-3xl">
               {customer.fullName}
             </h1>
 
@@ -75,7 +85,7 @@ export default async function CustomerDetailPage({
             </p>
           </div>
 
-          <div className="flex shrink-0 flex-col gap-3 sm:flex-row lg:flex-col">
+          <div className="grid shrink-0 gap-3 sm:grid-cols-3 lg:flex lg:flex-col">
             <Link
               href={`/customers/${customer.id}/edit`}
               className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover sm:w-auto"
@@ -85,14 +95,14 @@ export default async function CustomerDetailPage({
 
             <Link
               href={`/vehicles/new?customerId=${customer.id}`}
-              className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
+              className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
             >
               Cargar vehículo
             </Link>
 
             <Link
               href="#customer-vehicles-heading"
-              className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
+              className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
             >
               Ver vehículos
             </Link>
@@ -119,9 +129,7 @@ export default async function CustomerDetailPage({
         />
         <DetailSheetRow
           label="Email"
-          value={
-            <BreakableDetailValue value={customer.email ?? "Sin email"} />
-          }
+          value={<BreakableDetailValue value={customer.email ?? "Sin email"} />}
         />
         <DetailSheetRow
           label="Dirección"
@@ -139,18 +147,26 @@ export default async function CustomerDetailPage({
 
       <section
         aria-labelledby="customer-summary-heading"
-        className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8"
+        className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8"
       >
-        <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
-          Actividad
-        </p>
+        <div className="flex flex-col gap-3 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+              Actividad
+            </p>
 
-        <h2
-          id="customer-summary-heading"
-          className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-white"
-        >
-          Resumen operativo
-        </h2>
+            <h2
+              id="customer-summary-heading"
+              className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
+            >
+              Resumen operativo
+            </h2>
+          </div>
+
+          <p className="w-fit rounded-full border border-border-strong bg-surface-muted px-3 py-1.5 text-[0.66rem] font-black uppercase tracking-[0.18em] text-muted-foreground">
+            Cliente activo
+          </p>
+        </div>
 
         <dl className="mt-5 grid gap-4 md:grid-cols-3">
           <SummaryMetric
@@ -180,8 +196,12 @@ export default async function CustomerDetailPage({
 
         {associatedVehicles.length > 0 ? (
           <div className="grid gap-4">
-            {associatedVehicles.map((vehicle) => (
-              <VehicleCard key={vehicle.id} vehicle={vehicle} />
+            {associatedVehicles.map((vehicle, index) => (
+              <VehicleCard
+                key={vehicle.id}
+                vehicle={vehicle}
+                variant={index % 2 === 0 ? "accent" : "neutral"}
+              />
             ))}
           </div>
         ) : (
@@ -220,8 +240,12 @@ export default async function CustomerDetailPage({
 
         {activeWorkOrders.length > 0 ? (
           <div className="grid gap-4">
-            {activeWorkOrders.map((workOrder) => (
-              <WorkOrderCard key={workOrder.id} workOrder={workOrder} />
+            {activeWorkOrders.map((workOrder, index) => (
+              <WorkOrderCard
+                key={workOrder.id}
+                workOrder={workOrder}
+                variant={index % 2 === 0 ? "accent" : "neutral"}
+              />
             ))}
           </div>
         ) : (
@@ -257,8 +281,12 @@ export default async function CustomerDetailPage({
 
         {deliveredWorkOrders.length > 0 ? (
           <div className="grid gap-4">
-            {deliveredWorkOrders.map((workOrder) => (
-              <WorkOrderCard key={workOrder.id} workOrder={workOrder} />
+            {deliveredWorkOrders.map((workOrder, index) => (
+              <WorkOrderCard
+                key={workOrder.id}
+                workOrder={workOrder}
+                variant={index % 2 === 0 ? "accent" : "neutral"}
+              />
             ))}
           </div>
         ) : (
@@ -348,12 +376,12 @@ type SummaryMetricProps = {
  */
 function SummaryMetric({ label, value }: SummaryMetricProps) {
   return (
-    <div className="rounded-2xl border border-border bg-background/55 p-4 ring-1 ring-white/3">
+    <div className="rounded-2xl border border-border bg-surface-muted/85 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
       <dt className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
         {label}
       </dt>
 
-      <dd className="mt-2 font-display text-lg font-black text-white">
+      <dd className="mt-2 font-display text-lg font-black text-foreground">
         {value}
       </dd>
     </div>
@@ -377,19 +405,23 @@ function SectionHeading({
   count,
 }: SectionHeadingProps) {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h2
-          id={headingId}
-          className="font-display text-lg font-black uppercase tracking-[0.04em] text-white"
-        >
-          {title}
-        </h2>
+    <div className="rounded-[1.1rem] border border-border bg-surface/90 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2
+            id={headingId}
+            className="font-display text-lg font-black uppercase tracking-[0.04em] text-foreground"
+          >
+            {title}
+          </h2>
 
-        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        </div>
+
+        <p className="w-fit rounded-full border border-border-strong bg-surface-muted px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-muted-foreground">
+          {count}
+        </p>
       </div>
-
-      <p className="text-sm font-semibold text-muted-foreground">{count}</p>
     </div>
   );
 }

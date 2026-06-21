@@ -25,10 +25,15 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
   const { vehicle, customer, currentStatus, summary } = profile;
 
   return (
-    <header className="relative overflow-hidden rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
+    <header className="relative overflow-hidden rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
       <div
         aria-hidden="true"
-        className="absolute right-0 top-0 h-56 w-56 translate-x-16 -translate-y-20 rounded-full bg-primary/15 blur-3xl"
+        className="absolute right-0 top-0 h-56 w-56 translate-x-16 -translate-y-20 rounded-full bg-primary/12 blur-3xl"
+      />
+
+      <div
+        aria-hidden="true"
+        className="absolute bottom-0 left-0 h-28 w-56 -translate-x-20 translate-y-14 rounded-full bg-carbon/10 blur-3xl"
       />
 
       <div className="relative flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
@@ -44,7 +49,7 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
             Ficha del vehículo
           </p>
 
-          <h1 className="mt-3 wrap-anywhere font-display text-4xl font-black italic uppercase tracking-[-0.04em] text-white sm:text-5xl">
+          <h1 className="mt-3 wrap-anywhere font-display text-4xl font-black italic uppercase tracking-[-0.04em] text-foreground sm:text-5xl">
             {vehicle.licensePlate}
           </h1>
 
@@ -79,7 +84,7 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
 
             <Link
               href={`/vehicles/${vehicle.id}/edit`}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated"
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated"
             >
               Editar vehículo
             </Link>
@@ -87,69 +92,72 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
         </div>
       </div>
 
-      <DetailSheet
-        headingId="vehicle-data-heading"
-        title="Datos del vehículo"
-        className="relative mt-8"
-        titleSize="sm"
-      >
-        <DetailSheetRow label="Patente" value={vehicle.licensePlate} />
-        <DetailSheetRow label="Marca" value={vehicle.brand} />
-        <DetailSheetRow label="Modelo" value={vehicle.model} />
-        <DetailSheetRow
-          label="Año"
-          value={vehicle.year ? vehicle.year.toString() : "Sin cargar"}
-        />
-        <DetailSheetRow
-          label="Kilometraje"
-          value={formatMileage(vehicle.mileage)}
-        />
-        <DetailSheetRow
-          label="Notas"
-          value={
-            <NotesValue value={vehicle.notes} fallback="Sin notas del vehículo" />
-          }
-        />
-      </DetailSheet>
+      <div className="relative mt-8 grid gap-5 xl:grid-cols-2">
+        <DetailSheet
+          headingId="vehicle-data-heading"
+          title="Datos del vehículo"
+          titleSize="sm"
+        >
+          <DetailSheetRow label="Patente" value={vehicle.licensePlate} />
+          <DetailSheetRow label="Marca" value={vehicle.brand} />
+          <DetailSheetRow label="Modelo" value={vehicle.model} />
+          <DetailSheetRow
+            label="Año"
+            value={vehicle.year ? vehicle.year.toString() : "Sin cargar"}
+          />
+          <DetailSheetRow
+            label="Kilometraje"
+            value={formatMileage(vehicle.mileage)}
+          />
+          <DetailSheetRow
+            label="Notas"
+            value={
+              <NotesValue
+                value={vehicle.notes}
+                fallback="Sin notas del vehículo"
+              />
+            }
+          />
+        </DetailSheet>
 
-      <DetailSheet
-        headingId="customer-heading"
-        title="Cliente asociado"
-        className="relative mt-8"
-        titleSize="sm"
-        action={
-          <Link
-            href={`/customers/${vehicle.customerId}`}
-            className="text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
-          >
-            Ver cliente
-          </Link>
-        }
-      >
-        <DetailSheetRow label="Nombre" value={customer.fullName} />
-        <DetailSheetRow
-          label="Teléfono"
-          value={customer.phone ?? "Sin teléfono"}
-        />
-        <DetailSheetRow
-          label="Email"
-          value={
-            <BreakableDetailValue value={customer.email ?? "Sin email"} />
+        <DetailSheet
+          headingId="customer-heading"
+          title="Cliente asociado"
+          titleSize="sm"
+          action={
+            <Link
+              href={`/customers/${vehicle.customerId}`}
+              className="text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
+            >
+              Ver cliente
+            </Link>
           }
-        />
-        <DetailSheetRow
-          label="Dirección"
-          value={
-            <BreakableDetailValue
-              value={customer.address ?? "Sin dirección"}
-            />
-          }
-        />
-        <DetailSheetRow
-          label="Notas"
-          value={<NotesValue value={customer.notes} fallback="Sin notas" />}
-        />
-      </DetailSheet>
+        >
+          <DetailSheetRow label="Nombre" value={customer.fullName} />
+          <DetailSheetRow
+            label="Teléfono"
+            value={customer.phone ?? "Sin teléfono"}
+          />
+          <DetailSheetRow
+            label="Email"
+            value={
+              <BreakableDetailValue value={customer.email ?? "Sin email"} />
+            }
+          />
+          <DetailSheetRow
+            label="Dirección"
+            value={
+              <BreakableDetailValue
+                value={customer.address ?? "Sin dirección"}
+              />
+            }
+          />
+          <DetailSheetRow
+            label="Notas"
+            value={<NotesValue value={customer.notes} fallback="Sin notas" />}
+          />
+        </DetailSheet>
+      </div>
     </header>
   );
 }
@@ -170,7 +178,7 @@ function Metric({ label, value, tone = "neutral" }: MetricProps) {
         {label}
       </p>
 
-      <p className="mt-2 wrap-anywhere font-display text-xl font-black uppercase tracking-[0.02em] text-white">
+      <p className="mt-2 wrap-anywhere font-display text-xl font-black uppercase tracking-[0.02em] text-foreground">
         {value}
       </p>
     </article>
@@ -203,10 +211,10 @@ function getCurrentStatusTone(
  */
 function getMetricClassName(tone: MetricProps["tone"]): string {
   const baseClassName =
-    "rounded-2xl border p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]";
+    "rounded-2xl border p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]";
 
   if (tone === "active") {
-    return `${baseClassName} border-primary/40 bg-primary/10`;
+    return `${baseClassName} border-primary/35 bg-primary/10`;
   }
 
   if (tone === "ready") {
@@ -214,10 +222,10 @@ function getMetricClassName(tone: MetricProps["tone"]): string {
   }
 
   if (tone === "closed") {
-    return `${baseClassName} border-border bg-background/55`;
+    return `${baseClassName} border-border bg-surface-muted/85`;
   }
 
-  return `${baseClassName} border-border bg-background/65`;
+  return `${baseClassName} border-border bg-surface-muted/85`;
 }
 
 type BreakableDetailValueProps = {
@@ -228,5 +236,7 @@ type BreakableDetailValueProps = {
  * Prevents long vehicle/customer values from overflowing inside detail sheets.
  */
 function BreakableDetailValue({ value }: BreakableDetailValueProps) {
-  return <span className="block min-w-0 max-w-full wrap-anywhere">{value}</span>;
+  return (
+    <span className="block min-w-0 max-w-full wrap-anywhere">{value}</span>
+  );
 }

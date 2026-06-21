@@ -38,14 +38,14 @@ export function VehicleWorkOrdersPanel({
   workOrders,
 }: VehicleWorkOrdersPanelProps) {
   return (
-    <section className="overflow-hidden rounded-[1.35rem] border border-border bg-surface/85 shadow-(--shadow-industrial) ring-1 ring-white/3">
-      <div className="flex flex-col gap-3 border-b border-border p-6 sm:flex-row sm:items-start sm:justify-between">
+    <section className="overflow-hidden rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated shadow-(--shadow-industrial) ring-1 ring-white/3">
+      <div className="flex flex-col gap-3 border-b border-border p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
         <div className="min-w-0">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
             Órdenes de trabajo
           </p>
 
-          <h2 className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-white">
+          <h2 className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground">
             {title}
           </h2>
 
@@ -54,7 +54,7 @@ export function VehicleWorkOrdersPanel({
           </p>
         </div>
 
-        <p className="inline-flex w-fit rounded-full border border-border-strong bg-background/60 px-4 py-2 text-sm font-bold text-white">
+        <p className="inline-flex w-fit rounded-full border border-border-strong bg-surface-muted px-4 py-2 text-sm font-bold text-foreground">
           {workOrders.length} orden{workOrders.length === 1 ? "" : "es"}
         </p>
       </div>
@@ -65,21 +65,23 @@ export function VehicleWorkOrdersPanel({
             const isDelivered = workOrder.status === "DELIVERED";
 
             return (
-              <article key={workOrder.id} className="p-6">
-                <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_24rem] xl:items-start">
+              <article key={workOrder.id} className="p-5 sm:p-6">
+                <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_23rem] xl:items-start">
                   <div className="min-w-0 space-y-5">
-                    <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold text-primary">
-                          Orden #{workOrder.orderNumber}
-                        </p>
+                    <header className="rounded-2xl border border-border bg-surface-muted/75 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-primary">
+                            Orden #{workOrder.orderNumber}
+                          </p>
 
-                        <h3 className="mt-2 wrap-anywhere font-display text-xl font-black uppercase tracking-[0.02em] text-white">
-                          {workOrder.reportedIssue}
-                        </h3>
+                          <h3 className="mt-2 wrap-anywhere font-display text-xl font-black uppercase tracking-[0.02em] text-foreground">
+                            {workOrder.reportedIssue}
+                          </h3>
+                        </div>
+
+                        <StatusIndicator status={workOrder.status} />
                       </div>
-
-                      <StatusIndicator status={workOrder.status} />
                     </header>
 
                     <DetailSheet
@@ -135,7 +137,7 @@ export function VehicleWorkOrdersPanel({
                       {!isDelivered ? (
                         <Link
                           href={`/work-orders/${workOrder.id}/edit`}
-                          className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
+                          className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
                         >
                           Editar orden
                         </Link>
@@ -197,8 +199,8 @@ export function VehicleWorkOrdersPanel({
           })}
         </div>
       ) : (
-        <div className="p-6">
-          <p className="rounded-2xl border border-dashed border-border-strong bg-background/45 p-6 text-sm leading-6 text-muted-foreground">
+        <div className="p-5 sm:p-6">
+          <p className="rounded-2xl border border-dashed border-border-strong bg-surface-muted/65 p-6 text-sm leading-6 text-muted-foreground">
             {emptyMessage}
           </p>
         </div>
@@ -266,7 +268,7 @@ function getStatusIndicatorClasses(status: WorkOrderStatus): {
       dot: "bg-steel text-steel",
     },
     IN_PROGRESS: {
-      text: "text-white",
+      text: "text-primary",
       dot: "bg-primary text-primary",
     },
     READY: {
