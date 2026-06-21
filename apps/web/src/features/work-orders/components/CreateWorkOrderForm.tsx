@@ -1,7 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type FormEvent, useId, useMemo, useState } from "react";
+import {
+  type FormEvent,
+  type ReactNode,
+  useId,
+  useMemo,
+  useState,
+} from "react";
 import { getApiErrorMessage } from "../../../lib/api";
 import { createWorkOrder } from "../work-orders.client";
 import type { CreateWorkOrderInput } from "../types";
@@ -129,33 +135,19 @@ export function CreateWorkOrderForm({ vehicle }: CreateWorkOrderFormProps) {
         <p
           id={errorId}
           role="alert"
-          className="rounded-2xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-semibold text-white"
+          className="rounded-2xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-semibold text-foreground"
         >
           {errorMessage}
         </p>
       ) : null}
 
-      <section
-        aria-labelledby="selected-vehicle-heading"
-        className="rounded-[1.1rem] border border-border bg-surface/85 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-6"
+      <FormSection
+        headingId="selected-vehicle-heading"
+        eyebrow="Nueva orden"
+        title="Vehículo seleccionado"
+        description="Esta orden se asociará automáticamente al vehículo desde el que iniciaste la orden."
       >
-        <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
-          Nueva orden
-        </p>
-
-        <h2
-          id="selected-vehicle-heading"
-          className="mt-2 font-display text-lg font-black uppercase tracking-[0.04em] text-white sm:text-xl"
-        >
-          Vehículo seleccionado
-        </h2>
-
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Esta orden se asociará automáticamente al vehículo desde el que
-          iniciaste la orden.
-        </p>
-
-        <div className="mt-5 grid gap-3 sm:gap-4 md:grid-cols-2">
+        <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
           <ReadOnlyDetail label="Patente" value={vehicle.licensePlate} />
 
           <ReadOnlyDetail
@@ -170,114 +162,76 @@ export function CreateWorkOrderForm({ vehicle }: CreateWorkOrderFormProps) {
             value={vehicle.customerPhone ?? "Sin teléfono"}
           />
         </div>
-      </section>
+      </FormSection>
 
-      <section
-        aria-labelledby="work-order-details-heading"
-        className="rounded-[1.1rem] border border-border bg-surface/85 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-6"
+      <FormSection
+        headingId="work-order-details-heading"
+        eyebrow="Diagnóstico inicial"
+        title="Datos de la orden"
       >
-        <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
-          Diagnóstico inicial
-        </p>
-
-        <h2
-          id="work-order-details-heading"
-          className="mt-2 font-display text-lg font-black uppercase tracking-[0.04em] text-white sm:text-xl"
-        >
-          Datos de la orden
-        </h2>
-
-        <div className="mt-5 grid gap-5 sm:mt-6">
-          <div>
-            <label
-              htmlFor="reportedIssue"
-              className="text-sm font-bold text-white"
-            >
+        <div className="grid gap-5">
+          <Field>
+            <FieldLabel htmlFor="reportedIssue">
               Problema reportado *
-            </label>
+            </FieldLabel>
 
-            <textarea
+            <TextArea
               id="reportedIssue"
               name="reportedIssue"
               required
               rows={4}
               placeholder="Ej: El cliente reporta ruido en tren delantero al frenar."
-              className="mt-2 w-full resize-y rounded-xl border border-border-strong bg-background/70 px-4 py-3 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
-          </div>
+          </Field>
 
-          <div>
-            <label
-              htmlFor="entryMileage"
-              className="text-sm font-bold text-white"
-            >
+          <Field>
+            <FieldLabel htmlFor="entryMileage">
               Kilometraje de ingreso
-            </label>
+            </FieldLabel>
 
-            <input
+            <NumberInput
               id="entryMileage"
               name="entryMileage"
-              type="number"
               min="0"
               step="1"
               placeholder="129200"
-              className="mt-2 h-12 w-full rounded-xl border border-border-strong bg-background/70 px-4 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
-          </div>
+          </Field>
 
           <div className="grid gap-5 lg:grid-cols-2">
-            <div>
-              <label
-                htmlFor="diagnosis"
-                className="text-sm font-bold text-white"
-              >
-                Diagnóstico
-              </label>
+            <Field>
+              <FieldLabel htmlFor="diagnosis">Diagnóstico</FieldLabel>
 
-              <textarea
+              <TextArea
                 id="diagnosis"
                 name="diagnosis"
                 rows={4}
                 placeholder="Diagnóstico inicial del mecánico."
-                className="mt-2 w-full resize-y rounded-xl border border-border-strong bg-background/70 px-4 py-3 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
-            </div>
+            </Field>
 
-            <div>
-              <label htmlFor="workDone" className="text-sm font-bold text-white">
-                Trabajo realizado
-              </label>
+            <Field>
+              <FieldLabel htmlFor="workDone">Trabajo realizado</FieldLabel>
 
-              <textarea
+              <TextArea
                 id="workDone"
                 name="workDone"
                 rows={4}
                 placeholder="Detalle del trabajo realizado."
-                className="mt-2 w-full resize-y rounded-xl border border-border-strong bg-background/70 px-4 py-3 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
-            </div>
+            </Field>
           </div>
         </div>
-      </section>
+      </FormSection>
 
       <WorkOrderPartsEditor parts={parts} onChange={setParts} />
 
-      <section
-        aria-labelledby="work-order-costs-heading"
-        className="rounded-[1.1rem] border border-border bg-surface/85 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-6"
+      <FormSection
+        headingId="work-order-costs-heading"
+        eyebrow="Presupuesto"
+        title="Costos"
       >
-        <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
-          Presupuesto
-        </p>
-
-        <h2
-          id="work-order-costs-heading"
-          className="mt-2 font-display text-lg font-black uppercase tracking-[0.04em] text-white sm:text-xl"
-        >
-          Costos
-        </h2>
-
-        <div className="mt-5 grid gap-3 sm:mt-6 sm:gap-5 md:grid-cols-3">
+        <div className="grid gap-3 sm:gap-5 md:grid-cols-3">
           <MoneyInput
             id="laborCost"
             label="Costo mano de obra"
@@ -290,7 +244,7 @@ export function CreateWorkOrderForm({ vehicle }: CreateWorkOrderFormProps) {
 
           <ReadOnlyMoney label="Total automático" value={calculatedTotal} />
         </div>
-      </section>
+      </FormSection>
 
       <WorkOrderNotesEditor notes={notes} onChange={setNotes} />
 
@@ -306,12 +260,156 @@ export function CreateWorkOrderForm({ vehicle }: CreateWorkOrderFormProps) {
         <button
           type="button"
           onClick={() => router.push(`/vehicles/${vehicleId}`)}
-          className="inline-flex h-12 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated sm:h-11"
+          className="inline-flex h-12 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:h-11"
         >
           Cancelar
         </button>
       </div>
     </form>
+  );
+}
+
+type FormSectionProps = {
+  headingId: string;
+  eyebrow: string;
+  title: string;
+  description?: string;
+  children: ReactNode;
+};
+
+/**
+ * Shared light-mode section wrapper for work order forms.
+ */
+function FormSection({
+  headingId,
+  eyebrow,
+  title,
+  description,
+  children,
+}: FormSectionProps) {
+  return (
+    <section
+      aria-labelledby={headingId}
+      className="rounded-[1.1rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-6"
+    >
+      <div className="border-b border-border pb-5">
+        <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+          {eyebrow}
+        </p>
+
+        <h2
+          id={headingId}
+          className="mt-2 font-display text-lg font-black uppercase tracking-[0.04em] text-foreground sm:text-xl"
+        >
+          {title}
+        </h2>
+
+        {description ? (
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            {description}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="mt-5 sm:mt-6">{children}</div>
+    </section>
+  );
+}
+
+type FieldProps = {
+  children: ReactNode;
+};
+
+/**
+ * Vertical field wrapper for labels and controls.
+ */
+function Field({ children }: FieldProps) {
+  return <div className="space-y-2">{children}</div>;
+}
+
+type FieldLabelProps = {
+  htmlFor: string;
+  children: ReactNode;
+};
+
+/**
+ * Accessible label used by work order fields.
+ */
+function FieldLabel({ htmlFor, children }: FieldLabelProps) {
+  return (
+    <label
+      htmlFor={htmlFor}
+      className="block text-sm font-bold text-foreground"
+    >
+      {children}
+    </label>
+  );
+}
+
+type TextAreaProps = {
+  id: string;
+  name: string;
+  rows: number;
+  placeholder: string;
+  defaultValue?: string;
+  required?: boolean;
+};
+
+/**
+ * Shared textarea style for operational work order text fields.
+ */
+function TextArea({
+  id,
+  name,
+  rows,
+  placeholder,
+  defaultValue,
+  required,
+}: TextAreaProps) {
+  return (
+    <textarea
+      id={id}
+      name={name}
+      rows={rows}
+      placeholder={placeholder}
+      defaultValue={defaultValue}
+      required={required}
+      className="w-full resize-y rounded-xl border border-border-strong bg-surface-muted/85 px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20"
+    />
+  );
+}
+
+type NumberInputProps = {
+  id: string;
+  name: string;
+  min: string;
+  step: string;
+  placeholder: string;
+  defaultValue?: string | number;
+};
+
+/**
+ * Shared number input style for mileage and numeric fields.
+ */
+function NumberInput({
+  id,
+  name,
+  min,
+  step,
+  placeholder,
+  defaultValue,
+}: NumberInputProps) {
+  return (
+    <input
+      id={id}
+      name={name}
+      type="number"
+      min={min}
+      step={step}
+      defaultValue={defaultValue}
+      placeholder={placeholder}
+      className="h-12 w-full rounded-xl border border-border-strong bg-surface-muted/85 px-4 text-sm text-foreground outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20"
+    />
   );
 }
 
@@ -326,12 +424,12 @@ type ReadOnlyDetailProps = {
  */
 function ReadOnlyDetail({ label, value }: ReadOnlyDetailProps) {
   return (
-    <div className="rounded-2xl border border-border bg-background/55 p-3 ring-1 ring-white/3 sm:p-4">
+    <div className="rounded-2xl border border-border bg-surface-muted/85 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] ring-1 ring-white/3 sm:p-4">
       <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
         {label}
       </p>
 
-      <p className="mt-2 wrap-anywhere text-sm font-bold text-white">
+      <p className="mt-2 wrap-anywhere text-sm font-bold text-foreground">
         {value}
       </p>
     </div>
@@ -360,7 +458,7 @@ function MoneyInput({
   placeholder,
 }: MoneyInputProps) {
   return (
-    <div className="rounded-2xl border border-border bg-background/55 p-3 ring-1 ring-white/3 sm:p-4">
+    <div className="rounded-2xl border border-border bg-surface-muted/85 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] ring-1 ring-white/3 sm:p-4">
       <label
         htmlFor={id}
         className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary"
@@ -377,7 +475,7 @@ function MoneyInput({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="mt-3 h-12 w-full rounded-xl border border-border-strong bg-background/70 px-3 text-sm font-bold text-white outline-none transition placeholder:font-normal placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 sm:h-10"
+        className="mt-3 h-12 w-full rounded-xl border border-border-strong bg-surface/90 px-3 text-sm font-bold text-foreground outline-none transition placeholder:font-normal placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 sm:h-10"
       />
     </div>
   );
@@ -393,12 +491,12 @@ type ReadOnlyMoneyProps = {
  */
 function ReadOnlyMoney({ label, value }: ReadOnlyMoneyProps) {
   return (
-    <div className="rounded-2xl border border-border bg-background/55 p-3 ring-1 ring-white/3 sm:p-4">
+    <div className="rounded-2xl border border-border bg-surface-muted/85 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] ring-1 ring-white/3 sm:p-4">
       <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
         {label}
       </p>
 
-      <p className="mt-2 font-display text-lg font-black text-white">
+      <p className="mt-2 font-display text-lg font-black text-foreground">
         {formatCurrency(value)}
       </p>
     </div>

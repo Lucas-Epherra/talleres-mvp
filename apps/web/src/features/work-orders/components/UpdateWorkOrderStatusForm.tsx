@@ -82,7 +82,7 @@ export function UpdateWorkOrderStatusForm({
 
   return (
     <form
-      className="mt-5 rounded-[1.35rem] border border-border bg-surface/85 p-4 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03]"
+      className="mt-5 rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-4 shadow-(--shadow-industrial) ring-1 ring-white/3"
       onSubmit={handleSubmit}
       aria-describedby={errorMessage ? errorId : undefined}
       noValidate
@@ -104,7 +104,7 @@ export function UpdateWorkOrderStatusForm({
             onChange={(event) =>
               setSelectedStatus(event.target.value as WorkOrderStatus)
             }
-            className="mt-2 h-11 w-full rounded-xl border border-border-strong bg-background/70 px-4 text-sm font-bold text-white outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-2 h-11 w-full rounded-xl border border-border-strong bg-surface-muted/85 px-4 text-sm font-bold text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {availableStatusOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -115,7 +115,8 @@ export function UpdateWorkOrderStatusForm({
 
           {isDelivered ? (
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              Esta orden ya fue entregada y no puede volver a estados anteriores.
+              Esta orden ya fue entregada y no puede volver a estados
+              anteriores.
             </p>
           ) : null}
         </div>
@@ -133,7 +134,7 @@ export function UpdateWorkOrderStatusForm({
         <p
           id={errorId}
           role="alert"
-          className="mt-3 rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-semibold text-white"
+          className="mt-3 rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-semibold text-foreground"
         >
           {errorMessage}
         </p>

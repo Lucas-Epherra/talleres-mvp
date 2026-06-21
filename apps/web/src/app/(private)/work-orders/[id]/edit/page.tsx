@@ -30,8 +30,13 @@ export default async function EditWorkOrderPage({
 
   return (
     <section className="space-y-6">
-      <header className="rounded-[1.35rem] border border-border bg-surface/85 p-6 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03] sm:p-8">
-        <div className="max-w-3xl">
+      <header className="relative overflow-hidden rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
+        <div
+          aria-hidden="true"
+          className="absolute right-0 top-0 h-40 w-40 translate-x-14 -translate-y-16 rounded-full bg-primary/10 blur-3xl"
+        />
+
+        <div className="relative max-w-3xl">
           <Link
             href={`/work-orders/${workOrder.id}`}
             className="text-sm font-bold text-primary transition hover:text-primary-hover"
@@ -43,7 +48,7 @@ export default async function EditWorkOrderPage({
             Orden #{workOrder.orderNumber}
           </p>
 
-          <h1 className="mt-3 font-display text-2xl font-black uppercase tracking-[0.04em] text-white sm:text-3xl">
+          <h1 className="mt-3 font-display text-2xl font-black uppercase tracking-[0.04em] text-foreground sm:text-3xl">
             Editar orden de trabajo
           </h1>
 

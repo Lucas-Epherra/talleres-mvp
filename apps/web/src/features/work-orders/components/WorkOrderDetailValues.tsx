@@ -25,7 +25,7 @@ export function WorkOrderPartsValue({
   const lines = splitStoredList(value);
 
   if (lines.length === 0) {
-    return <span>{fallback}</span>;
+    return <span className="text-muted-foreground">{fallback}</span>;
   }
 
   return (
@@ -36,9 +36,9 @@ export function WorkOrderPartsValue({
         return (
           <div
             key={`${part.name}-${index.toString()}`}
-            className="grid gap-1 rounded-xl border border-border bg-background/55 px-3 py-2 ring-1 ring-white/[0.03] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+            className="grid gap-1 rounded-xl border border-border bg-surface-muted/85 px-3 py-2 ring-1 ring-white/3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
           >
-            <span className="wrap-anywhere text-sm font-bold text-white">
+            <span className="wrap-anywhere text-sm font-bold text-foreground">
               {part.name}
             </span>
 
@@ -64,7 +64,7 @@ export function WorkOrderNotesValue({
   const lines = splitStoredList(value);
 
   if (lines.length === 0) {
-    return <span>{fallback}</span>;
+    return <span className="text-muted-foreground">{fallback}</span>;
   }
 
   return (
@@ -72,13 +72,13 @@ export function WorkOrderNotesValue({
       {lines.map((line, index) => (
         <li
           key={`${line}-${index.toString()}`}
-          className="flex gap-2 rounded-xl border border-border bg-background/55 px-3 py-2 ring-1 ring-white/[0.03]"
+          className="flex gap-2 rounded-xl border border-border bg-surface-muted/85 px-3 py-2 ring-1 ring-white/3"
         >
           <span aria-hidden="true" className="text-primary">
             •
           </span>
 
-          <span className="wrap-anywhere text-sm font-bold text-white">
+          <span className="wrap-anywhere text-sm font-bold text-foreground">
             {stripListPrefix(line)}
           </span>
         </li>
@@ -92,9 +92,7 @@ export function WorkOrderNotesValue({
  */
 export function BreakableDetailValue({ value }: BreakableDetailValueProps) {
   return (
-    <span className="block min-w-0 max-w-full wrap-anywhere">
-      {value}
-    </span>
+    <span className="block min-w-0 max-w-full wrap-anywhere">{value}</span>
   );
 }
 

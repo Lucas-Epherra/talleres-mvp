@@ -51,7 +51,7 @@ export function WorkOrderNotesEditor({
   return (
     <section
       aria-labelledby="work-order-notes-heading"
-      className="rounded-[1.1rem] border border-border bg-surface/85 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-6"
+      className="rounded-[1.1rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-6"
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
@@ -61,7 +61,7 @@ export function WorkOrderNotesEditor({
 
           <h2
             id="work-order-notes-heading"
-            className="mt-2 font-display text-lg font-black uppercase tracking-[0.04em] text-white sm:text-xl"
+            className="mt-2 font-display text-lg font-black uppercase tracking-[0.04em] text-foreground sm:text-xl"
           >
             Notas internas
           </h2>
@@ -72,13 +72,13 @@ export function WorkOrderNotesEditor({
           </p>
         </div>
 
-        <p className="w-fit rounded-full border border-border-strong bg-background/55 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-white">
+        <p className="w-fit rounded-full border border-border-strong bg-surface-muted px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-foreground">
           {notesCount} nota{notesCount === 1 ? "" : "s"}
         </p>
       </div>
 
-      <div className="mt-5 overflow-hidden rounded-2xl border border-border bg-background/35 sm:mt-6">
-        <div className="hidden grid-cols-[minmax(0,1fr)_48px] border-b border-border bg-background/70 px-4 py-3 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-muted-foreground sm:grid">
+      <div className="mt-5 overflow-hidden rounded-2xl border border-border bg-surface-muted/65 sm:mt-6">
+        <div className="hidden grid-cols-[minmax(0,1fr)_48px] border-b border-border bg-surface-elevated/85 px-4 py-3 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-muted-foreground sm:grid">
           <span>Nota</span>
           <span className="sr-only">Acción</span>
         </div>
@@ -87,7 +87,7 @@ export function WorkOrderNotesEditor({
           {notes.map((note, index) => (
             <div
               key={note.id}
-              className="rounded-xl border border-border bg-surface/50 p-3 sm:grid sm:rounded-none sm:border-0 sm:bg-transparent sm:p-4 sm:grid-cols-[minmax(0,1fr)_48px] sm:items-start sm:gap-3"
+              className="rounded-xl border border-border bg-surface/85 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] sm:grid sm:grid-cols-[minmax(0,1fr)_48px] sm:items-start sm:gap-3 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-4 sm:shadow-none"
             >
               <div>
                 <label
@@ -103,14 +103,14 @@ export function WorkOrderNotesEditor({
                   onChange={(event) => updateNote(note.id, event.target.value)}
                   rows={3}
                   placeholder="Ej: Avisar por WhatsApp antes de avanzar con repuestos extra."
-                  className="mt-2 w-full resize-y rounded-xl border border-border-strong bg-background/70 px-4 py-3 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 sm:mt-0 sm:rows-2"
+                  className="mt-2 w-full resize-y rounded-xl border border-border-strong bg-surface-muted/85 px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 sm:mt-0"
                 />
               </div>
 
               <button
                 type="button"
                 onClick={() => removeNote(note.id)}
-                className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-black text-white transition hover:border-primary/60 hover:bg-primary/10 sm:mt-0 sm:h-11 sm:px-0 sm:text-lg"
+                className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-elevated px-4 text-sm font-black text-foreground transition hover:border-primary/60 hover:bg-primary/10 sm:mt-0 sm:h-11 sm:px-0 sm:text-lg"
                 aria-label={`Quitar nota ${index + 1}`}
               >
                 ×
@@ -123,7 +123,7 @@ export function WorkOrderNotesEditor({
       <button
         type="button"
         onClick={addNote}
-        className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated sm:h-11 sm:w-auto"
+        className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:h-11 sm:w-auto"
       >
         Agregar nota
       </button>
