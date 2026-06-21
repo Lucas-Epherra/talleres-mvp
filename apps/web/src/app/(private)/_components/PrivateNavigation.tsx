@@ -1,41 +1,56 @@
 "use client";
 
+import {
+  CarFront,
+  ClipboardList,
+  LayoutGrid,
+  Menu,
+  Users,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import { useState } from "react";
 import { PrivateNavLink } from "./PrivateNavLink";
 
-const PRIVATE_NAVIGATION_ITEMS = [
+type PrivateNavigationItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+};
+
+const PRIVATE_NAVIGATION_ITEMS: PrivateNavigationItem[] = [
   {
     href: "/dashboard",
     label: "Dashboard",
-    code: "DB",
+    icon: LayoutGrid,
   },
   {
     href: "/customers",
     label: "Clientes",
-    code: "CL",
+    icon: Users,
   },
   {
     href: "/vehicles",
     label: "Vehículos",
-    code: "VH",
+    icon: CarFront,
   },
   {
     href: "/work-orders",
     label: "Órdenes",
-    code: "OT",
+    icon: ClipboardList,
   },
-] as const;
+];
 
 /**
  * Responsive private navigation.
  *
- * Mobile uses an explicit toggle button instead of horizontal scrolling because
- * the menu must be discoverable for non-technical workshop users.
+ * Desktop renders a horizontal navigation bar below the dark shell header.
+ * Mobile uses a compact hamburger trigger that expands a vertical list.
  */
 export function PrivateNavigation() {
   const [isOpen, setIsOpen] = useState(false);
 
-  function closeMenu() {
+  function closeMenu(): void {
     setIsOpen(false);
   }
 
@@ -46,29 +61,35 @@ export function PrivateNavigation() {
         aria-expanded={isOpen}
         aria-controls="private-mobile-navigation"
         onClick={() => setIsOpen((currentValue) => !currentValue)}
-        className="flex h-12 w-full items-center justify-between rounded-2xl border border-[#c7ccd3] bg-[#edf0f3] px-4 text-sm font-bold text-[#1f2329] transition hover:border-primary/45 hover:bg-white lg:hidden"
+        className="flex h-12 w-full items-center justify-between rounded-2xl border border-[#d7dde5] bg-[#eef2f6] px-4 text-sm font-bold text-slate-800 transition hover:bg-[#e8edf2] lg:hidden"
       >
-        <span className="font-display uppercase tracking-[0.08em]">
-          Menú del taller
-        </span>
+        <span className="flex items-center gap-3">
+          <span className="grid size-8 place-items-center rounded-xl border border-[#d7dde5] bg-white">
+            {isOpen ? (
+              <X className="size-4 text-slate-700" />
+            ) : (
+              <Menu className="size-4 text-slate-700" />
+            )}
+          </span>
 
-        <span aria-hidden="true" className="text-primary">
-          {isOpen ? "↑" : "↓"}
+          <span className="font-display uppercase tracking-[0.08em]">
+            Menú del taller
+          </span>
         </span>
       </button>
 
       <ul
         id="private-mobile-navigation"
         className={buildClassName(
-          "mt-3 space-y-1 lg:hidden",
-          isOpen ? "block" : "hidden",
+          "mt-3 gap-2 rounded-3xl border border-[#d8dde5] bg-[#f7f9fb] p-2 lg:hidden",
+          isOpen ? "grid" : "hidden",
         )}
       >
         {PRIVATE_NAVIGATION_ITEMS.map((item) => (
           <li key={item.href}>
             <PrivateNavLink
               href={item.href}
-              code={item.code}
+              icon={item.icon}
               onClick={closeMenu}
             >
               {item.label}
@@ -77,29 +98,21 @@ export function PrivateNavigation() {
         ))}
       </ul>
 
-      <div className="hidden lg:block">
-        <p className="mb-3 px-3 text-[0.68rem] font-black uppercase tracking-[0.22em] text-[#4b5563]">
-          Operación
-        </p>
-
-        <div className="mb-3 h-px bg-linear-to-r from-[#aeb5bf] via-[#c7ccd3] to-transparent" />
-
-        <ul className="space-y-1">
-          {PRIVATE_NAVIGATION_ITEMS.map((item) => (
-            <li key={item.href}>
-              <PrivateNavLink href={item.href} code={item.code}>
-                {item.label}
-              </PrivateNavLink>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <ul className="hidden flex-wrap items-center gap-4 lg:flex">
+        {PRIVATE_NAVIGATION_ITEMS.map((item) => (
+          <li key={item.href}>
+            <PrivateNavLink href={item.href} icon={item.icon}>
+              {item.label}
+            </PrivateNavLink>
+          </li>
+        ))}
+      </ul>
     </nav>
   );
 }
 
 /**
- * Small className join helper to avoid adding a dependency for this use case.
+ * Small helper to compose className strings without adding a dependency.
  */
 function buildClassName(...classes: string[]): string {
   return classes.join(" ");

@@ -1,5 +1,6 @@
 "use client";
 
+import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { MouseEventHandler, ReactNode } from "react";
@@ -7,20 +8,20 @@ import type { MouseEventHandler, ReactNode } from "react";
 type PrivateNavLinkProps = {
   href: string;
   children: ReactNode;
-  code: string;
+  icon: LucideIcon;
   onClick?: MouseEventHandler<HTMLAnchorElement>;
 };
 
 /**
  * Private navigation link with active route detection.
  *
- * This is intentionally a leaf Client Component because active route detection
- * depends on usePathname(). The private layout can remain server-rendered.
+ * The selected state intentionally mirrors the approved render:
+ * red background, white icon, white label, and no trailing active marker.
  */
 export function PrivateNavLink({
   href,
   children,
-  code,
+  icon: Icon,
   onClick,
 }: PrivateNavLinkProps) {
   const pathname = usePathname();
@@ -32,32 +33,28 @@ export function PrivateNavLink({
       onClick={onClick}
       aria-current={isActive ? "page" : undefined}
       className={buildClassName(
-        "group relative flex h-12 w-full items-center gap-3 rounded-2xl px-3 text-sm font-black transition",
+        "flex h-12 w-full items-center gap-3 rounded-2xl border px-5 text-base font-bold transition lg:min-w-40 lg:w-auto",
         isActive
-          ? "bg-primary text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)]"
-          : "text-[#374151] hover:bg-white/70 hover:text-[#111827]",
+          ? "border-primary bg-primary text-white"
+          : "border-[#d8dde5] bg-[#eef2f6] text-slate-800 hover:bg-[#e8edf2]",
       )}
     >
-      <span
+      <Icon
         className={buildClassName(
-          "grid size-8 shrink-0 place-items-center rounded-xl border text-[0.65rem] font-black uppercase tracking-[0.08em] transition",
-          isActive
-            ? "border-white/20 bg-white/12 text-white"
-            : "border-[#c7ccd3] bg-[#edf0f3] text-[#4b5563] group-hover:border-primary/40 group-hover:bg-primary/10 group-hover:text-primary",
+          "size-5 shrink-0 transition",
+          isActive ? "text-white" : "text-slate-700",
         )}
         aria-hidden="true"
+      />
+
+      <span
+        className={buildClassName(
+          "truncate",
+          isActive ? "text-white" : "text-slate-800",
+        )}
       >
-        {code}
+        {children}
       </span>
-
-      <span className="truncate">{children}</span>
-
-      {isActive ? (
-        <span
-          aria-hidden="true"
-          className="absolute right-3 h-5 w-1 rounded-full bg-white/75"
-        />
-      ) : null}
     </Link>
   );
 }
@@ -75,7 +72,7 @@ function isActivePath(pathname: string, href: string): boolean {
 }
 
 /**
- * Small className join helper to avoid adding a dependency for this use case.
+ * Small helper to compose className strings without adding a dependency.
  */
 function buildClassName(...classes: string[]): string {
   return classes.join(" ");
