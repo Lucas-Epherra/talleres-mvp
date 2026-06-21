@@ -46,7 +46,7 @@ export function PrivateNavigation() {
         aria-expanded={isOpen}
         aria-controls="private-mobile-navigation"
         onClick={() => setIsOpen((currentValue) => !currentValue)}
-        className="flex h-12 w-full items-center justify-between rounded-2xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-white transition hover:border-primary/70 hover:bg-surface-elevated lg:hidden"
+        className="flex h-12 w-full items-center justify-between rounded-2xl border border-[#c7ccd3] bg-[#edf0f3] px-4 text-sm font-bold text-[#1f2329] transition hover:border-primary/45 hover:bg-white lg:hidden"
       >
         <span className="font-display uppercase tracking-[0.08em]">
           Menú del taller
@@ -78,9 +78,11 @@ export function PrivateNavigation() {
       </ul>
 
       <div className="hidden lg:block">
-        <p className="mb-3 px-3 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+        <p className="mb-3 px-3 text-[0.68rem] font-black uppercase tracking-[0.22em] text-[#4b5563]">
           Operación
         </p>
+
+        <div className="mb-3 h-px bg-linear-to-r from-[#aeb5bf] via-[#c7ccd3] to-transparent" />
 
         <ul className="space-y-1">
           {PRIVATE_NAVIGATION_ITEMS.map((item) => (

@@ -32,18 +32,18 @@ export function PrivateNavLink({
       onClick={onClick}
       aria-current={isActive ? "page" : undefined}
       className={buildClassName(
-        "group relative flex h-12 w-full items-center gap-3 rounded-2xl px-3 text-sm font-bold transition",
+        "group relative flex h-12 w-full items-center gap-3 rounded-2xl px-3 text-sm font-black transition",
         isActive
           ? "bg-primary text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)]"
-          : "text-muted-foreground hover:bg-surface-muted hover:text-white",
+          : "text-[#374151] hover:bg-white/70 hover:text-[#111827]",
       )}
     >
       <span
         className={buildClassName(
-          "grid size-8 shrink-0 place-items-center rounded-xl border text-[0.65rem] font-black uppercase tracking-[0.08em]",
+          "grid size-8 shrink-0 place-items-center rounded-xl border text-[0.65rem] font-black uppercase tracking-[0.08em] transition",
           isActive
-            ? "border-white/20 bg-white/10 text-white"
-            : "border-border-strong bg-background/60 text-steel group-hover:border-primary/50 group-hover:text-primary",
+            ? "border-white/20 bg-white/12 text-white"
+            : "border-[#c7ccd3] bg-[#edf0f3] text-[#4b5563] group-hover:border-primary/40 group-hover:bg-primary/10 group-hover:text-primary",
         )}
         aria-hidden="true"
       >
@@ -55,7 +55,7 @@ export function PrivateNavLink({
       {isActive ? (
         <span
           aria-hidden="true"
-          className="absolute right-3 h-5 w-1 rounded-full bg-white/70"
+          className="absolute right-3 h-5 w-1 rounded-full bg-white/75"
         />
       ) : null}
     </Link>

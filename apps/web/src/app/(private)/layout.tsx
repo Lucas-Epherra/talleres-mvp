@@ -66,7 +66,7 @@ export default async function PrivateLayout({
       </header>
 
       <div className="mx-auto grid w-full max-w-7xl flex-1 gap-4 px-3 py-4 sm:gap-5 sm:px-6 sm:py-6 lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-6 lg:py-8">
-        <aside className="theme-dark-shell min-w-0 overflow-hidden rounded-[1.1rem] border border-border bg-surface/90 p-2.5 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-3 lg:p-4">
+        <aside className="min-w-0 self-start overflow-hidden rounded-[1.1rem] border border-[#cbd1d8] bg-linear-to-b from-[#eef1f4] via-[#dde2e8] to-[#cfd6df] p-2.5 shadow-(--shadow-industrial) ring-1 ring-black/5 sm:rounded-[1.35rem] sm:p-3 lg:sticky lg:top-8 lg:p-4">
           <PrivateNavigation />
         </aside>
 
