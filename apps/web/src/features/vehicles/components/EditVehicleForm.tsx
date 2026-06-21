@@ -99,7 +99,7 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
     >
       <section
         aria-labelledby="edit-vehicle-context-heading"
-        className="rounded-[1.1rem] border border-border bg-surface/85 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-8"
+        className="rounded-[1.1rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-8"
       >
         <div className="border-b border-border pb-5">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
@@ -108,15 +108,15 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
 
           <h2
             id="edit-vehicle-context-heading"
-            className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-white"
+            className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
           >
             Contexto de la ficha
           </h2>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
             Esta pantalla edita solamente los datos del vehículo. El cliente
-            asociado se mantiene sin cambios para evitar modificar la titularidad
-            desde un flujo operativo.
+            asociado se mantiene sin cambios para evitar modificar la
+            titularidad desde un flujo operativo.
           </p>
         </div>
 
@@ -129,7 +129,7 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
 
       <section
         aria-labelledby="edit-vehicle-data-heading"
-        className="rounded-[1.1rem] border border-border bg-surface/85 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-8"
+        className="rounded-[1.1rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-8"
       >
         <div className="border-b border-border pb-5">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
@@ -138,7 +138,7 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
 
           <h2
             id="edit-vehicle-data-heading"
-            className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-white"
+            className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
           >
             Datos del vehículo
           </h2>
@@ -240,7 +240,7 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
       {state.message ? (
         <p
           id={errorId}
-          className="rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-medium text-red-100"
+          className="rounded-xl border border-primary/35 bg-primary/10 px-4 py-3 text-sm font-semibold text-foreground"
           role="alert"
         >
           {state.message}
@@ -258,7 +258,7 @@ export function EditVehicleForm({ profile }: EditVehicleFormProps) {
 
         <Link
           href={`/vehicles/${vehicle.id}`}
-          className="inline-flex h-12 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated sm:h-11"
+          className="inline-flex h-12 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:h-11"
         >
           Cancelar
         </Link>
@@ -277,12 +277,12 @@ type ReadOnlyDetailProps = {
  */
 function ReadOnlyDetail({ label, value }: ReadOnlyDetailProps) {
   return (
-    <div className="rounded-2xl border border-border bg-background/55 p-4">
-      <p className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-steel">
+    <div className="rounded-2xl border border-border bg-surface-muted/85 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+      <p className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-primary">
         {label}
       </p>
 
-      <p className="mt-2 wrap-anywhere text-sm font-bold text-white">
+      <p className="mt-2 wrap-anywhere text-sm font-bold text-foreground">
         {value}
       </p>
     </div>
@@ -315,7 +315,10 @@ type LabelProps = {
  */
 function Label({ htmlFor, children }: LabelProps) {
   return (
-    <label htmlFor={htmlFor} className="block text-sm font-bold text-white">
+    <label
+      htmlFor={htmlFor}
+      className="block text-sm font-bold text-foreground"
+    >
       {children}
     </label>
   );
@@ -384,7 +387,7 @@ function Input({
       inputMode={inputMode}
       autoComplete={autoComplete}
       autoCapitalize={autoCapitalize}
-      className="h-12 w-full rounded-xl border border-border-strong bg-background/70 px-4 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+      className="h-12 w-full rounded-xl border border-border-strong bg-surface-muted/85 px-4 text-sm text-foreground outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
     />
   );
 }

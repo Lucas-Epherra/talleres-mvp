@@ -106,7 +106,7 @@ export function CreateVehicleForm({
 
   if (!hasCustomers) {
     return (
-      <section className="relative overflow-hidden rounded-[1.35rem] border border-dashed border-border-strong bg-surface/75 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3">
+      <section className="relative overflow-hidden rounded-[1.35rem] border border-dashed border-border-strong bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3">
         <div
           aria-hidden="true"
           className="absolute right-0 top-0 h-28 w-28 translate-x-10 -translate-y-10 rounded-full bg-primary/15 blur-2xl"
@@ -117,7 +117,7 @@ export function CreateVehicleForm({
             Vehículos
           </p>
 
-          <h2 className="mt-3 font-display text-xl font-black uppercase tracking-[0.02em] text-white">
+          <h2 className="mt-3 font-display text-xl font-black uppercase tracking-[0.02em] text-foreground">
             Primero necesitás crear un cliente
           </h2>
 
@@ -147,7 +147,7 @@ export function CreateVehicleForm({
     >
       <section
         aria-labelledby="create-vehicle-main-heading"
-        className="rounded-[1.1rem] border border-border bg-surface/85 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-8"
+        className="rounded-[1.1rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-8"
       >
         <div className="border-b border-border pb-5">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
@@ -156,7 +156,7 @@ export function CreateVehicleForm({
 
           <h2
             id="create-vehicle-main-heading"
-            className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-white"
+            className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
           >
             Datos principales
           </h2>
@@ -178,7 +178,7 @@ export function CreateVehicleForm({
               disabled={isLoading}
               required
               autoComplete="off"
-              className="h-12 w-full rounded-xl border border-border-strong bg-background/70 px-4 text-sm font-medium text-white outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-12 w-full rounded-xl border border-border-strong bg-surface-muted/85 px-4 text-sm font-medium text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <option value="">Seleccionar cliente</option>
 
@@ -204,8 +204,8 @@ export function CreateVehicleForm({
                 autoComplete="off"
               />
               <HelpText>
-                Podés escribirla con espacios o guiones. Se guardará
-                normalizada en mayúsculas.
+                Podés escribirla con espacios o guiones. Se guardará normalizada
+                en mayúsculas.
               </HelpText>
             </Field>
 
@@ -279,7 +279,7 @@ export function CreateVehicleForm({
       {state.message ? (
         <p
           id="create-vehicle-error"
-          className="rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-medium text-red-100"
+          className="rounded-xl border border-primary/35 bg-primary/10 px-4 py-3 text-sm font-semibold text-foreground"
           role="alert"
         >
           {state.message}
@@ -299,7 +299,7 @@ export function CreateVehicleForm({
           type="button"
           onClick={() => router.back()}
           disabled={isLoading}
-          className="h-12 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-60 sm:h-11"
+          className="h-12 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-60 sm:h-11"
         >
           Cancelar
         </button>
@@ -329,7 +329,10 @@ type LabelProps = {
  */
 function Label({ htmlFor, children }: LabelProps) {
   return (
-    <label htmlFor={htmlFor} className="block text-sm font-bold text-white">
+    <label
+      htmlFor={htmlFor}
+      className="block text-sm font-bold text-foreground"
+    >
       {children}
     </label>
   );
@@ -395,7 +398,7 @@ function Input({
       inputMode={inputMode}
       autoComplete={autoComplete}
       autoCapitalize={autoCapitalize}
-      className="h-12 w-full rounded-xl border border-border-strong bg-background/70 px-4 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+      className="h-12 w-full rounded-xl border border-border-strong bg-surface-muted/85 px-4 text-sm text-foreground outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
     />
   );
 }
