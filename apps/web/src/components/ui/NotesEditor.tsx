@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus, X } from "lucide-react";
 import { useId, useState } from "react";
 
 type NoteDraft = {
@@ -138,10 +139,11 @@ export function NotesEditor({
               type="button"
               onClick={() => removeNote(note.id)}
               disabled={disabled}
-              className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-black text-white transition hover:border-primary/60 hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-black text-white transition hover:border-primary/60 hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
               aria-label={`Quitar nota ${index + 1}`}
             >
-              ×
+              <X className="size-4 shrink-0" aria-hidden="true" />
+              Quitar nota
             </button>
           </div>
         ))}
@@ -151,8 +153,9 @@ export function NotesEditor({
         type="button"
         onClick={addNote}
         disabled={disabled}
-        className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+        className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       >
+        <Plus className="size-4 shrink-0" aria-hidden="true" />
         {addLabel}
       </button>
 

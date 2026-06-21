@@ -1,3 +1,4 @@
+import { ExternalLink, Eye, ListChecks, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { formatDate, formatMoney } from "../utils";
@@ -34,32 +35,40 @@ export function AttentionWorkOrdersPanel({
       className="overflow-hidden rounded-[1.35rem] border border-primary/25 bg-linear-to-br from-primary/8 via-surface to-surface-elevated shadow-(--shadow-industrial) ring-1 ring-white/3"
     >
       <div className="flex flex-col gap-3 border-b border-primary/15 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-        <div className="min-w-0">
-          <p className="text-[0.66rem] font-bold uppercase tracking-[0.22em] text-primary">
-            Prioridad operativa
-          </p>
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-primary/25 bg-primary/10 text-primary">
+            <TriangleAlert className="size-5" aria-hidden="true" />
+          </div>
 
-          <h2
-            id="attention-work-orders-heading"
-            className="mt-1.5 font-display text-lg font-black uppercase tracking-[0.04em] text-foreground"
-          >
-            Alertas del taller
-          </h2>
+          <div className="min-w-0">
+            <p className="text-[0.66rem] font-bold uppercase tracking-[0.22em] text-primary">
+              Prioridad operativa
+            </p>
 
-          <p className="mt-1 text-sm leading-5 text-muted-foreground">
-            Órdenes activas que conviene revisar antes de continuar el flujo.
-          </p>
+            <h2
+              id="attention-work-orders-heading"
+              className="mt-1.5 font-display text-lg font-black uppercase tracking-[0.04em] text-foreground"
+            >
+              Alertas del taller
+            </h2>
+
+            <p className="mt-1 text-sm leading-5 text-muted-foreground">
+              Órdenes activas que conviene revisar antes de continuar el flujo.
+            </p>
+          </div>
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <span className="inline-flex h-9 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 px-3 text-xs font-black uppercase tracking-[0.14em] text-primary">
+          <span className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-primary/25 bg-primary/10 px-3 text-xs font-black uppercase tracking-[0.14em] text-primary">
+            <TriangleAlert className="size-3.5 shrink-0" aria-hidden="true" />
             {workOrders.length} alerta{workOrders.length === 1 ? "" : "s"}
           </span>
 
           <Link
             href="/work-orders"
-            className="inline-flex h-9 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-3 text-xs font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-3 text-xs font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
           >
+            <ListChecks className="size-3.5 shrink-0" aria-hidden="true" />
             Ver flujo
           </Link>
         </div>
@@ -168,15 +177,17 @@ function AttentionAlertCard({ workOrder }: AttentionAlertCardProps) {
       <div className="mt-3 grid grid-cols-2 gap-2">
         <Link
           href={`/work-orders/${workOrder.id}`}
-          className="inline-flex h-9 items-center justify-center rounded-xl bg-primary px-3 text-xs font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.18)] transition hover:bg-primary-hover"
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-bold text-white transition hover:bg-primary-hover"
         >
+          <Eye className="size-3.5 shrink-0" aria-hidden="true" />
           Ver orden
         </Link>
 
         <Link
           href={`/vehicles/${workOrder.vehicle.id}`}
-          className="inline-flex h-9 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-3 text-xs font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-3 text-xs font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
         >
+          <ExternalLink className="size-3.5 shrink-0" aria-hidden="true" />
           Ver ficha
         </Link>
       </div>

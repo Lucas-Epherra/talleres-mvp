@@ -129,7 +129,7 @@ export function VehicleWorkOrdersPanel({
                     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                       <Link
                         href={`/work-orders/${workOrder.id}`}
-                        className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover sm:w-auto"
+                        className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
                       >
                         Ver orden
                       </Link>

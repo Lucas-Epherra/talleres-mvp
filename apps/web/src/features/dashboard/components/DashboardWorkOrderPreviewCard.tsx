@@ -1,3 +1,4 @@
+import { ExternalLink, Eye } from "lucide-react";
 import Link from "next/link";
 import { formatDate, formatMoney } from "../../../features/dashboard/utils";
 import type { DashboardWorkOrder } from "../types";
@@ -48,15 +49,17 @@ export function DashboardWorkOrderPreviewCard({
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <Link
           href={`/work-orders/${workOrder.id}`}
-          className="inline-flex h-9 w-full items-center justify-center rounded-xl bg-primary px-4 text-xs font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.18)] transition hover:bg-primary-hover sm:w-auto"
+          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-xs font-bold text-white transition hover:bg-primary-hover sm:w-auto"
         >
+          <Eye className="size-3.5 shrink-0" aria-hidden="true" />
           Ver orden
         </Link>
 
         <Link
           href={`/vehicles/${workOrder.vehicle.id}`}
-          className="inline-flex h-9 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-elevated px-4 text-xs font-bold text-foreground transition hover:border-primary/60 hover:bg-surface sm:w-auto"
+          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-elevated px-4 text-xs font-bold text-foreground transition hover:border-primary/60 hover:bg-surface sm:w-auto"
         >
+          <ExternalLink className="size-3.5 shrink-0" aria-hidden="true" />
           Ver ficha
         </Link>
       </div>

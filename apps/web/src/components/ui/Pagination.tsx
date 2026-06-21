@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 type PaginationProps = {
@@ -37,8 +38,8 @@ export function Pagination({
       className="flex flex-col gap-3 rounded-[1.1rem] border border-border bg-surface/80 p-3 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:flex-row sm:items-center sm:justify-between sm:rounded-[1.35rem] sm:p-4"
     >
       <p className="text-sm font-semibold text-muted-foreground">
-        Página <span className="font-black text-white">{currentPage}</span> de{" "}
-        <span className="font-black text-white">{totalPages}</span>
+        Página <span className="font-black text-foreground">{currentPage}</span>{" "}
+        de <span className="font-black text-foreground">{totalPages}</span>
       </p>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -46,9 +47,10 @@ export function Pagination({
           <PaginationLink
             href={buildPageHref(basePath, searchParams, previousPage)}
             label="Anterior"
+            direction="previous"
           />
         ) : (
-          <PaginationDisabledItem label="Anterior" />
+          <PaginationDisabledItem label="Anterior" direction="previous" />
         )}
 
         {visiblePages.map((page) => {
@@ -58,7 +60,7 @@ export function Pagination({
             <span
               key={page}
               aria-current="page"
-              className="grid size-10 place-items-center rounded-xl bg-primary text-sm font-black text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)]"
+              className="grid size-10 place-items-center rounded-xl bg-primary text-sm font-black text-white"
             >
               {page}
             </span>
@@ -66,7 +68,7 @@ export function Pagination({
             <Link
               key={page}
               href={buildPageHref(basePath, searchParams, page)}
-              className="grid size-10 place-items-center rounded-xl border border-border-strong bg-surface-muted text-sm font-black text-white transition hover:border-primary/60 hover:bg-surface-elevated"
+              className="grid size-10 place-items-center rounded-xl border border-border-strong bg-surface-muted text-sm font-black text-foreground transition hover:border-primary/60 hover:bg-surface-elevated"
             >
               {page}
             </Link>
@@ -77,9 +79,10 @@ export function Pagination({
           <PaginationLink
             href={buildPageHref(basePath, searchParams, nextPage)}
             label="Siguiente"
+            direction="next"
           />
         ) : (
-          <PaginationDisabledItem label="Siguiente" />
+          <PaginationDisabledItem label="Siguiente" direction="next" />
         )}
       </div>
     </nav>
@@ -89,13 +92,29 @@ export function Pagination({
 /**
  * Renders an enabled pagination text link.
  */
-function PaginationLink({ href, label }: { href: string; label: string }) {
+function PaginationLink({
+  href,
+  label,
+  direction,
+}: {
+  href: string;
+  label: string;
+  direction: "previous" | "next";
+}) {
   return (
     <Link
       href={href}
-      className="inline-flex h-10 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated"
+      className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated"
     >
+      {direction === "previous" ? (
+        <ChevronLeft className="size-4 shrink-0" aria-hidden="true" />
+      ) : null}
+
       {label}
+
+      {direction === "next" ? (
+        <ChevronRight className="size-4 shrink-0" aria-hidden="true" />
+      ) : null}
     </Link>
   );
 }
@@ -103,13 +122,27 @@ function PaginationLink({ href, label }: { href: string; label: string }) {
 /**
  * Renders a disabled pagination item without fake button behavior.
  */
-function PaginationDisabledItem({ label }: { label: string }) {
+function PaginationDisabledItem({
+  label,
+  direction,
+}: {
+  label: string;
+  direction: "previous" | "next";
+}) {
   return (
     <span
       aria-disabled="true"
-      className="inline-flex h-10 cursor-not-allowed items-center justify-center rounded-xl border border-border bg-background/40 px-4 text-sm font-bold text-muted-foreground opacity-60"
+      className="inline-flex h-10 cursor-not-allowed items-center justify-center gap-1.5 rounded-xl border border-border bg-background/40 px-4 text-sm font-bold text-muted-foreground opacity-60"
     >
+      {direction === "previous" ? (
+        <ChevronLeft className="size-4 shrink-0" aria-hidden="true" />
+      ) : null}
+
       {label}
+
+      {direction === "next" ? (
+        <ChevronRight className="size-4 shrink-0" aria-hidden="true" />
+      ) : null}
     </span>
   );
 }

@@ -1,3 +1,4 @@
+import { Eye, ListChecks } from "lucide-react";
 import Link from "next/link";
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { formatDate, formatMileage, formatMoney } from "../utils";
@@ -15,7 +16,9 @@ type LatestWorkOrdersPanelProps = {
  * Uses a spreadsheet-like table on desktop and compact cards on smaller
  * screens. The desktop table is full-width to avoid horizontal scrolling.
  */
-export function LatestWorkOrdersPanel({ workOrders }: LatestWorkOrdersPanelProps) {
+export function LatestWorkOrdersPanel({
+  workOrders,
+}: LatestWorkOrdersPanelProps) {
   return (
     <section
       aria-labelledby="latest-work-orders-heading"
@@ -41,8 +44,9 @@ export function LatestWorkOrdersPanel({ workOrders }: LatestWorkOrdersPanelProps
 
         <Link
           href="/work-orders"
-          className="inline-flex h-9 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-3 text-xs font-bold text-foreground transition hover:border-primary/60 hover:bg-surface sm:w-auto"
+          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-3 text-xs font-bold text-foreground transition hover:border-primary/60 hover:bg-surface sm:w-auto"
         >
+          <ListChecks className="size-3.5 shrink-0" aria-hidden="true" />
           Ver órdenes
         </Link>
       </div>
@@ -158,8 +162,9 @@ export function LatestWorkOrdersPanel({ workOrders }: LatestWorkOrdersPanelProps
                     <td className="px-4 py-4 text-right">
                       <Link
                         href={`/work-orders/${workOrder.id}`}
-                        className="inline-flex h-8 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-3 text-[0.68rem] font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
+                        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-xl border border-border-strong bg-surface-muted px-3 text-[0.68rem] font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
                       >
+                        <Eye className="size-3.5 shrink-0" aria-hidden="true" />
                         Ver
                       </Link>
                     </td>

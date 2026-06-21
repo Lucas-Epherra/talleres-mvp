@@ -89,7 +89,9 @@ function getValidCustomerId(
     return undefined;
   }
 
-  const exists = customers.some((customer) => customer.id === requestedCustomerId);
+  const exists = customers.some(
+    (customer) => customer.id === requestedCustomerId,
+  );
 
   return exists ? requestedCustomerId : undefined;
 }

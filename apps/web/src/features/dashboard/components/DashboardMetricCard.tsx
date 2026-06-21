@@ -1,3 +1,4 @@
+import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
 type DashboardMetricCardProps = {
@@ -31,9 +32,9 @@ export function DashboardMetricCard({
         {href ? (
           <span
             aria-hidden="true"
-            className="grid size-6 shrink-0 place-items-center rounded-lg border border-border bg-surface-elevated text-[0.62rem] font-black text-primary transition group-hover:border-primary/50"
+            className="grid size-6 shrink-0 place-items-center rounded-lg border border-border bg-surface-elevated text-primary transition group-hover:border-primary/50"
           >
-            →
+            <ArrowUpRight className="size-3.5" />
           </span>
         ) : null}
       </div>

@@ -82,7 +82,7 @@ export function EmptyState({
  */
 function getActionClassName(variant: EmptyStateAction["variant"]): string {
   if (variant === "primary") {
-    return "inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover";
+    return "inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover";
   }
 
   return "inline-flex h-11 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-white transition hover:border-primary/60 hover:bg-surface-elevated";

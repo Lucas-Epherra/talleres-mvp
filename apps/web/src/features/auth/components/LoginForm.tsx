@@ -37,7 +37,9 @@ export function LoginForm() {
     }
 
     const formData = new FormData(event.currentTarget);
-    const email = String(formData.get("email") ?? "").trim().toLowerCase();
+    const email = String(formData.get("email") ?? "")
+      .trim()
+      .toLowerCase();
     const password = String(formData.get("password") ?? "");
 
     if (!email || !password) {
@@ -123,7 +125,7 @@ export function LoginForm() {
 
       <button
         type="submit"
-        className="h-12 w-full rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+        className="h-12 w-full rounded-xl bg-primary px-4 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         disabled={isLoading}
       >
         {isLoading ? "Ingresando..." : "Ingresar"}

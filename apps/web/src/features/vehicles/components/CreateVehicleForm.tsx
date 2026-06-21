@@ -129,7 +129,7 @@ export function CreateVehicleForm({
           <button
             type="button"
             onClick={() => router.push("/customers/new")}
-            className="mt-6 h-11 rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover"
+            className="mt-6 h-11 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover"
           >
             Crear cliente
           </button>
@@ -290,7 +290,7 @@ export function CreateVehicleForm({
         <button
           type="submit"
           disabled={isLoading}
-          className="h-12 rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 sm:h-11"
+          className="h-12 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 sm:h-11"
         >
           {isLoading ? "Creando..." : "Crear vehículo"}
         </button>

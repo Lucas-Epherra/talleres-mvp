@@ -10,7 +10,9 @@ const workOrderStatusLabels: Record<WorkOrderStatus, string> = {
 /**
  * Converts backend work order status values into user-facing Spanish labels.
  */
-export function formatWorkOrderStatus(status: WorkOrderStatus | string): string {
+export function formatWorkOrderStatus(
+  status: WorkOrderStatus | string,
+): string {
   if (isWorkOrderStatus(status)) {
     return workOrderStatusLabels[status];
   }

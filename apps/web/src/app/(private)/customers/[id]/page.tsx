@@ -88,7 +88,7 @@ export default async function CustomerDetailPage({
           <div className="grid shrink-0 gap-3 sm:grid-cols-3 lg:flex lg:flex-col">
             <Link
               href={`/customers/${customer.id}/edit`}
-              className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover sm:w-auto"
+              className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
             >
               Editar cliente
             </Link>
@@ -134,9 +134,7 @@ export default async function CustomerDetailPage({
         <DetailSheetRow
           label="Dirección"
           value={
-            <BreakableDetailValue
-              value={customer.address ?? "Sin dirección"}
-            />
+            <BreakableDetailValue value={customer.address ?? "Sin dirección"} />
           }
         />
         <DetailSheetRow
@@ -184,7 +182,10 @@ export default async function CustomerDetailPage({
         </dl>
       </section>
 
-      <section aria-labelledby="customer-vehicles-heading" className="space-y-4">
+      <section
+        aria-labelledby="customer-vehicles-heading"
+        className="space-y-4"
+      >
         <SectionHeading
           headingId="customer-vehicles-heading"
           title="Vehículos asociados"
@@ -435,5 +436,7 @@ type BreakableDetailValueProps = {
  * inside detail sheet cells.
  */
 function BreakableDetailValue({ value }: BreakableDetailValueProps) {
-  return <span className="block min-w-0 max-w-full wrap-anywhere">{value}</span>;
+  return (
+    <span className="block min-w-0 max-w-full wrap-anywhere">{value}</span>
+  );
 }

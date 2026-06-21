@@ -11,8 +11,8 @@ type WorkOrderStatusIndicatorProps = {
 /**
  * Renders a non-interactive work order status indicator.
  *
- * It avoids pill borders and filled backgrounds so users do not confuse the
- * status with an actionable button.
+ * It avoids pill borders, filled backgrounds and glow shadows so users do not
+ * confuse the status with an actionable button.
  */
 export function WorkOrderStatusIndicator({
   status,
@@ -27,7 +27,7 @@ export function WorkOrderStatusIndicator({
     >
       <span
         aria-hidden="true"
-        className={`${classes.dot} size-2 rounded-full shadow-[0_0_14px_currentColor]`}
+        className={`${classes.dot} size-2 rounded-full`}
       />
       <span>
         {withLabel ? "Estado: " : ""}

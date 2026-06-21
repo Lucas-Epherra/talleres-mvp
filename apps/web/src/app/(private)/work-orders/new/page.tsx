@@ -55,7 +55,7 @@ export default async function NewWorkOrderPage({
 
           <Link
             href="/vehicles"
-            className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover"
+            className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover"
           >
             Ir a vehículos
           </Link>

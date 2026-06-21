@@ -85,7 +85,7 @@ export function WorkOrderCard({
           <div className="grid gap-2 rounded-2xl border border-border bg-surface-muted/80 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.62)] sm:grid-cols-2 lg:flex lg:h-full lg:flex-col lg:justify-center lg:gap-3 lg:p-3">
             <Link
               href={`/work-orders/${workOrder.id}`}
-              className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-[0_14px_35px_rgba(214,40,40,0.22)] transition hover:bg-primary-hover"
+              className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white transition hover:bg-primary-hover"
             >
               Ver orden
             </Link>
