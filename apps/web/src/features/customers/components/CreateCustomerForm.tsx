@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeft, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, type ReactNode, useState } from "react";
 import { NotesEditor } from "../../../components/ui/NotesEditor";
@@ -193,8 +194,9 @@ export function CreateCustomerForm() {
         <button
           type="submit"
           disabled={isLoading}
-          className="h-12 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 sm:h-11"
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 sm:h-11"
         >
+          <UserPlus className="size-4 shrink-0" aria-hidden="true" />
           {isLoading ? "Creando..." : "Crear cliente"}
         </button>
 
@@ -202,8 +204,9 @@ export function CreateCustomerForm() {
           type="button"
           onClick={() => router.back()}
           disabled={isLoading}
-          className="h-12 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-60 sm:h-11"
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-60 sm:h-11"
         >
+          <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
           Cancelar
         </button>
       </div>

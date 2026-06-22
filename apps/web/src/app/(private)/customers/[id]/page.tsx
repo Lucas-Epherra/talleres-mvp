@@ -1,3 +1,4 @@
+import { ArrowLeft, CarFront, Eye, Pencil } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -52,23 +53,14 @@ export default async function CustomerDetailPage({
   return (
     <section className="space-y-6 sm:space-y-8">
       <header className="relative overflow-hidden rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
-        <div
-          aria-hidden="true"
-          className="absolute right-0 top-0 h-40 w-40 translate-x-14 -translate-y-16 rounded-full bg-primary/10 blur-3xl"
-        />
-
-        <div
-          aria-hidden="true"
-          className="absolute bottom-0 left-0 h-24 w-48 -translate-x-16 translate-y-12 rounded-full bg-carbon/10 blur-3xl"
-        />
-
         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <Link
               href="/customers"
-              className="text-sm font-bold text-primary transition hover:text-primary-hover"
+              className="inline-flex items-center gap-2 text-sm font-bold text-primary transition hover:text-primary-hover"
             >
-              ← Volver a clientes
+              <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
+              Volver a clientes
             </Link>
 
             <p className="mt-6 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
@@ -88,22 +80,25 @@ export default async function CustomerDetailPage({
           <div className="grid shrink-0 gap-3 sm:grid-cols-3 lg:flex lg:flex-col">
             <Link
               href={`/customers/${customer.id}/edit`}
-              className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
             >
+              <Pencil className="size-4 shrink-0" aria-hidden="true" />
               Editar cliente
             </Link>
 
             <Link
               href={`/vehicles/new?customerId=${customer.id}`}
-              className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
             >
+              <CarFront className="size-4 shrink-0" aria-hidden="true" />
               Cargar vehículo
             </Link>
 
             <Link
               href="#customer-vehicles-heading"
-              className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
             >
+              <Eye className="size-4 shrink-0" aria-hidden="true" />
               Ver vehículos
             </Link>
           </div>
@@ -116,8 +111,9 @@ export default async function CustomerDetailPage({
         action={
           <Link
             href={`/customers/${customer.id}/edit`}
-            className="text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
+            className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
           >
+            <Pencil className="size-3.5 shrink-0" aria-hidden="true" />
             Editar datos
           </Link>
         }

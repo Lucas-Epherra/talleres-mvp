@@ -1,3 +1,4 @@
+import { ArrowLeft, CarFront } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -34,11 +35,6 @@ export default async function NewWorkOrderPage({
   if (!vehicleId) {
     return (
       <section className="relative overflow-hidden rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
-        <div
-          aria-hidden="true"
-          className="absolute right-0 top-0 h-36 w-36 translate-x-12 -translate-y-14 rounded-full bg-primary/10 blur-3xl"
-        />
-
         <div className="relative">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
             Nueva orden
@@ -55,8 +51,9 @@ export default async function NewWorkOrderPage({
 
           <Link
             href="/vehicles"
-            className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover"
+            className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover"
           >
+            <CarFront className="size-4 shrink-0" aria-hidden="true" />
             Ir a vehículos
           </Link>
         </div>
@@ -69,22 +66,13 @@ export default async function NewWorkOrderPage({
   return (
     <section>
       <header className="relative overflow-hidden rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
-        <div
-          aria-hidden="true"
-          className="absolute right-0 top-0 h-36 w-36 translate-x-12 -translate-y-14 rounded-full bg-primary/10 blur-3xl"
-        />
-
-        <div
-          aria-hidden="true"
-          className="absolute bottom-0 left-0 h-24 w-48 -translate-x-16 translate-y-12 rounded-full bg-carbon/10 blur-3xl"
-        />
-
         <div className="relative">
           <Link
             href={`/vehicles/${vehicleProfile.vehicle.id}`}
-            className="text-sm font-bold text-primary transition hover:text-primary-hover"
+            className="inline-flex items-center gap-2 text-sm font-bold text-primary transition hover:text-primary-hover"
           >
-            ← Volver a la ficha del vehículo
+            <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
+            Volver a la ficha del vehículo
           </Link>
 
           <p className="mt-6 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">

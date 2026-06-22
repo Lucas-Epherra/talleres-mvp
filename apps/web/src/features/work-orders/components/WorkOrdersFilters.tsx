@@ -1,5 +1,6 @@
 "use client";
 
+import { Search, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState, useTransition } from "react";
@@ -115,15 +116,17 @@ export function WorkOrdersFilters({
         <button
           type="submit"
           disabled={isPending}
-          className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
+          <Search className="size-4 shrink-0" aria-hidden="true" />
           {isPending ? "Filtrando..." : "Aplicar filtros"}
         </button>
 
         <Link
           href="/work-orders"
-          className="inline-flex h-11 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
         >
+          <X className="size-4 shrink-0" aria-hidden="true" />
           Limpiar
         </Link>
       </div>

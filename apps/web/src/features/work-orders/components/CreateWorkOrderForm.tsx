@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeft, ClipboardPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   type FormEvent,
@@ -252,16 +253,18 @@ export function CreateWorkOrderForm({ vehicle }: CreateWorkOrderFormProps) {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex h-12 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 sm:h-11"
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 sm:h-11"
         >
+          <ClipboardPlus className="size-4 shrink-0" aria-hidden="true" />
           {isSubmitting ? "Creando orden..." : "Crear orden de trabajo"}
         </button>
 
         <button
           type="button"
           onClick={() => router.push(`/vehicles/${vehicleId}`)}
-          className="inline-flex h-12 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:h-11"
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:h-11"
         >
+          <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
           Cancelar
         </button>
       </div>

@@ -14,7 +14,7 @@ export function DashboardHeader() {
           </p>
 
           <h1 className="mt-2 font-display text-2xl font-black uppercase tracking-[0.04em] text-foreground sm:text-3xl">
-            Dashboard del taller
+            Panel de control del taller
           </h1>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">

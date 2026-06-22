@@ -1,3 +1,4 @@
+import { ArrowLeft, ClipboardPlus, ExternalLink, Pencil } from "lucide-react";
 import Link from "next/link";
 import {
   DetailSheet,
@@ -26,23 +27,14 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
 
   return (
     <header className="relative overflow-hidden rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
-      <div
-        aria-hidden="true"
-        className="absolute right-0 top-0 h-56 w-56 translate-x-16 -translate-y-20 rounded-full bg-primary/12 blur-3xl"
-      />
-
-      <div
-        aria-hidden="true"
-        className="absolute bottom-0 left-0 h-28 w-56 -translate-x-20 translate-y-14 rounded-full bg-carbon/10 blur-3xl"
-      />
-
       <div className="relative flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <Link
             href="/vehicles"
-            className="inline-flex text-sm font-bold text-primary transition hover:text-primary-hover"
+            className="inline-flex items-center gap-2 text-sm font-bold text-primary transition hover:text-primary-hover"
           >
-            ← Volver a vehículos
+            <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
+            Volver a vehículos
           </Link>
 
           <p className="mt-6 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
@@ -77,15 +69,17 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
           <div className="grid gap-3 sm:grid-cols-2">
             <Link
               href={`/work-orders/new?vehicleId=${vehicle.id}`}
-              className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover"
             >
+              <ClipboardPlus className="size-4 shrink-0" aria-hidden="true" />
               Nueva orden
             </Link>
 
             <Link
               href={`/vehicles/${vehicle.id}/edit`}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated"
             >
+              <Pencil className="size-4 shrink-0" aria-hidden="true" />
               Editar vehículo
             </Link>
           </div>
@@ -127,8 +121,9 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
           action={
             <Link
               href={`/customers/${vehicle.customerId}`}
-              className="text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
+              className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
             >
+              <ExternalLink className="size-3.5 shrink-0" aria-hidden="true" />
               Ver cliente
             </Link>
           }

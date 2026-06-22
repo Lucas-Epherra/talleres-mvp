@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { ChevronDown, ListChecks } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { apiFetch, getApiErrorMessage } from "../../../lib/api";
 import {
   formatWorkOrderStatus,
@@ -174,20 +175,26 @@ export function WorkOrderStatusMenu({
             role="menuitem"
             disabled={isSubmitting}
             onClick={handleStatusUpdate}
-            className="group w-full px-4 py-3 text-left transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+            className="group flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <span
-              className={
-                action.nextStatus === "DELIVERED"
-                  ? "block text-sm font-black text-primary"
-                  : "block text-sm font-black text-foreground group-hover:text-primary"
-              }
-            >
-              {action.label}
+            <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-xl border border-border-strong bg-surface-muted text-primary transition group-hover:border-primary/50">
+              <ListChecks className="size-4" aria-hidden="true" />
             </span>
 
-            <span className="mt-1 block text-xs font-semibold leading-5 text-muted-foreground">
-              {action.description}
+            <span className="min-w-0">
+              <span
+                className={
+                  action.nextStatus === "DELIVERED"
+                    ? "block text-sm font-black text-primary"
+                    : "block text-sm font-black text-foreground group-hover:text-primary"
+                }
+              >
+                {action.label}
+              </span>
+
+              <span className="mt-1 block text-xs font-semibold leading-5 text-muted-foreground">
+                {action.description}
+              </span>
             </span>
           </button>
         </div>
@@ -233,20 +240,18 @@ function StatusVisual({
     >
       <span
         aria-hidden="true"
-        className={`${classes.dot} size-2 rounded-full shadow-[0_0_14px_currentColor]`}
+        className={`${classes.dot} size-2 rounded-full`}
       />
 
       <span>{label}</span>
 
       {isInteractive ? (
-        <span
+        <ChevronDown
           aria-hidden="true"
-          className={`ml-0.5 inline-flex items-center text-[0.5rem] leading-none opacity-65 transition ${
+          className={`ml-0.5 size-3 shrink-0 opacity-65 transition ${
             isOpen ? "rotate-180 opacity-90" : ""
           }`}
-        >
-          ▾
-        </span>
+        />
       ) : null}
     </div>
   );

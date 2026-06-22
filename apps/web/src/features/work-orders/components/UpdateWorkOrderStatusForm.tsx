@@ -1,5 +1,6 @@
 "use client";
 
+import { ListChecks } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useId, useMemo, useState } from "react";
 import { getApiErrorMessage } from "../../../lib/api";
@@ -124,8 +125,9 @@ export function UpdateWorkOrderStatusForm({
         <button
           type="submit"
           disabled={isSubmitting || isDelivered || !hasChangedStatus}
-          className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
+          <ListChecks className="size-4 shrink-0" aria-hidden="true" />
           {isSubmitting ? "Actualizando..." : "Actualizar estado"}
         </button>
       </div>

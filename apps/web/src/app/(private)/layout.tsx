@@ -41,11 +41,11 @@ export default async function PrivateLayout({
               </span>
 
               <span className="min-w-0">
-                <span className="block max-w-32 truncate font-display text-lg font-black italic uppercase tracking-[0.02em] text-white xs:max-w-40 sm:max-w-none sm:text-2xl">
+                <span className="block max-w-32 truncate font-display text-lg font-black italic uppercase tracking-[0.02em] text-foreground xs:max-w-40 sm:max-w-none sm:text-2xl">
                   Mi <span className="text-primary">Taller</span>
                 </span>
 
-                <span className="hidden truncate text-xs font-medium uppercase tracking-[0.18em] text-white/70 sm:block">
+                <span className="hidden truncate text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground sm:block">
                   Mecánica confiable
                 </span>
               </span>
@@ -54,9 +54,11 @@ export default async function PrivateLayout({
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-4">
             <div className="hidden rounded-2xl border border-white/15 bg-white/3 px-4 py-2 text-right sm:block">
-              <p className="text-sm font-semibold text-white">{user.name}</p>
+              <p className="text-sm font-semibold text-foreground">
+                {user.name}
+              </p>
 
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-white/65">
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                 {user.role}
               </p>
             </div>
@@ -66,7 +68,7 @@ export default async function PrivateLayout({
         </div>
       </header>
 
-      <div className="border-b border-[#d8dde5] bg-background">
+      <div className="border-b border-border bg-background">
         <div className="mx-auto w-full max-w-7xl px-3 py-3 sm:px-6">
           <PrivateNavigation />
         </div>

@@ -33,16 +33,16 @@ export function PrivateNavLink({
       onClick={onClick}
       aria-current={isActive ? "page" : undefined}
       className={buildClassName(
-        "flex h-12 w-full items-center gap-3 rounded-2xl border px-5 text-base font-bold transition lg:min-w-40 lg:w-auto",
+        "flex h-12 w-full items-center gap-3 rounded-2xl border px-5 text-base font-bold transition lg:w-auto lg:min-w-40",
         isActive
-          ? "border-primary bg-primary text-white"
-          : "border-[#d8dde5] bg-[#eef2f6] text-slate-800 hover:bg-[#e8edf2]",
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border bg-surface-muted text-foreground hover:border-border-strong hover:bg-surface-elevated",
       )}
     >
       <Icon
         className={buildClassName(
           "size-5 shrink-0 transition",
-          isActive ? "text-white" : "text-slate-700",
+          isActive ? "text-primary-foreground" : "text-muted-foreground",
         )}
         aria-hidden="true"
       />
@@ -50,7 +50,7 @@ export function PrivateNavLink({
       <span
         className={buildClassName(
           "truncate",
-          isActive ? "text-white" : "text-slate-800",
+          isActive ? "text-primary-foreground" : "text-foreground",
         )}
       >
         {children}
@@ -75,5 +75,5 @@ function isActivePath(pathname: string, href: string): boolean {
  * Small helper to compose className strings without adding a dependency.
  */
 function buildClassName(...classes: string[]): string {
-  return classes.join(" ");
+  return classes.filter(Boolean).join(" ");
 }

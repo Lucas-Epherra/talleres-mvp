@@ -13,7 +13,7 @@ export function PrivateFooter() {
     <footer className="theme-dark-shell border-t border-border bg-background/95">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-5 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="space-y-1">
-          <p className="font-display text-sm font-black italic uppercase tracking-[0.08em] text-white">
+          <p className="font-display text-sm font-black italic uppercase tracking-[0.08em] text-foreground">
             Mi <span className="text-primary">Taller</span>
           </p>
 

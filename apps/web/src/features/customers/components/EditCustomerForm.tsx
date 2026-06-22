@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, type ReactNode, useId, useState } from "react";
@@ -207,15 +208,17 @@ export function EditCustomerForm({ customer }: EditCustomerFormProps) {
         <button
           type="submit"
           disabled={isLoading}
-          className="inline-flex h-12 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 sm:h-11"
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 sm:h-11"
         >
+          <Save className="size-4 shrink-0" aria-hidden="true" />
           {isLoading ? "Guardando cambios..." : "Guardar cambios"}
         </button>
 
         <Link
           href={`/customers/${customer.id}`}
-          className="inline-flex h-12 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:h-11"
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:h-11"
         >
+          <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
           Cancelar
         </Link>
       </div>

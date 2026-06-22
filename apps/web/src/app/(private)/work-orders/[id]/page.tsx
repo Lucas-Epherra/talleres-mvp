@@ -1,3 +1,4 @@
+import { ArrowLeft, CarFront, Eye, ListChecks, Pencil, UserRound } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -48,23 +49,14 @@ export default async function WorkOrderDetailPage({
   return (
     <section className="space-y-6">
       <header className="relative overflow-hidden rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
-        <div
-          aria-hidden="true"
-          className="absolute right-0 top-0 h-40 w-40 translate-x-14 -translate-y-16 rounded-full bg-primary/10 blur-3xl"
-        />
-
-        <div
-          aria-hidden="true"
-          className="absolute bottom-0 left-0 h-24 w-48 -translate-x-16 translate-y-12 rounded-full bg-carbon/10 blur-3xl"
-        />
-
         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <Link
               href="/work-orders"
-              className="text-sm font-bold text-primary transition hover:text-primary-hover"
+              className="inline-flex items-center gap-2 text-sm font-bold text-primary transition hover:text-primary-hover"
             >
-              ← Volver a órdenes
+              <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
+              Volver a órdenes
             </Link>
 
             <p className="mt-6 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
@@ -89,22 +81,25 @@ export default async function WorkOrderDetailPage({
         <div className="relative mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Link
             href={`/work-orders/${workOrder.id}/edit`}
-            className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
           >
+            <Pencil className="size-4 shrink-0" aria-hidden="true" />
             Editar orden
           </Link>
 
           <Link
             href={`/vehicles/${vehicle.id}`}
-            className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
           >
+            <CarFront className="size-4 shrink-0" aria-hidden="true" />
             Ver ficha del vehículo
           </Link>
 
           <Link
             href="/work-orders"
-            className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
           >
+            <ListChecks className="size-4 shrink-0" aria-hidden="true" />
             Ver todas las órdenes
           </Link>
         </div>
@@ -195,21 +190,29 @@ export default async function WorkOrderDetailPage({
               aria-labelledby="work-order-status-heading"
               className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
             >
-              <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
-                Flujo operativo
-              </p>
+              <div className="flex items-start gap-3">
+                <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-primary">
+                  <ListChecks className="size-5" aria-hidden="true" />
+                </div>
 
-              <h2
-                id="work-order-status-heading"
-                className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
-              >
-                Actualizar estado
-              </h2>
+                <div className="min-w-0">
+                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+                    Flujo operativo
+                  </p>
 
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                Cambiá el estado de la orden cuando el trabajo avance dentro del
-                taller.
-              </p>
+                  <h2
+                    id="work-order-status-heading"
+                    className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
+                  >
+                    Actualizar estado
+                  </h2>
+
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                    Cambiá el estado de la orden cuando el trabajo avance dentro del
+                    taller.
+                  </p>
+                </div>
+              </div>
 
               <UpdateWorkOrderStatusForm
                 workOrderId={workOrder.id}
@@ -226,8 +229,9 @@ export default async function WorkOrderDetailPage({
             action={
               <Link
                 href={`/vehicles/${vehicle.id}`}
-                className="text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
+                className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
               >
+                <CarFront className="size-3.5 shrink-0" aria-hidden="true" />
                 Abrir ficha
               </Link>
             }
@@ -251,8 +255,9 @@ export default async function WorkOrderDetailPage({
             action={
               <Link
                 href={`/customers/${customer.id}`}
-                className="text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
+                className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
               >
+                <UserRound className="size-3.5 shrink-0" aria-hidden="true" />
                 Ver cliente
               </Link>
             }
@@ -320,7 +325,7 @@ function StatusIndicator({ status }: StatusIndicatorProps) {
     >
       <span
         aria-hidden="true"
-        className={`${classes.dot} size-2 rounded-full shadow-[0_0_14px_currentColor]`}
+        className={`${classes.dot} size-2 rounded-full`}
       />
 
       <span>Estado: {formatWorkOrderStatus(status)}</span>
