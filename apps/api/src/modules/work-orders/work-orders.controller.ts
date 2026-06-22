@@ -51,7 +51,7 @@ export class WorkOrdersController {
    */
   @Post()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateWorkOrderDto) {
-    return this.workOrdersService.create(user.workshopId, dto);
+    return this.workOrdersService.create(user.workshopId, user.id, dto);
   }
 
   /**
@@ -63,7 +63,7 @@ export class WorkOrdersController {
     @Param('id') id: string,
     @Body() dto: UpdateWorkOrderDto,
   ) {
-    return this.workOrdersService.update(user.workshopId, id, dto);
+    return this.workOrdersService.update(user.workshopId, user.id, id, dto);
   }
 
   /**
@@ -75,6 +75,11 @@ export class WorkOrdersController {
     @Param('id') id: string,
     @Body() dto: UpdateWorkOrderStatusDto,
   ) {
-    return this.workOrdersService.updateStatus(user.workshopId, id, dto);
+    return this.workOrdersService.updateStatus(
+      user.workshopId,
+      user.id,
+      id,
+      dto,
+    );
   }
 }

@@ -20,6 +20,13 @@ enum WorkOrderStatus {
   DELIVERED
 }
 
+enum WorkOrderEventType {
+  CREATED
+  UPDATED
+  STATUS_CHANGED
+  DELIVERED
+}
+
 model Workshop {
   id        String   @id @default(uuid())
   name      String
@@ -27,10 +34,11 @@ model Workshop {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  members    WorkshopMember[]
-  customers  Customer[]
-  vehicles   Vehicle[]
-  workOrders WorkOrder[]
+  members         WorkshopMember[]
+  customers       Customer[]
+  vehicles        Vehicle[]
+  workOrders      WorkOrder[]
+  workOrderEvents WorkOrderEvent[]
 
   @@map("workshops")
 }
@@ -43,7 +51,8 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  memberships WorkshopMember[]
+  memberships     WorkshopMember[]
+  workOrderEvents WorkOrderEvent[]
 
   @@map("users")
 }
@@ -129,12 +138,36 @@ model WorkOrder {
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
 
-  workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
-  vehicle  Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  workshop Workshop         @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  vehicle  Vehicle          @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  events   WorkOrderEvent[]
 
   @@unique([workshopId, orderNumber])
   @@index([workshopId])
   @@index([vehicleId])
   @@index([status])
   @@map("work_orders")
+}
+
+model WorkOrderEvent {
+  id          String              @id @default(uuid())
+  workshopId  String              @map("workshop_id")
+  workOrderId String              @map("work_order_id")
+  userId      String?             @map("user_id")
+  type        WorkOrderEventType
+  fromStatus  WorkOrderStatus?    @map("from_status")
+  toStatus    WorkOrderStatus?    @map("to_status")
+  description String?
+  createdAt   DateTime            @default(now()) @map("created_at")
+
+  workshop  Workshop  @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([workshopId])
+  @@index([workOrderId])
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("work_order_events")
 }
