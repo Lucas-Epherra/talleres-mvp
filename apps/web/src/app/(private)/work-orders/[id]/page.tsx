@@ -93,13 +93,15 @@ export default async function WorkOrderDetailPage({
         </div>
 
         <div className="relative mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <Link
-            href={`/work-orders/${workOrder.id}/edit`}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
-          >
-            <Pencil className="size-4 shrink-0" aria-hidden="true" />
-            Editar orden
-          </Link>
+          {workOrder.status !== "DELIVERED" ? (
+            <Link
+              href={`/work-orders/${workOrder.id}/edit`}
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
+            >
+              <Pencil className="size-4 shrink-0" aria-hidden="true" />
+              Editar orden
+            </Link>
+          ) : null}
 
           <Link
             href={`/vehicles/${vehicle.id}`}

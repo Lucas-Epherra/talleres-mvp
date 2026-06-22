@@ -295,7 +295,11 @@ export class WorkOrdersService {
     dto: UpdateWorkOrderDto,
   ) {
     const currentWorkOrder = await this.findOne(workshopId, id);
-
+    if (currentWorkOrder.status === WorkOrderStatus.DELIVERED) {
+      throw new BadRequestException(
+        'Una orden entregada no puede editarse. Reabrila primero con un motivo.',
+      );
+    }
     const nextStatus = dto.status;
     const deliveryDate = this.resolveDeliveryDate(
       currentWorkOrder.status,
@@ -588,11 +592,9 @@ export class WorkOrdersService {
       return `La orden #${orderNumber} fue marcada como entregada.`;
     }
 
-
     if (type === WorkOrderEventType.REOPENED) {
       return `La orden #${orderNumber} fue reabierta.`;
     }
-
 
     return `La orden #${orderNumber} pasó de ${this.formatReadableStatus(
       fromStatus,
