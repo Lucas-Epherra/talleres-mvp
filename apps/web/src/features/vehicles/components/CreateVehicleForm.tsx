@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeft, CarFront, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, type ReactNode, useState } from "react";
 import { NotesEditor } from "../../../components/ui/NotesEditor";
@@ -107,11 +108,6 @@ export function CreateVehicleForm({
   if (!hasCustomers) {
     return (
       <section className="relative overflow-hidden rounded-[1.35rem] border border-dashed border-border-strong bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3">
-        <div
-          aria-hidden="true"
-          className="absolute right-0 top-0 h-28 w-28 translate-x-10 -translate-y-10 rounded-full bg-primary/15 blur-2xl"
-        />
-
         <div className="relative">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
             Vehículos
@@ -129,8 +125,9 @@ export function CreateVehicleForm({
           <button
             type="button"
             onClick={() => router.push("/customers/new")}
-            className="mt-6 h-11 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover"
+            className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover"
           >
+            <UserPlus className="size-4 shrink-0" aria-hidden="true" />
             Crear cliente
           </button>
         </div>
@@ -290,8 +287,9 @@ export function CreateVehicleForm({
         <button
           type="submit"
           disabled={isLoading}
-          className="h-12 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 sm:h-11"
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 sm:h-11"
         >
+          <CarFront className="size-4 shrink-0" aria-hidden="true" />
           {isLoading ? "Creando..." : "Crear vehículo"}
         </button>
 
@@ -299,8 +297,9 @@ export function CreateVehicleForm({
           type="button"
           onClick={() => router.back()}
           disabled={isLoading}
-          className="h-12 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-60 sm:h-11"
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-60 sm:h-11"
         >
+          <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
           Cancelar
         </button>
       </div>

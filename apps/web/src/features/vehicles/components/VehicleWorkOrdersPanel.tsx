@@ -1,4 +1,9 @@
+import { ClipboardList, Eye, Pencil } from "lucide-react";
 import Link from "next/link";
+import {
+  DetailSheet,
+  DetailSheetRow,
+} from "../../../components/ui/DetailSheet";
 import {
   formatDate,
   formatMileage,
@@ -6,10 +11,6 @@ import {
   formatWorkOrderStatus,
   type WorkOrderStatus,
 } from "../../../lib/format";
-import {
-  DetailSheet,
-  DetailSheetRow,
-} from "../../../components/ui/DetailSheet";
 import { UpdateWorkOrderStatusForm } from "../../work-orders/components/UpdateWorkOrderStatusForm";
 import {
   WorkOrderNotesValue,
@@ -40,21 +41,31 @@ export function VehicleWorkOrdersPanel({
   return (
     <section className="overflow-hidden rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated shadow-(--shadow-industrial) ring-1 ring-white/3">
       <div className="flex flex-col gap-3 border-b border-border p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
-        <div className="min-w-0">
-          <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
-            Órdenes de trabajo
-          </p>
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-primary">
+            <ClipboardList className="size-5" aria-hidden="true" />
+          </div>
 
-          <h2 className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground">
-            {title}
-          </h2>
+          <div className="min-w-0">
+            <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+              Órdenes de trabajo
+            </p>
 
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            {description}
-          </p>
+            <h2 className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground">
+              {title}
+            </h2>
+
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+              {description}
+            </p>
+          </div>
         </div>
 
-        <p className="inline-flex w-fit rounded-full border border-border-strong bg-surface-muted px-4 py-2 text-sm font-bold text-foreground">
+        <p className="inline-flex w-fit items-center gap-2 rounded-full border border-border-strong bg-surface-muted px-4 py-2 text-sm font-bold text-foreground">
+          <ClipboardList
+            className="size-4 shrink-0 text-primary"
+            aria-hidden="true"
+          />
           {workOrders.length} orden{workOrders.length === 1 ? "" : "es"}
         </p>
       </div>
@@ -129,16 +140,21 @@ export function VehicleWorkOrdersPanel({
                     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                       <Link
                         href={`/work-orders/${workOrder.id}`}
-                        className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
+                        className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
                       >
+                        <Eye className="size-4 shrink-0" aria-hidden="true" />
                         Ver orden
                       </Link>
 
                       {!isDelivered ? (
                         <Link
                           href={`/work-orders/${workOrder.id}/edit`}
-                          className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
+                          className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
                         >
+                          <Pencil
+                            className="size-4 shrink-0"
+                            aria-hidden="true"
+                          />
                           Editar orden
                         </Link>
                       ) : null}
@@ -229,7 +245,7 @@ function StatusIndicator({ status }: StatusIndicatorProps) {
     >
       <span
         aria-hidden="true"
-        className={`${classes.dot} size-2 rounded-full shadow-[0_0_14px_currentColor]`}
+        className={`${classes.dot} size-2 rounded-full`}
       />
       <span>Estado: {formatWorkOrderStatus(status)}</span>
     </div>

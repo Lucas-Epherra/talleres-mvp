@@ -1,3 +1,4 @@
+import { ClipboardPlus, Eye, UserRound } from "lucide-react";
 import Link from "next/link";
 import { formatMileage } from "../../../lib/format";
 import type { VehicleListItem } from "../types";
@@ -31,11 +32,6 @@ export function VehicleCard({
       <div
         aria-hidden="true"
         className="absolute inset-y-0 left-0 w-1 bg-primary/45"
-      />
-
-      <div
-        aria-hidden="true"
-        className="absolute right-0 top-0 h-28 w-28 translate-x-14 -translate-y-14 rounded-full bg-primary/10 blur-2xl"
       />
 
       <div className="relative flex flex-col gap-4 lg:flex-row lg:items-stretch lg:justify-between">
@@ -89,22 +85,25 @@ export function VehicleCard({
           <div className="grid gap-2 rounded-2xl border border-border bg-surface-muted/80 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.62)] sm:grid-cols-3 lg:flex lg:h-full lg:flex-col lg:justify-center lg:gap-3 lg:p-3">
             <Link
               href={`/vehicles/${vehicle.id}`}
-              className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white transition hover:bg-primary-hover"
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white transition hover:bg-primary-hover"
             >
+              <Eye className="size-4 shrink-0" aria-hidden="true" />
               Abrir ficha
             </Link>
 
             <Link
               href={`/work-orders/new?vehicleId=${vehicle.id}`}
-              className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-elevated px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-elevated px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
             >
+              <ClipboardPlus className="size-4 shrink-0" aria-hidden="true" />
               Nueva orden
             </Link>
 
             <Link
               href={`/customers/${vehicle.customer.id}`}
-              className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-elevated px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-elevated px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
             >
+              <UserRound className="size-4 shrink-0" aria-hidden="true" />
               Ver cliente
             </Link>
           </div>
