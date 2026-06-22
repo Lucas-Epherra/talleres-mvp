@@ -61,14 +61,17 @@ export function PrivateNavigation() {
         aria-expanded={isOpen}
         aria-controls="private-mobile-navigation"
         onClick={() => setIsOpen((currentValue) => !currentValue)}
-        className="flex h-12 w-full items-center justify-between rounded-2xl border border-[#d7dde5] bg-[#eef2f6] px-4 text-sm font-bold text-slate-800 transition hover:bg-[#e8edf2] lg:hidden"
+        className="flex h-12 w-full items-center justify-between rounded-2xl border border-border bg-surface-muted px-4 text-sm font-bold text-foreground transition hover:bg-surface-elevated lg:hidden"
       >
         <span className="flex items-center gap-3">
-          <span className="grid size-8 place-items-center rounded-xl border border-[#d7dde5] bg-white">
+          <span className="grid size-8 place-items-center rounded-xl border border-border-strong bg-surface">
             {isOpen ? (
-              <X className="size-4 text-slate-700" />
+              <X className="size-4 text-muted-foreground" aria-hidden="true" />
             ) : (
-              <Menu className="size-4 text-slate-700" />
+              <Menu
+                className="size-4 text-muted-foreground"
+                aria-hidden="true"
+              />
             )}
           </span>
 
@@ -81,7 +84,7 @@ export function PrivateNavigation() {
       <ul
         id="private-mobile-navigation"
         className={buildClassName(
-          "mt-3 gap-2 rounded-3xl border border-[#d8dde5] bg-[#f7f9fb] p-2 lg:hidden",
+          "mt-3 gap-2 rounded-3xl border border-border bg-surface p-2 shadow-(--shadow-industrial) lg:hidden",
           isOpen ? "grid" : "hidden",
         )}
       >
@@ -115,5 +118,5 @@ export function PrivateNavigation() {
  * Small helper to compose className strings without adding a dependency.
  */
 function buildClassName(...classes: string[]): string {
-  return classes.join(" ");
+  return classes.filter(Boolean).join(" ");
 }
