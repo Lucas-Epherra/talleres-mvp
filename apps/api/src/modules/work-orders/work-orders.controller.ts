@@ -13,6 +13,7 @@ import { AuthGuard } from '../auth/guards/auth.guard';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { FindWorkOrdersQueryDto } from './dto/find-work-orders-query.dto';
+import { ReopenWorkOrderDto } from './dto/reopen-work-order.dto';
 import { UpdateWorkOrderStatusDto } from './dto/update-work-order-status.dto';
 import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
 import { WorkOrdersService } from './work-orders.service';
@@ -81,5 +82,17 @@ export class WorkOrdersController {
       id,
       dto,
     );
+  }
+
+  /**
+   * Reopens a delivered work order with an auditable required reason.
+   */
+  @Patch(':id/reopen')
+  reopen(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: ReopenWorkOrderDto,
+  ) {
+    return this.workOrdersService.reopen(user.workshopId, user.id, id, dto);
   }
 }

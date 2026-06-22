@@ -9,6 +9,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { UpdateWorkOrderStatusDto } from './dto/update-work-order-status.dto';
 import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
+import { ReopenWorkOrderDto } from './dto/reopen-work-order.dto';
 import { FindWorkOrdersQueryDto } from './dto/find-work-orders-query.dto';
 
 const INITIAL_ORDER_NUMBER = 1000;
@@ -455,7 +456,63 @@ export class WorkOrdersService {
       this.handlePrismaWriteError(error);
     }
   }
+  /**
+   * Reopens a delivered work order and keeps the operation auditable.
+   *
+   * Delivered orders cannot be moved backwards through the normal status flow.
+   * This explicit operation requires a reason and always returns the order to
+   * READY, leaving the correction visible in the timeline.
+   */
+  async reopen(
+    workshopId: string,
+    userId: string,
+    id: string,
+    dto: ReopenWorkOrderDto,
+  ) {
+    const currentWorkOrder = await this.findOne(workshopId, id);
 
+    if (currentWorkOrder.status !== WorkOrderStatus.DELIVERED) {
+      throw new BadRequestException(
+        'Solo se puede reabrir una orden entregada.',
+      );
+    }
+
+    const reason = this.normalizeRequiredText(
+      dto.reason,
+      'Motivo de reapertura',
+      500,
+    );
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const updatedWorkOrder = await tx.workOrder.update({
+          where: {
+            id: currentWorkOrder.id,
+          },
+          data: {
+            status: WorkOrderStatus.READY,
+            deliveryDate: null,
+          },
+          include: this.getDefaultInclude(),
+        });
+
+        await this.createWorkOrderEvent({
+          prisma: tx,
+          workshopId,
+          workOrderId: updatedWorkOrder.id,
+          userId,
+          type: WorkOrderEventType.REOPENED,
+          fromStatus: WorkOrderStatus.DELIVERED,
+          toStatus: WorkOrderStatus.READY,
+          description: `La orden #${updatedWorkOrder.orderNumber} fue reabierta. Motivo: ${reason}`,
+        });
+
+        return updatedWorkOrder;
+      });
+    } catch (error) {
+      this.handlePrismaWriteError(error);
+    }
+  }
   /**
    * Persists one immutable audit event for a work order operation.
    */
@@ -530,6 +587,12 @@ export class WorkOrdersService {
     if (type === WorkOrderEventType.DELIVERED) {
       return `La orden #${orderNumber} fue marcada como entregada.`;
     }
+
+
+    if (type === WorkOrderEventType.REOPENED) {
+      return `La orden #${orderNumber} fue reabierta.`;
+    }
+
 
     return `La orden #${orderNumber} pasó de ${this.formatReadableStatus(
       fromStatus,

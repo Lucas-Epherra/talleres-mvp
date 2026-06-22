@@ -3,6 +3,7 @@ import type {
   CreateWorkOrderInput,
   UpdateWorkOrderInput,
   UpdateWorkOrderStatusInput,
+  ReopenWorkOrderInput,
   WorkOrder,
 } from "./types";
 
@@ -48,6 +49,23 @@ export function updateWorkOrderStatus(
   input: UpdateWorkOrderStatusInput,
 ): Promise<WorkOrder> {
   return apiFetch<WorkOrder>(`/work-orders/${workOrderId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+/**
+ * Reopens a delivered work order with an auditable required reason.
+ *
+ * The backend validates that the order is delivered and records the reason in
+ * the operational timeline.
+ */
+
+export function reopenWorkOrder(
+  workOrderId: string,
+  input: ReopenWorkOrderInput,
+): Promise<WorkOrder> {
+  return apiFetch<WorkOrder>(`/work-orders/${workOrderId}/reopen`, {
     method: "PATCH",
     body: JSON.stringify(input),
   });

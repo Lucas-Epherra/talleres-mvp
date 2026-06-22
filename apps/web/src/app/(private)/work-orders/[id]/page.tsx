@@ -23,6 +23,7 @@ import {
   formatWorkOrderStatus,
 } from "../../../../lib/format";
 import { UpdateWorkOrderStatusForm } from "../../../../features/work-orders/components/UpdateWorkOrderStatusForm";
+import { ReopenWorkOrderForm } from "../../../../features/work-orders/components/ReopenWorkOrderForm";
 import {
   BreakableDetailValue,
   WorkOrderNotesValue,
@@ -231,6 +232,39 @@ export default async function WorkOrderDetailPage({
                 workOrderId={workOrder.id}
                 currentStatus={workOrder.status}
               />
+            </section>
+          ) : null}
+          {workOrder.status === "DELIVERED" ? (
+            <section
+              aria-labelledby="work-order-reopen-heading"
+              className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
+            >
+              <div className="flex items-start gap-3">
+                <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-success">
+                  <CheckCircle2 className="size-5" aria-hidden="true" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-success">
+                    Orden entregada
+                  </p>
+
+                  <h2
+                    id="work-order-reopen-heading"
+                    className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
+                  >
+                    Corrección controlada
+                  </h2>
+
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                    Esta orden está cerrada como entregada. Si fue marcada por
+                    error, podés reabrirla dejando un motivo obligatorio en el
+                    historial operativo.
+                  </p>
+                </div>
+              </div>
+
+              <ReopenWorkOrderForm workOrderId={workOrder.id} />
             </section>
           ) : null}
           <WorkOrderTimeline events={workOrder.events ?? []} />

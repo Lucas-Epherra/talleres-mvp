@@ -25,6 +25,7 @@ enum WorkOrderEventType {
   UPDATED
   STATUS_CHANGED
   DELIVERED
+  REOPENED
 }
 
 model Workshop {
