@@ -1,5 +1,6 @@
 "use client";
 
+import { Eye, EyeOff, LogIn } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useId, useState } from "react";
 import { getApiErrorMessage } from "../../../lib/api";
@@ -26,6 +27,7 @@ export function LoginForm() {
     status: "idle",
     message: null,
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   const isLoading = state.status === "loading";
 
@@ -77,7 +79,10 @@ export function LoginForm() {
       aria-describedby={state.message ? errorId : undefined}
     >
       <div className="space-y-2">
-        <label htmlFor="email" className="block text-sm font-bold text-white">
+        <label
+          htmlFor="email"
+          className="block text-sm font-bold text-foreground"
+        >
           Email
         </label>
 
@@ -87,7 +92,7 @@ export function LoginForm() {
           type="email"
           autoComplete="email"
           placeholder="admin@taller.demo"
-          className="h-12 w-full rounded-xl border border-border-strong bg-background/70 px-4 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+          className="h-12 w-full rounded-xl border border-border-strong bg-background/70 px-4 text-sm text-foreground outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
           disabled={isLoading}
           required
         />
@@ -96,27 +101,46 @@ export function LoginForm() {
       <div className="space-y-2">
         <label
           htmlFor="password"
-          className="block text-sm font-bold text-white"
+          className="block text-sm font-bold text-foreground"
         >
           Contraseña
         </label>
 
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          placeholder="Admin123!"
-          className="h-12 w-full rounded-xl border border-border-strong bg-background/70 px-4 text-sm text-white outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={isLoading}
-          required
-        />
+        <div className="relative">
+          <input
+            id="password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            placeholder="Admin123!"
+            className="h-12 w-full rounded-xl border border-border-strong bg-background/70 px-4 pr-12 text-sm text-foreground outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isLoading}
+            required
+          />
+
+          <button
+            type="button"
+            onClick={() => setShowPassword((currentValue) => !currentValue)}
+            disabled={isLoading}
+            aria-label={
+              showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+            }
+            aria-pressed={showPassword}
+            className="absolute right-3 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-lg text-muted-foreground transition hover:bg-surface-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {showPassword ? (
+              <EyeOff className="size-4" aria-hidden="true" />
+            ) : (
+              <Eye className="size-4" aria-hidden="true" />
+            )}
+          </button>
+        </div>
       </div>
 
       {state.message ? (
         <p
           id={errorId}
-          className="rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-semibold text-white"
+          className="rounded-xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-semibold text-foreground"
           role="alert"
         >
           {state.message}
@@ -125,9 +149,10 @@ export function LoginForm() {
 
       <button
         type="submit"
-        className="h-12 w-full rounded-xl bg-primary px-4 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         disabled={isLoading}
       >
+        <LogIn className="size-4 shrink-0" aria-hidden="true" />
         {isLoading ? "Ingresando..." : "Ingresar"}
       </button>
     </form>

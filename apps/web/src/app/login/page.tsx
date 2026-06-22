@@ -21,23 +21,18 @@ export default async function LoginPage() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-6 py-12 text-foreground">
+    <main className="theme-dark-shell relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-5 py-10 text-foreground sm:px-6 sm:py-12">
       <div
         aria-hidden="true"
-        className="absolute left-0 top-0 h-80 w-80 -translate-x-24 -translate-y-24 rounded-full bg-primary/15 blur-3xl"
+        className="absolute left-0 top-0 h-80 w-80 -translate-x-24 -translate-y-24 rounded-full bg-primary/12 blur-3xl"
       />
 
       <div
         aria-hidden="true"
-        className="absolute bottom-0 right-0 h-96 w-96 translate-x-28 translate-y-28 rounded-full bg-surface-elevated/70 blur-3xl"
+        className="absolute bottom-0 right-0 h-96 w-96 translate-x-28 translate-y-28 rounded-full bg-surface-elevated/55 blur-3xl"
       />
 
-      <section className="relative w-full max-w-md overflow-hidden rounded-[1.35rem] border border-border bg-surface/85 p-8 shadow-[var(--shadow-industrial)] ring-1 ring-white/[0.03]">
-        <div
-          aria-hidden="true"
-          className="absolute right-0 top-0 h-32 w-32 translate-x-10 -translate-y-10 rounded-full bg-primary/15 blur-2xl"
-        />
-
+      <section className="relative w-full max-w-md overflow-hidden rounded-[1.35rem] border border-border bg-surface/88 p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
         <div className="relative mb-8 space-y-5">
           <div className="flex items-center gap-3">
             <span className="grid size-12 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-elevated shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
@@ -47,7 +42,7 @@ export default async function LoginPage() {
             </span>
 
             <div className="min-w-0">
-              <p className="font-display text-xl font-black italic uppercase tracking-[0.02em] text-white">
+              <p className="font-display text-xl font-black italic uppercase tracking-[0.02em] text-foreground">
                 Mi <span className="text-primary">Taller</span>
               </p>
 
@@ -62,7 +57,7 @@ export default async function LoginPage() {
               Acceso privado
             </p>
 
-            <h1 className="mt-3 font-display text-3xl font-black uppercase tracking-[0.04em] text-white">
+            <h1 className="mt-3 font-display text-3xl font-black uppercase tracking-[0.04em] text-foreground">
               Iniciar sesión
             </h1>
 
@@ -73,9 +68,7 @@ export default async function LoginPage() {
           </div>
         </div>
 
-        <div className="relative">
-          <LoginForm />
-        </div>
+        <LoginForm />
       </section>
     </main>
   );
