@@ -1,5 +1,6 @@
 "use client";
 
+import { Package, Plus, X } from "lucide-react";
 import {
   createEmptyWorkOrderPart,
   formatCurrency,
@@ -78,7 +79,8 @@ export function WorkOrderPartsEditor({
           </p>
         </div>
 
-        <p className="w-fit rounded-full border border-primary/35 bg-primary/10 px-4 py-2 text-sm font-black text-primary">
+        <p className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/35 bg-primary/10 px-4 py-2 text-sm font-black text-primary">
+          <Package className="size-4 shrink-0" aria-hidden="true" />
           {formatCurrency(partsTotal)}
         </p>
       </div>
@@ -142,10 +144,10 @@ export function WorkOrderPartsEditor({
               <button
                 type="button"
                 onClick={() => removePart(part.id)}
-                className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-elevated px-4 text-sm font-black text-foreground transition hover:border-primary/60 hover:bg-primary/10 sm:mt-0 sm:h-11 sm:px-0 sm:text-lg"
+                className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-elevated px-4 text-sm font-black text-foreground transition hover:border-primary/60 hover:bg-primary/10 sm:mt-0 sm:h-11 sm:px-0"
                 aria-label={`Quitar repuesto ${index + 1}`}
               >
-                ×
+                <X className="size-4" aria-hidden="true" />
               </button>
             </div>
           ))}
@@ -155,8 +157,9 @@ export function WorkOrderPartsEditor({
       <button
         type="button"
         onClick={addPart}
-        className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:h-11 sm:w-auto"
+        className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:h-11 sm:w-auto"
       >
+        <Plus className="size-4 shrink-0" aria-hidden="true" />
         Agregar repuesto
       </button>
     </section>
