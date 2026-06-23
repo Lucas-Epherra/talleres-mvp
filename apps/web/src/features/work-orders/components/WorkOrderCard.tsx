@@ -87,13 +87,16 @@ export function WorkOrderCard({
               Ver orden
             </Link>
 
-            <Link
-              href={`/work-orders/${workOrder.id}/edit`}
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-elevated px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
-            >
-              <Pencil className="size-4 shrink-0" aria-hidden="true" />
-              Editar orden
-            </Link>
+            {workOrder.status !== "DELIVERED" &&
+            workOrder.status !== "CANCELLED" ? (
+              <Link
+                href={`/work-orders/${workOrder.id}/edit`}
+                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-elevated px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
+              >
+                <Pencil className="size-4 shrink-0" aria-hidden="true" />
+                Editar orden
+              </Link>
+            ) : null}
 
             <Link
               href={`/vehicles/${vehicle.id}`}

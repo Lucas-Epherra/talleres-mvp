@@ -45,6 +45,7 @@ export function UpdateWorkOrderStatusForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isDelivered = currentStatus === "DELIVERED";
+  const isCancelled = currentStatus === "CANCELLED";
   const hasChangedStatus = selectedStatus !== currentStatus;
   const isSelectingDelivered = selectedStatus === "DELIVERED";
   const shouldShowDeliveryConfirmation =
@@ -62,7 +63,7 @@ export function UpdateWorkOrderStatusForm({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (isSubmitting || isDelivered) {
+    if (isSubmitting || isDelivered || isCancelled) {
       return;
     }
 
@@ -134,7 +135,7 @@ export function UpdateWorkOrderStatusForm({
             id={selectId}
             name="status"
             value={selectedStatus}
-            disabled={isSubmitting || isDelivered}
+            disabled={isSubmitting || isDelivered || isCancelled}
             onChange={(event) =>
               handleStatusChange(event.target.value as WorkOrderStatus)
             }
@@ -153,11 +154,19 @@ export function UpdateWorkOrderStatusForm({
               anteriores.
             </p>
           ) : null}
+
+          {isCancelled ? (
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              Esta orden fue anulada y no puede volver al flujo operativo.
+            </p>
+          ) : null}
         </div>
 
         <button
           type="submit"
-          disabled={isSubmitting || isDelivered || !hasChangedStatus}
+          disabled={
+            isSubmitting || isDelivered || isCancelled || !hasChangedStatus
+          }
           className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
           {shouldShowDeliveryConfirmation ? (

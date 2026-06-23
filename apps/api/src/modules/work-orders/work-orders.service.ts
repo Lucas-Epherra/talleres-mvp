@@ -10,6 +10,7 @@ import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { UpdateWorkOrderStatusDto } from './dto/update-work-order-status.dto';
 import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
 import { ReopenWorkOrderDto } from './dto/reopen-work-order.dto';
+import { CancelWorkOrderDto } from './dto/cancel-work-order.dto';
 import { FindWorkOrdersQueryDto } from './dto/find-work-orders-query.dto';
 
 const INITIAL_ORDER_NUMBER = 1000;
@@ -300,6 +301,16 @@ export class WorkOrdersService {
         'Una orden entregada no puede editarse. Reabrila primero con un motivo.',
       );
     }
+
+    if (currentWorkOrder.status === WorkOrderStatus.CANCELLED) {
+      throw new BadRequestException('Una orden anulada no puede editarse.');
+    }
+
+    if (dto.status === WorkOrderStatus.CANCELLED) {
+      throw new BadRequestException(
+        'Para anular una orden usá la acción de anulación con motivo.',
+      );
+    }
     const nextStatus = dto.status;
     const deliveryDate = this.resolveDeliveryDate(
       currentWorkOrder.status,
@@ -408,9 +419,15 @@ export class WorkOrdersService {
   ) {
     const currentWorkOrder = await this.findOne(workshopId, id);
 
-    if (dto.status === currentWorkOrder.status) {
+    if (currentWorkOrder.status === WorkOrderStatus.CANCELLED) {
       throw new BadRequestException(
-        'Seleccioná un estado diferente al actual.',
+        'Una orden anulada no puede volver al flujo operativo.',
+      );
+    }
+
+    if (dto.status === WorkOrderStatus.CANCELLED) {
+      throw new BadRequestException(
+        'Para anular una orden usá la acción de anulación con motivo.',
       );
     }
 
@@ -517,6 +534,68 @@ export class WorkOrdersService {
       this.handlePrismaWriteError(error);
     }
   }
+
+  /**
+   * Cancels an open work order and keeps the operation auditable.
+   *
+   * Delivered orders must be reopened first before cancellation. Cancelled
+   * orders cannot return to the normal workflow.
+   */
+  async cancel(
+    workshopId: string,
+    userId: string,
+    id: string,
+    dto: CancelWorkOrderDto,
+  ) {
+    const currentWorkOrder = await this.findOne(workshopId, id);
+
+    if (currentWorkOrder.status === WorkOrderStatus.DELIVERED) {
+      throw new BadRequestException(
+        'Una orden entregada no puede anularse directamente. Reabrila primero con un motivo.',
+      );
+    }
+
+    if (currentWorkOrder.status === WorkOrderStatus.CANCELLED) {
+      throw new BadRequestException('Esta orden ya está anulada.');
+    }
+
+    const reason = this.normalizeRequiredText(
+      dto.reason,
+      'Motivo de anulación',
+      500,
+    );
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const updatedWorkOrder = await tx.workOrder.update({
+          where: {
+            id: currentWorkOrder.id,
+          },
+          data: {
+            status: WorkOrderStatus.CANCELLED,
+            deliveryDate: null,
+          },
+          include: this.getDefaultInclude(),
+        });
+
+        await this.createWorkOrderEvent({
+          prisma: tx,
+          workshopId,
+          workOrderId: updatedWorkOrder.id,
+          userId,
+          type: WorkOrderEventType.CANCELLED,
+          fromStatus: currentWorkOrder.status,
+          toStatus: WorkOrderStatus.CANCELLED,
+          description: `La orden #${updatedWorkOrder.orderNumber} fue anulada. Motivo: ${reason}`,
+        });
+
+        return updatedWorkOrder;
+      });
+    } catch (error) {
+      this.handlePrismaWriteError(error);
+    }
+  }
+
   /**
    * Persists one immutable audit event for a work order operation.
    */
@@ -596,6 +675,10 @@ export class WorkOrdersService {
       return `La orden #${orderNumber} fue reabierta.`;
     }
 
+        if (type === WorkOrderEventType.CANCELLED) {
+      return `La orden #${orderNumber} fue anulada.`;
+    }
+
     return `La orden #${orderNumber} pasó de ${this.formatReadableStatus(
       fromStatus,
     )} a ${this.formatReadableStatus(toStatus)}.`;
@@ -614,6 +697,7 @@ export class WorkOrdersService {
       IN_PROGRESS: 'En progreso',
       READY: 'Lista para entregar',
       DELIVERED: 'Entregada',
+      CANCELLED: 'Anulada',
     };
 
     return statusLabels[status];

@@ -1,5 +1,6 @@
 import {
   ArrowLeft,
+  Ban,
   CarFront,
   CheckCircle2,
   ClipboardCheck,
@@ -24,6 +25,7 @@ import {
 } from "../../../../lib/format";
 import { UpdateWorkOrderStatusForm } from "../../../../features/work-orders/components/UpdateWorkOrderStatusForm";
 import { ReopenWorkOrderForm } from "../../../../features/work-orders/components/ReopenWorkOrderForm";
+import { CancelWorkOrderForm } from "../../../../features/work-orders/components/CancelWorkOrderForm";
 import {
   BreakableDetailValue,
   WorkOrderNotesValue,
@@ -59,6 +61,9 @@ export default async function WorkOrderDetailPage({
   const workOrder = await getWorkOrderOrNotFound(resolvedParams.id);
   const { vehicle } = workOrder;
   const customer = vehicle.customer;
+  const isDelivered = workOrder.status === "DELIVERED";
+  const isCancelled = workOrder.status === "CANCELLED";
+  const isClosed = isDelivered || isCancelled;
 
   return (
     <section className="space-y-6">
@@ -93,7 +98,7 @@ export default async function WorkOrderDetailPage({
         </div>
 
         <div className="relative mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          {workOrder.status !== "DELIVERED" ? (
+          {!isClosed ? (
             <Link
               href={`/work-orders/${workOrder.id}/edit`}
               className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
@@ -201,7 +206,7 @@ export default async function WorkOrderDetailPage({
             />
           </DetailSheet>
 
-          {workOrder.status !== "DELIVERED" ? (
+          {!isClosed ? (
             <section
               aria-labelledby="work-order-status-heading"
               className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
@@ -236,7 +241,41 @@ export default async function WorkOrderDetailPage({
               />
             </section>
           ) : null}
-          {workOrder.status === "DELIVERED" ? (
+          {!isClosed ? (
+            <section
+              aria-labelledby="work-order-cancel-heading"
+              className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
+            >
+              <div className="flex items-start gap-3">
+                <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-primary">
+                  <Ban className="size-5" aria-hidden="true" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+                    Cierre administrativo
+                  </p>
+
+                  <h2
+                    id="work-order-cancel-heading"
+                    className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
+                  >
+                    Anular orden
+                  </h2>
+
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                    Usá esta acción cuando la orden fue cargada por error, el
+                    cliente no autorizó el trabajo o el servicio no continuará.
+                    La anulación exige motivo y queda registrada en el
+                    historial.
+                  </p>
+                </div>
+              </div>
+
+              <CancelWorkOrderForm workOrderId={workOrder.id} />
+            </section>
+          ) : null}
+          {isDelivered ? (
             <section
               aria-labelledby="work-order-reopen-heading"
               className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
@@ -267,6 +306,37 @@ export default async function WorkOrderDetailPage({
               </div>
 
               <ReopenWorkOrderForm workOrderId={workOrder.id} />
+            </section>
+          ) : null}
+          {isCancelled ? (
+            <section
+              aria-labelledby="work-order-cancelled-heading"
+              className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
+            >
+              <div className="flex items-start gap-3">
+                <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-muted-foreground">
+                  <Ban className="size-5" aria-hidden="true" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+                    Orden anulada
+                  </p>
+
+                  <h2
+                    id="work-order-cancelled-heading"
+                    className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
+                  >
+                    Flujo cerrado
+                  </h2>
+
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                    Esta orden fue anulada y quedó fuera del flujo operativo. No
+                    puede editarse, entregarse ni volver a estados anteriores.
+                    Revisá el historial para consultar el motivo registrado.
+                  </p>
+                </div>
+              </div>
             </section>
           ) : null}
           <WorkOrderTimeline events={workOrder.events ?? []} />
@@ -457,6 +527,8 @@ function getWorkOrderEventIcon(
     UPDATED: FilePenLine,
     STATUS_CHANGED: RefreshCw,
     DELIVERED: CheckCircle2,
+    REOPENED: RefreshCw,
+    CANCELLED: Ban,
   };
 
   return iconMap[type];
@@ -471,6 +543,8 @@ function getWorkOrderEventTitle(type: WorkOrderTimelineItem["type"]): string {
     UPDATED: "Información actualizada",
     STATUS_CHANGED: "Cambio de estado",
     DELIVERED: "Orden entregada",
+    REOPENED: "Orden reabierta",
+    CANCELLED: "Orden anulada",
   };
 
   return titleMap[type];
@@ -487,6 +561,8 @@ function getWorkOrderEventFallback(
     UPDATED: "Se actualizó la información operativa de la orden.",
     STATUS_CHANGED: "Se modificó el estado operativo de la orden.",
     DELIVERED: "La orden fue marcada como entregada.",
+    REOPENED: "La orden fue reabierta con trazabilidad operativa.",
+    CANCELLED: "La orden fue anulada con motivo registrado.",
   };
 
   return fallbackMap[type];
@@ -582,6 +658,10 @@ function getStatusIndicatorClasses(status: WorkOrder["status"]): {
     DELIVERED: {
       text: "text-success",
       dot: "bg-success text-success",
+    },
+    CANCELLED: {
+      text: "text-muted-foreground",
+      dot: "bg-muted-foreground text-muted-foreground",
     },
   };
 

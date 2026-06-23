@@ -30,6 +30,7 @@ const WORK_ORDER_STATUSES: WorkOrderStatus[] = [
   "IN_PROGRESS",
   "READY",
   "DELIVERED",
+  "CANCELLED",
 ];
 
 /**
@@ -57,12 +58,15 @@ export default async function WorkOrdersPage({
 
   const workOrders = workOrdersPage.data;
   const meta = workOrdersPage.meta;
+
   const pageActiveCount = workOrders.filter(
-    (workOrder) => workOrder.status !== "DELIVERED",
+    (workOrder) =>
+      workOrder.status !== "DELIVERED" && workOrder.status !== "CANCELLED",
   ).length;
   const pageDeliveredCount = workOrders.filter(
     (workOrder) => workOrder.status === "DELIVERED",
   ).length;
+
   const hasFilters = Boolean(search || status);
   const hasWorkOrders = workOrders.length > 0;
 

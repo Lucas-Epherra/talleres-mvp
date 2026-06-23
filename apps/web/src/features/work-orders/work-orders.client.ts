@@ -4,6 +4,7 @@ import type {
   UpdateWorkOrderInput,
   UpdateWorkOrderStatusInput,
   ReopenWorkOrderInput,
+  CancelWorkOrderInput,
   WorkOrder,
 } from "./types";
 
@@ -66,6 +67,22 @@ export function reopenWorkOrder(
   input: ReopenWorkOrderInput,
 ): Promise<WorkOrder> {
   return apiFetch<WorkOrder>(`/work-orders/${workOrderId}/reopen`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+/**
+ * Cancels an open work order with an auditable required reason.
+ *
+ * The backend rejects delivered orders, already cancelled orders and any
+ * cancellation attempt without a valid reason.
+ */
+export function cancelWorkOrder(
+  workOrderId: string,
+  input: CancelWorkOrderInput,
+): Promise<WorkOrder> {
+  return apiFetch<WorkOrder>(`/work-orders/${workOrderId}/cancel`, {
     method: "PATCH",
     body: JSON.stringify(input),
   });

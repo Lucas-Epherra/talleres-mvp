@@ -16,7 +16,10 @@ import { FindWorkOrdersQueryDto } from './dto/find-work-orders-query.dto';
 import { ReopenWorkOrderDto } from './dto/reopen-work-order.dto';
 import { UpdateWorkOrderStatusDto } from './dto/update-work-order-status.dto';
 import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
+import { CancelWorkOrderDto } from './dto/cancel-work-order.dto';
 import { WorkOrdersService } from './work-orders.service';
+
+
 
 /**
  * HTTP controller for work order operations.
@@ -95,4 +98,19 @@ export class WorkOrdersController {
   ) {
     return this.workOrdersService.reopen(user.workshopId, user.id, id, dto);
   }
+
+    /**
+   * Cancels an open work order with an auditable required reason.
+   */
+  @Patch(':id/cancel')
+  cancel(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: CancelWorkOrderDto,
+  ) {
+    return this.workOrdersService.cancel(user.workshopId, user.id, id, dto);
+  }
+
 }
+
+

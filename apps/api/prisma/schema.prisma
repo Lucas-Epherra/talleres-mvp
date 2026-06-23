@@ -18,6 +18,7 @@ enum WorkOrderStatus {
   IN_PROGRESS
   READY
   DELIVERED
+  CANCELLED
 }
 
 enum WorkOrderEventType {
@@ -26,6 +27,7 @@ enum WorkOrderEventType {
   STATUS_CHANGED
   DELIVERED
   REOPENED
+  CANCELLED
 }
 
 model Workshop {

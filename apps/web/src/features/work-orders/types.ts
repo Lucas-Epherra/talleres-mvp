@@ -35,6 +35,10 @@ export type ReopenWorkOrderInput = {
   reason: string;
 };
 
+export type CancelWorkOrderInput = {
+  reason: string;
+};
+
 export type WorkOrderCustomer = {
   id: string;
   fullName: string;
@@ -56,7 +60,9 @@ export type WorkOrderEventType =
   | "CREATED"
   | "UPDATED"
   | "STATUS_CHANGED"
-  | "DELIVERED";
+  | "DELIVERED"
+  | "REOPENED"
+  | "CANCELLED";
 
 export type WorkOrderEventUser = {
   id: string;

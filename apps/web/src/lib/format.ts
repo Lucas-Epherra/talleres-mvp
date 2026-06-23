@@ -1,12 +1,17 @@
-export type WorkOrderStatus = "PENDING" | "IN_PROGRESS" | "READY" | "DELIVERED";
+export type WorkOrderStatus =
+  | "PENDING"
+  | "IN_PROGRESS"
+  | "READY"
+  | "DELIVERED"
+  | "CANCELLED";
 
 const workOrderStatusLabels: Record<WorkOrderStatus, string> = {
   PENDING: "Pendiente",
   IN_PROGRESS: "En progreso",
   READY: "Listo",
   DELIVERED: "Entregado",
+  CANCELLED: "Anulada",
 };
-
 /**
  * Converts backend work order status values into user-facing Spanish labels.
  */

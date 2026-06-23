@@ -406,6 +406,10 @@ function getStatusIndicatorClasses(status: WorkOrderStatus): {
       text: "text-success",
       dot: "bg-success text-success",
     },
+    CANCELLED: {
+      text: "text-muted-foreground",
+      dot: "bg-muted-foreground text-muted-foreground",
+    },
   };
 
   return statusClassMap[status];
