@@ -1,4 +1,9 @@
-export type WorkOrderStatus = "PENDING" | "IN_PROGRESS" | "READY" | "DELIVERED";
+export type WorkOrderStatus =
+  | "PENDING"
+  | "IN_PROGRESS"
+  | "READY"
+  | "DELIVERED"
+  | "CANCELLED";
 
 export type DashboardVehicleCustomer = {
   id: string;
@@ -42,6 +47,7 @@ export type DashboardSummary = {
     inProgress: number;
     ready: number;
     delivered: number;
+    cancelled: number;
     active: number;
   };
   attentionWorkOrders: DashboardWorkOrder[];

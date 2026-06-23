@@ -13,6 +13,55 @@ type EditWorkOrderPageProps = {
   }>;
 };
 
+type ClosedWorkOrderStatus = Extract<
+  WorkOrder["status"],
+  "DELIVERED" | "CANCELLED"
+>;
+
+type ClosedWorkOrderEditLockCopy = {
+  eyebrow: string;
+  eyebrowClassName: string;
+  iconClassName: string;
+  title: string;
+  description: string;
+  protectionEyebrow: string;
+  protectionTitle: string;
+  protectionDescription: string;
+  primaryActionLabel: string;
+};
+
+const CLOSED_WORK_ORDER_EDIT_LOCK_COPY: Record<
+  ClosedWorkOrderStatus,
+  ClosedWorkOrderEditLockCopy
+> = {
+  DELIVERED: {
+    eyebrow: "Orden entregada",
+    eyebrowClassName: "text-success",
+    iconClassName: "text-success",
+    title: "Edición bloqueada",
+    description:
+      "La orden ya fue marcada como entregada. Para modificar sus datos, primero debe reabrirse desde el detalle con un motivo obligatorio.",
+    protectionEyebrow: "Protección operativa",
+    protectionTitle: "No se puede editar una orden entregada",
+    protectionDescription:
+      "Este bloqueo evita cambios directos sobre órdenes cerradas. Usá la corrección controlada desde el detalle para reabrirla y dejar la trazabilidad correspondiente en el historial operativo.",
+    primaryActionLabel: "Ver corrección controlada",
+  },
+  CANCELLED: {
+    eyebrow: "Orden anulada",
+    eyebrowClassName: "text-destructive",
+    iconClassName: "text-destructive",
+    title: "Edición bloqueada",
+    description:
+      "La orden fue anulada y quedó fuera del flujo operativo. No puede editarse ni reabrirse desde esta pantalla.",
+    protectionEyebrow: "Historial protegido",
+    protectionTitle: "No se puede editar una orden anulada",
+    protectionDescription:
+      "Este bloqueo preserva la trazabilidad de una orden cerrada por anulación. Si la anulación fue un error operativo, debe resolverse con una nueva orden o con una acción específica definida desde backend.",
+    primaryActionLabel: "Volver al detalle",
+  },
+};
+
 export const metadata: Metadata = {
   title: "Editar orden",
 };
@@ -30,8 +79,8 @@ export default async function EditWorkOrderPage({
   const resolvedParams = await params;
   const workOrder = await getWorkOrderOrNotFound(resolvedParams.id);
 
-  if (workOrder.status === "DELIVERED") {
-    return <DeliveredWorkOrderEditLock workOrder={workOrder} />;
+  if (isClosedWorkOrderStatus(workOrder.status)) {
+    return <ClosedWorkOrderEditLock workOrder={workOrder} />;
   }
 
   return (
@@ -68,10 +117,13 @@ export default async function EditWorkOrderPage({
 }
 
 /**
- * Shows a safe read-only lock screen when someone tries to edit a delivered
- * order directly from the URL.
+ * Shows a safe read-only lock screen when someone tries to edit a closed order
+ * directly from the URL.
  */
-function DeliveredWorkOrderEditLock({ workOrder }: { workOrder: WorkOrder }) {
+function ClosedWorkOrderEditLock({ workOrder }: { workOrder: WorkOrder }) {
+  const status = workOrder.status as ClosedWorkOrderStatus;
+  const copy = CLOSED_WORK_ORDER_EDIT_LOCK_COPY[status];
+
   return (
     <section className="space-y-6">
       <header className="relative overflow-hidden rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
@@ -84,47 +136,49 @@ function DeliveredWorkOrderEditLock({ workOrder }: { workOrder: WorkOrder }) {
             Volver al detalle
           </Link>
 
-          <p className="mt-6 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-success">
-            Orden entregada
+          <p
+            className={`mt-6 text-[0.68rem] font-bold uppercase tracking-[0.22em] ${copy.eyebrowClassName}`}
+          >
+            {copy.eyebrow}
           </p>
 
           <h1 className="mt-3 font-display text-2xl font-black uppercase tracking-[0.04em] text-foreground sm:text-3xl">
-            Edición bloqueada
+            {copy.title}
           </h1>
 
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            La orden #{workOrder.orderNumber} ya fue marcada como entregada. Para
-            modificar sus datos, primero debe reabrirse desde el detalle con un
-            motivo obligatorio.
+            La orden #{workOrder.orderNumber} {copy.description}
           </p>
         </div>
       </header>
 
       <section
-        aria-labelledby="delivered-work-order-lock-heading"
+        aria-labelledby="closed-work-order-lock-heading"
         className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
       >
         <div className="flex items-start gap-3">
-          <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-success">
+          <div
+            className={`grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted ${copy.iconClassName}`}
+          >
             <LockKeyhole className="size-5" aria-hidden="true" />
           </div>
 
           <div className="min-w-0">
-            <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-success">
-              Protección operativa
+            <p
+              className={`text-[0.68rem] font-bold uppercase tracking-[0.22em] ${copy.eyebrowClassName}`}
+            >
+              {copy.protectionEyebrow}
             </p>
 
             <h2
-              id="delivered-work-order-lock-heading"
+              id="closed-work-order-lock-heading"
               className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
             >
-              No se puede editar una orden entregada
+              {copy.protectionTitle}
             </h2>
 
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Este bloqueo evita cambios directos sobre órdenes cerradas. Usá la
-              corrección controlada desde el detalle para reabrirla y dejar la
-              trazabilidad correspondiente en el historial operativo.
+              {copy.protectionDescription}
             </p>
 
             <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -132,7 +186,7 @@ function DeliveredWorkOrderEditLock({ workOrder }: { workOrder: WorkOrder }) {
                 href={`/work-orders/${workOrder.id}`}
                 className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground transition hover:bg-primary-hover sm:w-auto"
               >
-                Ver corrección controlada
+                {copy.primaryActionLabel}
               </Link>
 
               <Link
@@ -147,6 +201,15 @@ function DeliveredWorkOrderEditLock({ workOrder }: { workOrder: WorkOrder }) {
       </section>
     </section>
   );
+}
+
+/**
+ * Returns true when a work order is closed and should not be edited directly.
+ */
+function isClosedWorkOrderStatus(
+  status: WorkOrder["status"],
+): status is ClosedWorkOrderStatus {
+  return status === "DELIVERED" || status === "CANCELLED";
 }
 
 /**

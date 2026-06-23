@@ -18,6 +18,17 @@ const NORMALIZED_LICENSE_PLATE_PATTERN = /^[A-Z0-9]{5,10}$/;
 const DEFAULT_VEHICLES_PAGE = 1;
 const DEFAULT_VEHICLES_LIMIT = 10;
 
+const ACTIVE_WORK_ORDER_STATUSES = new Set<WorkOrderStatus>([
+  WorkOrderStatus.PENDING,
+  WorkOrderStatus.IN_PROGRESS,
+  WorkOrderStatus.READY,
+]);
+
+const CLOSED_WORK_ORDER_STATUSES = new Set<WorkOrderStatus>([
+  WorkOrderStatus.DELIVERED,
+  WorkOrderStatus.CANCELLED,
+]);
+
 type PaginationMeta = {
   page: number;
   limit: number;
@@ -32,6 +43,20 @@ type VehicleSearchTerms = {
   normalizedLicensePlate?: string;
   formattedPhone?: string;
 };
+
+/**
+ * Returns true when a work order is still part of the operational flow.
+ */
+function isActiveWorkOrderStatus(status: WorkOrderStatus): boolean {
+  return ACTIVE_WORK_ORDER_STATUSES.has(status);
+}
+
+/**
+ * Returns true when a work order is closed and should be treated as history.
+ */
+function isClosedWorkOrderStatus(status: WorkOrderStatus): boolean {
+  return CLOSED_WORK_ORDER_STATUSES.has(status);
+}
 
 /**
  * Handles vehicle persistence and lookup operations.
@@ -199,16 +224,25 @@ export class VehiclesService {
       throw new NotFoundException('Vehículo no encontrado.');
     }
 
-    const activeWorkOrders = vehicle.workOrders.filter(
-      (workOrder) => workOrder.status !== WorkOrderStatus.DELIVERED,
+    const activeWorkOrders = vehicle.workOrders.filter((workOrder) =>
+      isActiveWorkOrderStatus(workOrder.status),
     );
 
-    const history = vehicle.workOrders.filter(
+    const history = vehicle.workOrders.filter((workOrder) =>
+      isClosedWorkOrderStatus(workOrder.status),
+    );
+
+    const deliveredWorkOrders = history.filter(
       (workOrder) => workOrder.status === WorkOrderStatus.DELIVERED,
+    );
+
+    const cancelledWorkOrders = history.filter(
+      (workOrder) => workOrder.status === WorkOrderStatus.CANCELLED,
     );
 
     const latestWorkOrder = vehicle.workOrders[0] ?? null;
     const latestActiveWorkOrder = activeWorkOrders[0] ?? null;
+    const latestClosedWorkOrder = history[0] ?? null;
 
     return {
       vehicle: {
@@ -231,9 +265,12 @@ export class VehiclesService {
       summary: {
         totalWorkOrders: vehicle.workOrders.length,
         activeWorkOrders: activeWorkOrders.length,
-        deliveredWorkOrders: history.length,
+        closedWorkOrders: history.length,
+        deliveredWorkOrders: deliveredWorkOrders.length,
+        cancelledWorkOrders: cancelledWorkOrders.length,
         latestWorkOrder,
         latestActiveWorkOrder,
+        latestClosedWorkOrder,
       },
     };
   }

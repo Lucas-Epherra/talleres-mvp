@@ -73,8 +73,9 @@ export function VehicleWorkOrdersPanel({
       {workOrders.length > 0 ? (
         <div className="divide-y divide-border">
           {workOrders.map((workOrder) => {
-            const isDelivered = workOrder.status === "DELIVERED";
-
+            const isClosed =
+              workOrder.status === "DELIVERED" ||
+              workOrder.status === "CANCELLED";
             return (
               <article key={workOrder.id} className="p-5 sm:p-6">
                 <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_23rem] xl:items-start">
@@ -146,7 +147,7 @@ export function VehicleWorkOrdersPanel({
                         Ver orden
                       </Link>
 
-                      {!isDelivered ? (
+                      {!isClosed ? (
                         <Link
                           href={`/work-orders/${workOrder.id}/edit`}
                           className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
@@ -160,7 +161,7 @@ export function VehicleWorkOrdersPanel({
                       ) : null}
                     </div>
 
-                    {!isDelivered ? (
+                    {!isClosed ? (
                       <UpdateWorkOrderStatusForm
                         workOrderId={workOrder.id}
                         currentStatus={workOrder.status}

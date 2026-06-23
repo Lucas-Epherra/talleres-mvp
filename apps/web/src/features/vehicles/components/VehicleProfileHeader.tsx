@@ -194,7 +194,11 @@ function getCurrentStatusTone(
     return "ready";
   }
 
-  if (status === "DELIVERED" || status === "NO_ACTIVE_WORK_ORDER") {
+  if (
+    status === "DELIVERED" ||
+    status === "CANCELLED" ||
+    status === "NO_ACTIVE_WORK_ORDER"
+  ) {
     return "closed";
   }
 

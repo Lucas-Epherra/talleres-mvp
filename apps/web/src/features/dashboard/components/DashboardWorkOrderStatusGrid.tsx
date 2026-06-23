@@ -30,7 +30,7 @@ export function DashboardWorkOrderStatusGrid({
         </p>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 2xl:grid-cols-5">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <DashboardMetricCard
           label="Activas"
           value={summary.workOrders.active}
@@ -38,12 +38,14 @@ export function DashboardWorkOrderStatusGrid({
           href="/work-orders"
           tone="primary"
         />
+
         <DashboardMetricCard
           label="Pendientes"
           value={summary.workOrders.pending}
           description="Aún sin iniciar"
           href="/work-orders?status=PENDING"
         />
+
         <DashboardMetricCard
           label="En progreso"
           value={summary.workOrders.inProgress}
@@ -51,6 +53,7 @@ export function DashboardWorkOrderStatusGrid({
           href="/work-orders?status=IN_PROGRESS"
           tone="primary"
         />
+
         <DashboardMetricCard
           label="Listas"
           value={summary.workOrders.ready}
@@ -58,12 +61,20 @@ export function DashboardWorkOrderStatusGrid({
           href="/work-orders?status=READY"
           tone="warning"
         />
+
         <DashboardMetricCard
           label="Entregadas"
           value={summary.workOrders.delivered}
           description="Historial cerrado"
           href="/work-orders?status=DELIVERED"
           tone="success"
+        />
+
+        <DashboardMetricCard
+          label="Anuladas"
+          value={summary.workOrders.cancelled}
+          description="Cerradas sin trabajo activo"
+          href="/work-orders?status=CANCELLED"
         />
       </div>
     </section>
