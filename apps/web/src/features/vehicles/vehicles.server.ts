@@ -28,6 +28,10 @@ export function getPaginatedVehicles(
     params.set("limit", String(query.limit));
   }
 
+  if (query.archiveStatus && query.archiveStatus !== "active") {
+    params.set("archiveStatus", query.archiveStatus);
+  }
+
   const queryString = params.toString();
   const path = queryString ? `/vehicles?${queryString}` : "/vehicles";
 
@@ -35,16 +39,16 @@ export function getPaginatedVehicles(
 }
 
 /**
- * Fetches vehicle options for forms that need a plain vehicle array.
+ * Fetches active vehicle options for forms that need a plain vehicle array.
  *
- * This keeps backwards compatibility with existing work-order creation screens
- * while the vehicles index page uses server-side pagination.
+ * Archived vehicles stay out of operational creation flows by default.
  */
 export async function getVehicles(
   query: Omit<VehiclesQuery, "page" | "limit"> = {},
 ): Promise<VehicleListItem[]> {
   const vehiclesPage = await getPaginatedVehicles({
     search: query.search,
+    archiveStatus: query.archiveStatus ?? "active",
     limit: 50,
   });
 

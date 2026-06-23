@@ -11,8 +11,10 @@ import {
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import type { AuthUser } from '../auth/types/auth-user.type';
+import { ArchiveVehicleDto } from './dto/archive-vehicle.dto';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { FindVehiclesQueryDto } from './dto/find-vehicles-query.dto';
+import { RestoreVehicleDto } from './dto/restore-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { VehiclesService } from './vehicles.service';
 
@@ -70,5 +72,29 @@ export class VehiclesController {
     @Body() dto: UpdateVehicleDto,
   ) {
     return this.vehiclesService.update(user.workshopId, id, dto);
+  }
+
+  /**
+   * Archives a vehicle when it has no active work orders.
+   */
+  @Patch(':id/archive')
+  archive(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: ArchiveVehicleDto,
+  ) {
+    return this.vehiclesService.archive(user.workshopId, id, user.id, dto);
+  }
+
+  /**
+   * Restores an archived vehicle to the operational vehicle list.
+   */
+  @Patch(':id/restore')
+  restore(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: RestoreVehicleDto,
+  ) {
+    return this.vehiclesService.restore(user.workshopId, id, user.id, dto);
   }
 }

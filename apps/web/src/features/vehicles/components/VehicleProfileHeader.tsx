@@ -1,4 +1,10 @@
-import { ArrowLeft, ClipboardPlus, ExternalLink, Pencil } from "lucide-react";
+import {
+  Archive,
+  ArrowLeft,
+  ClipboardPlus,
+  ExternalLink,
+  Pencil,
+} from "lucide-react";
 import Link from "next/link";
 import {
   DetailSheet,
@@ -6,11 +12,13 @@ import {
 } from "../../../components/ui/DetailSheet";
 import { NotesValue } from "../../../components/ui/NotesValue";
 import {
+  formatDate,
   formatMileage,
   formatWorkOrderStatus,
   type WorkOrderStatus,
 } from "../../../lib/format";
 import type { VehicleProfile } from "../types";
+import { VehicleArchiveActions } from "./VehicleArchiveActions";
 
 type VehicleProfileHeaderProps = {
   profile: VehicleProfile;
@@ -24,6 +32,7 @@ type VehicleProfileHeaderProps = {
  */
 export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
   const { vehicle, customer, currentStatus, summary } = profile;
+  const isArchived = Boolean(vehicle.archivedAt);
 
   return (
     <header className="relative overflow-hidden rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
@@ -37,9 +46,13 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
             Volver a vehículos
           </Link>
 
-          <p className="mt-6 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
-            Ficha del vehículo
-          </p>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+              Ficha del vehículo
+            </p>
+
+            {isArchived ? <ArchivedBadge /> : null}
+          </div>
 
           <h1 className="mt-3 wrap-anywhere font-display text-4xl font-black italic uppercase tracking-[-0.04em] text-foreground sm:text-5xl">
             {vehicle.licensePlate}
@@ -59,21 +72,32 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
           <div className="grid gap-3 sm:grid-cols-3">
             <Metric
               label="Estado actual"
-              value={formatWorkOrderStatus(currentStatus)}
-              tone={getCurrentStatusTone(currentStatus)}
+              value={
+                isArchived ? "Archivado" : formatWorkOrderStatus(currentStatus)
+              }
+              tone={
+                isArchived ? "archived" : getCurrentStatusTone(currentStatus)
+              }
             />
             <Metric label="Órdenes activas" value={summary.activeWorkOrders} />
-            <Metric label="Historial" value={summary.deliveredWorkOrders} />
+            <Metric label="Historial" value={summary.closedWorkOrders} />
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <Link
-              href={`/work-orders/new?vehicleId=${vehicle.id}`}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover"
-            >
-              <ClipboardPlus className="size-4 shrink-0" aria-hidden="true" />
-              Nueva orden
-            </Link>
+            {!isArchived ? (
+              <Link
+                href={`/work-orders/new?vehicleId=${vehicle.id}`}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover"
+              >
+                <ClipboardPlus className="size-4 shrink-0" aria-hidden="true" />
+                Nueva orden
+              </Link>
+            ) : (
+              <span className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-border bg-surface-muted px-5 text-sm font-bold text-muted-foreground">
+                <Archive className="size-4 shrink-0" aria-hidden="true" />
+                No admite nuevas órdenes
+              </span>
+            )}
 
             <Link
               href={`/vehicles/${vehicle.id}/edit`}
@@ -103,6 +127,27 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
             label="Kilometraje"
             value={formatMileage(vehicle.mileage)}
           />
+          <DetailSheetRow
+            label="Estado de ficha"
+            value={isArchived ? "Archivado" : "Activo"}
+          />
+          {isArchived ? (
+            <>
+              <DetailSheetRow
+                label="Archivado el"
+                value={formatDate(vehicle.archivedAt)}
+              />
+              <DetailSheetRow
+                label="Motivo de archivado"
+                value={
+                  <NotesValue
+                    value={vehicle.archivedReason}
+                    fallback="Sin motivo registrado"
+                  />
+                }
+              />
+            </>
+          ) : null}
           <DetailSheetRow
             label="Notas"
             value={
@@ -153,6 +198,15 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
           />
         </DetailSheet>
       </div>
+
+      <div className="relative mt-5">
+        <VehicleArchiveActions
+          vehicleId={vehicle.id}
+          isArchived={isArchived}
+          activeWorkOrdersCount={summary.activeWorkOrders}
+          archivedReason={vehicle.archivedReason}
+        />
+      </div>
     </header>
   );
 }
@@ -160,7 +214,7 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
 type MetricProps = {
   label: string;
   value: string | number;
-  tone?: "neutral" | "active" | "ready" | "closed";
+  tone?: "neutral" | "active" | "ready" | "closed" | "archived";
 };
 
 /**
@@ -177,6 +231,18 @@ function Metric({ label, value, tone = "neutral" }: MetricProps) {
         {value}
       </p>
     </article>
+  );
+}
+
+/**
+ * Shows the archived state beside the vehicle profile eyebrow.
+ */
+function ArchivedBadge() {
+  return (
+    <span className="inline-flex w-fit items-center gap-2 rounded-full border border-border-strong bg-surface-muted px-3 py-1.5 text-[0.65rem] font-black uppercase tracking-[0.16em] text-muted-foreground">
+      <Archive className="size-3.5 shrink-0" aria-hidden="true" />
+      Archivado
+    </span>
   );
 }
 
@@ -218,6 +284,10 @@ function getMetricClassName(tone: MetricProps["tone"]): string {
 
   if (tone === "ready") {
     return `${baseClassName} border-warning/40 bg-warning/10`;
+  }
+
+  if (tone === "archived") {
+    return `${baseClassName} border-border-strong bg-surface-muted`;
   }
 
   if (tone === "closed") {

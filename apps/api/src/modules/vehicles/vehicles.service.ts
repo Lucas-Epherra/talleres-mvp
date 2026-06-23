@@ -4,10 +4,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, WorkOrderStatus } from '@prisma/client';
+import { Prisma, VehicleEventType, WorkOrderStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ArchiveVehicleDto } from './dto/archive-vehicle.dto';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
-import { FindVehiclesQueryDto } from './dto/find-vehicles-query.dto';
+import {
+  FindVehiclesQueryDto,
+  VehicleArchiveStatus,
+} from './dto/find-vehicles-query.dto';
+import { RestoreVehicleDto } from './dto/restore-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 
 const MIN_VEHICLE_YEAR = 1900;
@@ -18,16 +23,24 @@ const NORMALIZED_LICENSE_PLATE_PATTERN = /^[A-Z0-9]{5,10}$/;
 const DEFAULT_VEHICLES_PAGE = 1;
 const DEFAULT_VEHICLES_LIMIT = 10;
 
-const ACTIVE_WORK_ORDER_STATUSES = new Set<WorkOrderStatus>([
+const ACTIVE_WORK_ORDER_STATUSES = [
   WorkOrderStatus.PENDING,
   WorkOrderStatus.IN_PROGRESS,
   WorkOrderStatus.READY,
-]);
+] as const satisfies readonly WorkOrderStatus[];
 
-const CLOSED_WORK_ORDER_STATUSES = new Set<WorkOrderStatus>([
+const CLOSED_WORK_ORDER_STATUSES = [
   WorkOrderStatus.DELIVERED,
   WorkOrderStatus.CANCELLED,
-]);
+] as const satisfies readonly WorkOrderStatus[];
+
+const ACTIVE_WORK_ORDER_STATUS_SET = new Set<WorkOrderStatus>(
+  ACTIVE_WORK_ORDER_STATUSES,
+);
+
+const CLOSED_WORK_ORDER_STATUS_SET = new Set<WorkOrderStatus>(
+  CLOSED_WORK_ORDER_STATUSES,
+);
 
 type PaginationMeta = {
   page: number;
@@ -48,14 +61,14 @@ type VehicleSearchTerms = {
  * Returns true when a work order is still part of the operational flow.
  */
 function isActiveWorkOrderStatus(status: WorkOrderStatus): boolean {
-  return ACTIVE_WORK_ORDER_STATUSES.has(status);
+  return ACTIVE_WORK_ORDER_STATUS_SET.has(status);
 }
 
 /**
  * Returns true when a work order is closed and should be treated as history.
  */
 function isClosedWorkOrderStatus(status: WorkOrderStatus): boolean {
-  return CLOSED_WORK_ORDER_STATUSES.has(status);
+  return CLOSED_WORK_ORDER_STATUS_SET.has(status);
 }
 
 /**
@@ -72,6 +85,7 @@ export class VehiclesService {
    * Returns paginated vehicles for the authenticated user's workshop.
    *
    * Search matches license plate, brand, model, customer name or customer phone.
+   * Archived vehicles are excluded by default from the operational list.
    */
   async findAll(workshopId: string, query: FindVehiclesQueryDto = {}) {
     const page = query.page ?? DEFAULT_VEHICLES_PAGE;
@@ -81,6 +95,7 @@ export class VehiclesService {
 
     const where: Prisma.VehicleWhereInput = {
       workshopId,
+      ...this.buildVehicleArchiveFilter(query.archiveStatus),
       ...(searchTerms
         ? {
             OR: this.buildVehicleSearchConditions(searchTerms),
@@ -255,6 +270,9 @@ export class VehiclesService {
         year: vehicle.year,
         mileage: vehicle.mileage,
         notes: vehicle.notes,
+        archivedAt: vehicle.archivedAt,
+        archivedReason: vehicle.archivedReason,
+        archivedByUserId: vehicle.archivedByUserId,
         createdAt: vehicle.createdAt,
         updatedAt: vehicle.updatedAt,
       },
@@ -379,6 +397,144 @@ export class VehiclesService {
   }
 
   /**
+   * Archives a vehicle with audit trail.
+   *
+   * Vehicles with active work orders cannot be archived because that would hide
+   * operational work still in progress.
+   */
+  async archive(
+    workshopId: string,
+    id: string,
+    userId: string,
+    dto: ArchiveVehicleDto,
+  ) {
+    const vehicle = await this.prisma.vehicle.findFirst({
+      where: {
+        id,
+        workshopId,
+      },
+      select: {
+        id: true,
+        archivedAt: true,
+        workOrders: {
+          where: {
+            status: {
+              in: [...ACTIVE_WORK_ORDER_STATUSES],
+            },
+          },
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    if (!vehicle) {
+      throw new NotFoundException('Vehículo no encontrado.');
+    }
+
+    if (vehicle.archivedAt) {
+      throw new BadRequestException('El vehículo ya está archivado.');
+    }
+
+    if (vehicle.workOrders.length > 0) {
+      throw new ConflictException(
+        'No se puede archivar un vehículo con órdenes activas.',
+      );
+    }
+
+    const reason = this.normalizeRequiredMultilineText(
+      dto.reason,
+      'Motivo de archivado',
+    );
+    const archivedAt = new Date();
+
+    await this.prisma.$transaction([
+      this.prisma.vehicle.update({
+        where: {
+          id: vehicle.id,
+        },
+        data: {
+          archivedAt,
+          archivedReason: reason,
+          archivedByUserId: userId,
+        },
+      }),
+      this.prisma.vehicleEvent.create({
+        data: {
+          workshopId,
+          vehicleId: vehicle.id,
+          userId,
+          type: VehicleEventType.ARCHIVED,
+          description: reason,
+        },
+      }),
+    ]);
+
+    return this.findProfile(workshopId, id);
+  }
+
+  /**
+   * Restores an archived vehicle with audit trail.
+   */
+  async restore(
+    workshopId: string,
+    id: string,
+    userId: string,
+    dto: RestoreVehicleDto,
+  ) {
+    const vehicle = await this.prisma.vehicle.findFirst({
+      where: {
+        id,
+        workshopId,
+      },
+      select: {
+        id: true,
+        archivedAt: true,
+      },
+    });
+
+    if (!vehicle) {
+      throw new NotFoundException('Vehículo no encontrado.');
+    }
+
+    if (!vehicle.archivedAt) {
+      throw new BadRequestException('El vehículo no está archivado.');
+    }
+
+    const reason = this.normalizeRequiredMultilineText(
+      dto.reason,
+      'Motivo de restauración',
+    );
+
+    await this.prisma.$transaction([
+      this.prisma.vehicle.update({
+        where: {
+          id: vehicle.id,
+        },
+        data: {
+          archivedAt: null,
+          archivedReason: null,
+          archivedByUserId: null,
+        },
+      }),
+      this.prisma.vehicleEvent.create({
+        data: {
+          workshopId,
+          vehicleId: vehicle.id,
+          userId,
+          type: VehicleEventType.RESTORED,
+          description: reason,
+        },
+      }),
+    ]);
+
+    return this.findProfile(workshopId, id);
+  }
+
+  /**
    * Builds Prisma search conditions for vehicle list filtering.
    */
   private buildVehicleSearchConditions(
@@ -439,6 +595,29 @@ export class VehiclesService {
     }
 
     return conditions;
+  }
+
+  /**
+   * Builds the archive filter used by the vehicles list endpoint.
+   */
+  private buildVehicleArchiveFilter(
+    archiveStatus?: VehicleArchiveStatus,
+  ): Prisma.VehicleWhereInput {
+    if (archiveStatus === 'all') {
+      return {};
+    }
+
+    if (archiveStatus === 'archived') {
+      return {
+        archivedAt: {
+          not: null,
+        },
+      };
+    }
+
+    return {
+      archivedAt: null,
+    };
   }
 
   /**
@@ -626,6 +805,25 @@ export class VehiclesService {
       throw new BadRequestException(
         `${fieldName} no puede superar ${MAX_NOTES_LENGTH} caracteres.`,
       );
+    }
+
+    return normalizedValue;
+  }
+
+  /**
+   * Normalizes required multiline text for critical operational reasons.
+   */
+  private normalizeRequiredMultilineText(
+    value: string,
+    fieldName: string,
+  ): string {
+    const normalizedValue = this.normalizeOptionalNullableMultilineText(
+      value,
+      fieldName,
+    );
+
+    if (!normalizedValue) {
+      throw new BadRequestException(`${fieldName} es obligatorio.`);
     }
 
     return normalizedValue;
