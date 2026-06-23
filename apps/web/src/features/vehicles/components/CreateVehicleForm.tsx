@@ -2,7 +2,7 @@
 
 import { ArrowLeft, CarFront, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { type FormEvent, type ReactNode, useState } from "react";
+import { type FormEvent, type ReactNode, useMemo, useState } from "react";
 import { NotesEditor } from "../../../components/ui/NotesEditor";
 import { getApiErrorMessage } from "../../../lib/api";
 import type { Customer } from "../../customers/types";
@@ -27,9 +27,9 @@ type CreateVehicleFormState = {
 /**
  * Interactive vehicle creation form.
  *
- * Requires an existing customer because vehicles are always associated with a
- * customer in the MVP domain model. When defaultCustomerId is provided, the
- * customer select is preselected but remains editable.
+ * Requires an active customer because vehicles are always associated with a
+ * customer in the MVP domain model. Archived customers are excluded from the
+ * operational creation flow.
  */
 export function CreateVehicleForm({
   customers,
@@ -37,14 +37,23 @@ export function CreateVehicleForm({
 }: CreateVehicleFormProps) {
   const router = useRouter();
 
+  const activeCustomers = useMemo(
+    () => customers.filter((customer) => !customer.archivedAt),
+    [customers],
+  );
+
   const [state, setState] = useState<CreateVehicleFormState>({
     status: "idle",
     message: null,
   });
 
   const isLoading = state.status === "loading";
-  const hasCustomers = customers.length > 0;
-  const validCustomerIds = customers.map((customer) => customer.id);
+  const hasActiveCustomers = activeCustomers.length > 0;
+  const validCustomerIds = activeCustomers.map((customer) => customer.id);
+  const safeDefaultCustomerId =
+    defaultCustomerId && validCustomerIds.includes(defaultCustomerId)
+      ? defaultCustomerId
+      : undefined;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -73,7 +82,7 @@ export function CreateVehicleForm({
     if (!data.customerId) {
       setState({
         status: "error",
-        message: "Seleccioná un cliente para asociar el vehículo.",
+        message: "Seleccioná un cliente activo para asociar el vehículo.",
       });
 
       return;
@@ -105,7 +114,7 @@ export function CreateVehicleForm({
     }
   }
 
-  if (!hasCustomers) {
+  if (!hasActiveCustomers) {
     return (
       <section className="relative overflow-hidden rounded-[1.35rem] border border-dashed border-border-strong bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3">
         <div className="relative">
@@ -114,22 +123,33 @@ export function CreateVehicleForm({
           </p>
 
           <h2 className="mt-3 font-display text-xl font-black uppercase tracking-[0.02em] text-foreground">
-            Primero necesitás crear un cliente
+            Primero necesitás un cliente activo
           </h2>
 
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-            El vehículo siempre debe estar asociado a un cliente. Creá el
-            cliente y después volvé a esta pantalla para cargar su vehículo.
+            El vehículo siempre debe estar asociado a un cliente activo. Creá un
+            cliente nuevo o restaurá un cliente archivado antes de cargar el
+            vehículo.
           </p>
 
-          <button
-            type="button"
-            onClick={() => router.push("/customers/new")}
-            className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover"
-          >
-            <UserPlus className="size-4 shrink-0" aria-hidden="true" />
-            Crear cliente
-          </button>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <button
+              type="button"
+              onClick={() => router.push("/customers/new")}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover"
+            >
+              <UserPlus className="size-4 shrink-0" aria-hidden="true" />
+              Crear cliente
+            </button>
+
+            <button
+              type="button"
+              onClick={() => router.push("/customers?archiveStatus=archived")}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated"
+            >
+              Ver archivados
+            </button>
+          </div>
         </div>
       </section>
     );
@@ -159,8 +179,8 @@ export function CreateVehicleForm({
           </h2>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Cargá la identificación del vehículo y vinculalo con un cliente del
-            taller.
+            Cargá la identificación del vehículo y vinculalo con un cliente
+            activo del taller.
           </p>
         </div>
 
@@ -171,15 +191,15 @@ export function CreateVehicleForm({
             <select
               id="customerId"
               name="customerId"
-              defaultValue={defaultCustomerId ?? ""}
+              defaultValue={safeDefaultCustomerId ?? ""}
               disabled={isLoading}
               required
               autoComplete="off"
               className="h-12 w-full rounded-xl border border-border-strong bg-surface-muted/85 px-4 text-sm font-medium text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <option value="">Seleccionar cliente</option>
+              <option value="">Seleccionar cliente activo</option>
 
-              {customers.map((customer) => (
+              {activeCustomers.map((customer) => (
                 <option key={customer.id} value={customer.id}>
                   {customer.fullName} · {customer.phone}
                 </option>

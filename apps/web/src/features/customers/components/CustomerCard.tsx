@@ -1,4 +1,4 @@
-import { CarFront, Eye, Pencil } from "lucide-react";
+import { Archive, CarFront, Eye, Pencil } from "lucide-react";
 import Link from "next/link";
 import type { CustomerListItem } from "../types";
 
@@ -21,17 +21,24 @@ export function CustomerCard({
   variant = "neutral",
 }: CustomerCardProps) {
   const vehicleCount = customer._count.vehicles;
+  const isArchived = Boolean(customer.archivedAt);
 
   return (
     <article
       className={buildClassName(
-        "relative overflow-hidden rounded-[1.1rem] border border-border p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 transition hover:border-primary/40 sm:rounded-[1.35rem] sm:p-5",
+        "relative overflow-hidden rounded-[1.1rem] border p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 transition sm:rounded-[1.35rem] sm:p-5",
+        isArchived
+          ? "border-border bg-gradient-to-br from-surface-muted via-surface to-surface-muted hover:border-border-strong"
+          : "border-border hover:border-primary/40",
         getArticleClassName(variant),
       )}
     >
       <div
         aria-hidden="true"
-        className="absolute inset-y-0 left-0 w-1 bg-primary/45"
+        className={buildClassName(
+          "absolute inset-y-0 left-0 w-1",
+          isArchived ? "bg-muted-foreground/45" : "bg-primary/45",
+        )}
       />
 
       <div className="relative flex flex-col gap-4 lg:flex-row lg:items-stretch lg:justify-between">
@@ -41,6 +48,7 @@ export function CustomerCard({
               eyebrow="Cliente"
               value={customer.fullName}
               size="large"
+              isArchived={isArchived}
             />
 
             <CustomerPrimaryDatum
@@ -48,8 +56,16 @@ export function CustomerCard({
               value={customer.phone}
               size="medium"
               align="right"
+              isArchived={isArchived}
             />
           </header>
+
+          {isArchived ? (
+            <p className="mt-4 inline-flex w-fit items-center gap-2 rounded-full border border-border-strong bg-surface-muted px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">
+              <Archive className="size-4 shrink-0" aria-hidden="true" />
+              Cliente archivado
+            </p>
+          ) : null}
 
           <section
             aria-labelledby={`customer-summary-${customer.id}`}
@@ -94,13 +110,20 @@ export function CustomerCard({
               Editar cliente
             </Link>
 
-            <Link
-              href={`/vehicles/new?customerId=${customer.id}`}
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-elevated px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
-            >
-              <CarFront className="size-4 shrink-0" aria-hidden="true" />
-              Cargar vehículo
-            </Link>
+            {!isArchived ? (
+              <Link
+                href={`/vehicles/new?customerId=${customer.id}`}
+                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-elevated px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
+              >
+                <CarFront className="size-4 shrink-0" aria-hidden="true" />
+                Cargar vehículo
+              </Link>
+            ) : (
+              <span className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface px-4 text-sm font-bold text-muted-foreground">
+                <Archive className="size-4 shrink-0" aria-hidden="true" />
+                Sin nuevos vehículos
+              </span>
+            )}
           </div>
         </aside>
       </div>
@@ -113,6 +136,7 @@ type CustomerPrimaryDatumProps = {
   value: string;
   size: "large" | "medium";
   align?: "left" | "right";
+  isArchived: boolean;
 };
 
 /**
@@ -123,6 +147,7 @@ function CustomerPrimaryDatum({
   value,
   size,
   align = "left",
+  isArchived,
 }: CustomerPrimaryDatumProps) {
   return (
     <div
@@ -131,7 +156,12 @@ function CustomerPrimaryDatum({
         align === "right" ? "md:text-right" : "",
       )}
     >
-      <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-primary">
+      <p
+        className={buildClassName(
+          "text-[0.65rem] font-bold uppercase tracking-[0.2em]",
+          isArchived ? "text-muted-foreground" : "text-primary",
+        )}
+      >
         {eyebrow}
       </p>
 

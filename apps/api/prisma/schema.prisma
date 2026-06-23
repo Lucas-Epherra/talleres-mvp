@@ -35,6 +35,11 @@ enum VehicleEventType {
   RESTORED
 }
 
+enum CustomerEventType {
+  ARCHIVED
+  RESTORED
+}
+
 model Workshop {
   id        String   @id @default(uuid())
   name      String
@@ -48,6 +53,7 @@ model Workshop {
   workOrders      WorkOrder[]
   workOrderEvents WorkOrderEvent[]
   vehicleEvents   VehicleEvent[]
+  customerEvents  CustomerEvent[]
 
   @@map("workshops")
 }
@@ -60,10 +66,12 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  memberships      WorkshopMember[]
-  workOrderEvents  WorkOrderEvent[]
-  vehicleEvents    VehicleEvent[]
-  archivedVehicles Vehicle[]        @relation("VehicleArchivedByUser")
+  memberships       WorkshopMember[]
+  workOrderEvents   WorkOrderEvent[]
+  vehicleEvents     VehicleEvent[]
+  archivedVehicles  Vehicle[]        @relation("VehicleArchivedByUser")
+  customerEvents    CustomerEvent[]
+  archivedCustomers Customer[]       @relation("CustomerArchivedByUser")
 
   @@map("users")
 }
@@ -86,22 +94,29 @@ model WorkshopMember {
 }
 
 model Customer {
-  id         String   @id @default(uuid())
-  workshopId String   @map("workshop_id")
-  fullName   String   @map("full_name")
-  phone      String
-  email      String?
-  address    String?
-  notes      String?
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id               String    @id @default(uuid())
+  workshopId       String    @map("workshop_id")
+  fullName         String    @map("full_name")
+  phone            String
+  email            String?
+  address          String?
+  notes            String?
+  archivedAt       DateTime? @map("archived_at")
+  archivedReason   String?   @map("archived_reason")
+  archivedByUserId String?   @map("archived_by_user_id")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  workshop Workshop  @relation(fields: [workshopId], references: [id], onDelete: Cascade)
-  vehicles Vehicle[]
+  workshop       Workshop        @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  archivedByUser User?           @relation("CustomerArchivedByUser", fields: [archivedByUserId], references: [id], onDelete: SetNull)
+  vehicles       Vehicle[]
+  events         CustomerEvent[]
 
   @@unique([workshopId, phone])
   @@index([workshopId])
   @@index([phone])
+  @@index([archivedAt])
+  @@index([archivedByUserId])
   @@map("customers")
 }
 
@@ -209,4 +224,25 @@ model VehicleEvent {
   @@index([type])
   @@index([createdAt])
   @@map("vehicle_events")
+}
+
+model CustomerEvent {
+  id          String            @id @default(uuid())
+  workshopId  String            @map("workshop_id")
+  customerId  String            @map("customer_id")
+  userId      String?           @map("user_id")
+  type        CustomerEventType
+  description String?
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([workshopId])
+  @@index([customerId])
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("customer_events")
 }

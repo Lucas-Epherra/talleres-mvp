@@ -4,14 +4,25 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { CustomerEventType, Prisma, WorkOrderStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
-import { FindCustomersQueryDto } from './dto/find-customers-query.dto';
+import { ArchiveCustomerDto } from './dto/archive-customer.dto';
+import {
+  CustomerArchiveStatus,
+  FindCustomersQueryDto,
+} from './dto/find-customers-query.dto';
+import { RestoreCustomerDto } from './dto/restore-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 
 const DEFAULT_CUSTOMERS_PAGE = 1;
 const DEFAULT_CUSTOMERS_LIMIT = 10;
+
+const ACTIVE_WORK_ORDER_STATUSES = [
+  WorkOrderStatus.PENDING,
+  WorkOrderStatus.IN_PROGRESS,
+  WorkOrderStatus.READY,
+] as const satisfies readonly WorkOrderStatus[];
 
 type NormalizedCustomerCreateData = {
   fullName: string;
@@ -66,6 +77,7 @@ export class CustomersService {
 
     const where: Prisma.CustomerWhereInput = {
       workshopId,
+      ...buildCustomerArchiveFilter(query.archiveStatus),
       ...(searchTerms
         ? {
             OR: buildCustomerSearchConditions(searchTerms),
@@ -184,6 +196,155 @@ export class CustomersService {
   }
 
   /**
+   * Archives a customer with audit trail.
+   *
+   * Customers with active work orders across any associated vehicle cannot be
+   * archived because that would hide operational work still in progress.
+   */
+  async archive(
+    workshopId: string,
+    id: string,
+    userId: string,
+    dto: ArchiveCustomerDto,
+  ) {
+    const customer = await this.prisma.customer.findFirst({
+      where: {
+        id,
+        workshopId,
+      },
+      select: {
+        id: true,
+        archivedAt: true,
+        vehicles: {
+          select: {
+            id: true,
+            licensePlate: true,
+            workOrders: {
+              where: {
+                status: {
+                  in: [...ACTIVE_WORK_ORDER_STATUSES],
+                },
+              },
+              select: {
+                id: true,
+                orderNumber: true,
+                status: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!customer) {
+      throw new NotFoundException('Cliente no encontrado.');
+    }
+
+    if (customer.archivedAt) {
+      throw new BadRequestException('El cliente ya está archivado.');
+    }
+
+    const activeWorkOrdersCount = customer.vehicles.reduce(
+      (total, vehicle) => total + vehicle.workOrders.length,
+      0,
+    );
+
+    if (activeWorkOrdersCount > 0) {
+      throw new ConflictException(
+        'No se puede archivar un cliente con órdenes activas.',
+      );
+    }
+
+    const reason = normalizeRequiredMultilineText(
+      dto.reason,
+      'Motivo de archivado',
+    );
+    const archivedAt = new Date();
+
+    await this.prisma.$transaction([
+      this.prisma.customer.update({
+        where: {
+          id: customer.id,
+        },
+        data: {
+          archivedAt,
+          archivedReason: reason,
+          archivedByUserId: userId,
+        },
+      }),
+      this.prisma.customerEvent.create({
+        data: {
+          workshopId,
+          customerId: customer.id,
+          userId,
+          type: CustomerEventType.ARCHIVED,
+          description: reason,
+        },
+      }),
+    ]);
+
+    return this.findOne(workshopId, id);
+  }
+
+  /**
+   * Restores an archived customer with audit trail.
+   */
+  async restore(
+    workshopId: string,
+    id: string,
+    userId: string,
+    dto: RestoreCustomerDto,
+  ) {
+    const customer = await this.prisma.customer.findFirst({
+      where: {
+        id,
+        workshopId,
+      },
+      select: {
+        id: true,
+        archivedAt: true,
+      },
+    });
+
+    if (!customer) {
+      throw new NotFoundException('Cliente no encontrado.');
+    }
+
+    if (!customer.archivedAt) {
+      throw new BadRequestException('El cliente no está archivado.');
+    }
+
+    const reason = normalizeRequiredMultilineText(
+      dto.reason,
+      'Motivo de restauración',
+    );
+
+    await this.prisma.$transaction([
+      this.prisma.customer.update({
+        where: {
+          id: customer.id,
+        },
+        data: {
+          archivedAt: null,
+          archivedReason: null,
+          archivedByUserId: null,
+        },
+      }),
+      this.prisma.customerEvent.create({
+        data: {
+          workshopId,
+          customerId: customer.id,
+          userId,
+          type: CustomerEventType.RESTORED,
+          description: reason,
+        },
+      }),
+    ]);
+
+    return this.findOne(workshopId, id);
+  }
+
+  /**
    * Ensures phone uniqueness inside one workshop.
    */
   private async assertPhoneIsAvailable(
@@ -268,6 +429,29 @@ function buildCustomerSearchConditions(
   }
 
   return conditions;
+}
+
+/**
+ * Builds the archive filter used by the customers list endpoint.
+ */
+function buildCustomerArchiveFilter(
+  archiveStatus?: CustomerArchiveStatus,
+): Prisma.CustomerWhereInput {
+  if (archiveStatus === 'all') {
+    return {};
+  }
+
+  if (archiveStatus === 'archived') {
+    return {
+      archivedAt: {
+        not: null,
+      },
+    };
+  }
+
+  return {
+    archivedAt: null,
+  };
 }
 
 /**
@@ -365,6 +549,19 @@ function normalizeOptionalMultilineText(
     .join('\n');
 
   return normalizedValue.length > 0 ? normalizedValue : null;
+}
+
+/**
+ * Normalizes required multiline text for critical operational reasons.
+ */
+function normalizeRequiredMultilineText(value: string, label: string): string {
+  const normalizedValue = normalizeOptionalMultilineText(value);
+
+  if (!normalizedValue) {
+    throw new BadRequestException(`${label} es obligatorio.`);
+  }
+
+  return normalizedValue;
 }
 
 /**

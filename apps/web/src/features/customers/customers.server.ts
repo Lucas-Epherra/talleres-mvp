@@ -28,6 +28,10 @@ export function getPaginatedCustomers(
     params.set("limit", String(query.limit));
   }
 
+  if (query.archiveStatus && query.archiveStatus !== "active") {
+    params.set("archiveStatus", query.archiveStatus);
+  }
+
   const queryString = params.toString();
   const path = queryString ? `/customers?${queryString}` : "/customers";
 
@@ -35,13 +39,16 @@ export function getPaginatedCustomers(
 }
 
 /**
- * Fetches customer options for forms that need a plain customer array.
+ * Fetches active customer options for forms that need a plain customer array.
  *
- * This keeps backwards compatibility with existing vehicle/work-order creation
- * screens while the customers index page uses server-side pagination.
+ * Archived customers stay out of operational creation flows by default.
  */
-export async function getCustomers(): Promise<CustomerListItem[]> {
+export async function getCustomers(
+  query: Omit<CustomersQuery, "page" | "limit"> = {},
+): Promise<CustomerListItem[]> {
   const customersPage = await getPaginatedCustomers({
+    search: query.search,
+    archiveStatus: query.archiveStatus ?? "active",
     limit: 50,
   });
 

@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -7,6 +8,10 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+
+export const CUSTOMER_ARCHIVE_STATUSES = ['active', 'archived', 'all'] as const;
+
+export type CustomerArchiveStatus = (typeof CUSTOMER_ARCHIVE_STATUSES)[number];
 
 /**
  * Query parameters accepted by the customers list endpoint.
@@ -33,4 +38,8 @@ export class FindCustomersQueryDto {
   @IsString()
   @MaxLength(120)
   search?: string;
+
+  @IsOptional()
+  @IsIn([...CUSTOMER_ARCHIVE_STATUSES])
+  archiveStatus?: CustomerArchiveStatus;
 }
