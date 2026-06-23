@@ -1,4 +1,18 @@
-import { ArrowLeft, CarFront, Eye, ListChecks, Pencil, UserRound } from "lucide-react";
+import {
+  ArrowLeft,
+  Ban,
+  CarFront,
+  CheckCircle2,
+  ClipboardCheck,
+  Clock3,
+  FilePenLine,
+  History,
+  ListChecks,
+  Pencil,
+  RefreshCw,
+  UserRound,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -10,6 +24,8 @@ import {
   formatWorkOrderStatus,
 } from "../../../../lib/format";
 import { UpdateWorkOrderStatusForm } from "../../../../features/work-orders/components/UpdateWorkOrderStatusForm";
+import { ReopenWorkOrderForm } from "../../../../features/work-orders/components/ReopenWorkOrderForm";
+import { CancelWorkOrderForm } from "../../../../features/work-orders/components/CancelWorkOrderForm";
 import {
   BreakableDetailValue,
   WorkOrderNotesValue,
@@ -45,6 +61,9 @@ export default async function WorkOrderDetailPage({
   const workOrder = await getWorkOrderOrNotFound(resolvedParams.id);
   const { vehicle } = workOrder;
   const customer = vehicle.customer;
+  const isDelivered = workOrder.status === "DELIVERED";
+  const isCancelled = workOrder.status === "CANCELLED";
+  const isClosed = isDelivered || isCancelled;
 
   return (
     <section className="space-y-6">
@@ -79,13 +98,15 @@ export default async function WorkOrderDetailPage({
         </div>
 
         <div className="relative mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <Link
-            href={`/work-orders/${workOrder.id}/edit`}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
-          >
-            <Pencil className="size-4 shrink-0" aria-hidden="true" />
-            Editar orden
-          </Link>
+          {!isClosed ? (
+            <Link
+              href={`/work-orders/${workOrder.id}/edit`}
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
+            >
+              <Pencil className="size-4 shrink-0" aria-hidden="true" />
+              Editar orden
+            </Link>
+          ) : null}
 
           <Link
             href={`/vehicles/${vehicle.id}`}
@@ -185,7 +206,7 @@ export default async function WorkOrderDetailPage({
             />
           </DetailSheet>
 
-          {workOrder.status !== "DELIVERED" ? (
+          {!isClosed ? (
             <section
               aria-labelledby="work-order-status-heading"
               className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
@@ -208,8 +229,8 @@ export default async function WorkOrderDetailPage({
                   </h2>
 
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                    Cambiá el estado de la orden cuando el trabajo avance dentro del
-                    taller.
+                    Cambiá el estado de la orden cuando el trabajo avance dentro
+                    del taller.
                   </p>
                 </div>
               </div>
@@ -220,6 +241,105 @@ export default async function WorkOrderDetailPage({
               />
             </section>
           ) : null}
+          {!isClosed ? (
+            <section
+              aria-labelledby="work-order-cancel-heading"
+              className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
+            >
+              <div className="flex items-start gap-3">
+                <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-primary">
+                  <Ban className="size-5" aria-hidden="true" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+                    Cierre administrativo
+                  </p>
+
+                  <h2
+                    id="work-order-cancel-heading"
+                    className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
+                  >
+                    Anular orden
+                  </h2>
+
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                    Usá esta acción cuando la orden fue cargada por error, el
+                    cliente no autorizó el trabajo o el servicio no continuará.
+                    La anulación exige motivo y queda registrada en el
+                    historial.
+                  </p>
+                </div>
+              </div>
+
+              <CancelWorkOrderForm workOrderId={workOrder.id} />
+            </section>
+          ) : null}
+          {isDelivered ? (
+            <section
+              aria-labelledby="work-order-reopen-heading"
+              className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
+            >
+              <div className="flex items-start gap-3">
+                <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-success">
+                  <CheckCircle2 className="size-5" aria-hidden="true" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-success">
+                    Orden entregada
+                  </p>
+
+                  <h2
+                    id="work-order-reopen-heading"
+                    className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
+                  >
+                    Corrección controlada
+                  </h2>
+
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                    Esta orden está cerrada como entregada. Si fue marcada por
+                    error, podés reabrirla dejando un motivo obligatorio en el
+                    historial operativo.
+                  </p>
+                </div>
+              </div>
+
+              <ReopenWorkOrderForm workOrderId={workOrder.id} />
+            </section>
+          ) : null}
+          {isCancelled ? (
+            <section
+              aria-labelledby="work-order-cancelled-heading"
+              className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
+            >
+              <div className="flex items-start gap-3">
+                <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-muted-foreground">
+                  <Ban className="size-5" aria-hidden="true" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+                    Orden anulada
+                  </p>
+
+                  <h2
+                    id="work-order-cancelled-heading"
+                    className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
+                  >
+                    Flujo cerrado
+                  </h2>
+
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                    Esta orden fue anulada y quedó fuera del flujo operativo. No
+                    puede editarse, entregarse ni volver a estados anteriores.
+                    Revisá el historial para consultar el motivo registrado.
+                  </p>
+                </div>
+              </div>
+            </section>
+          ) : null}
+          <WorkOrderTimeline events={workOrder.events ?? []} />
         </div>
 
         <aside className="min-w-0 space-y-6 xl:h-fit xl:self-start">
@@ -280,6 +400,182 @@ export default async function WorkOrderDetailPage({
       </div>
     </section>
   );
+}
+
+type WorkOrderTimelineProps = {
+  events: NonNullable<WorkOrder["events"]>;
+};
+
+type WorkOrderTimelineItem = NonNullable<WorkOrder["events"]>[number];
+
+/**
+ * Renders the immutable operational history of a work order.
+ */
+function WorkOrderTimeline({ events }: WorkOrderTimelineProps) {
+  return (
+    <section
+      aria-labelledby="work-order-timeline-heading"
+      className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
+    >
+      <div className="flex flex-col gap-3 border-b border-border pb-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-primary">
+            <History className="size-5" aria-hidden="true" />
+          </div>
+
+          <div className="min-w-0">
+            <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+              Historial
+            </p>
+
+            <h2
+              id="work-order-timeline-heading"
+              className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
+            >
+              Historial operativo
+            </h2>
+
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+              Registro de creación, ediciones y cambios de estado realizados
+              sobre esta orden.
+            </p>
+          </div>
+        </div>
+
+        <p className="inline-flex w-fit items-center gap-2 rounded-full border border-border-strong bg-surface-muted px-4 py-2 text-sm font-bold text-foreground">
+          <History
+            className="size-4 shrink-0 text-primary"
+            aria-hidden="true"
+          />
+          {events.length} evento{events.length === 1 ? "" : "s"}
+        </p>
+      </div>
+
+      {events.length > 0 ? (
+        <ol className="mt-5 space-y-3">
+          {events.map((event) => (
+            <TimelineEvent key={event.id} event={event} />
+          ))}
+        </ol>
+      ) : (
+        <p className="mt-5 rounded-2xl border border-dashed border-border-strong bg-surface-muted/65 p-5 text-sm leading-6 text-muted-foreground">
+          Todavía no hay eventos registrados para esta orden.
+        </p>
+      )}
+    </section>
+  );
+}
+
+/**
+ * Renders one audit event row inside the operational timeline.
+ */
+function TimelineEvent({ event }: { event: WorkOrderTimelineItem }) {
+  const Icon = getWorkOrderEventIcon(event.type);
+
+  return (
+    <li className="rounded-2xl border border-border bg-surface-muted/75 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+      <div className="flex items-start gap-3">
+        <div className="grid size-9 shrink-0 place-items-center rounded-xl border border-border-strong bg-surface-elevated text-primary">
+          <Icon className="size-4" aria-hidden="true" />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm font-black text-foreground">
+                {getWorkOrderEventTitle(event.type)}
+              </p>
+
+              <p className="mt-1 wrap-anywhere text-sm leading-6 text-muted-foreground">
+                {event.description ?? getWorkOrderEventFallback(event.type)}
+              </p>
+            </div>
+
+            <p className="inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full border border-border-strong bg-surface px-3 py-1 text-xs font-bold text-muted-foreground">
+              <Clock3 className="size-3.5" aria-hidden="true" />
+              {formatWorkOrderEventDateTime(event.createdAt)}
+            </p>
+          </div>
+
+          {event.fromStatus && event.toStatus ? (
+            <p className="mt-3 w-fit rounded-full border border-border-strong bg-surface px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-foreground">
+              {formatWorkOrderStatus(event.fromStatus)} →{" "}
+              {formatWorkOrderStatus(event.toStatus)}
+            </p>
+          ) : null}
+
+          <p className="mt-3 text-xs font-semibold text-muted-foreground">
+            Usuario:{" "}
+            <span className="font-bold text-foreground">
+              {event.user?.name ?? "Usuario eliminado"}
+            </span>
+          </p>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+/**
+ * Maps audit event types to visual icons.
+ */
+function getWorkOrderEventIcon(
+  type: WorkOrderTimelineItem["type"],
+): LucideIcon {
+  const iconMap: Record<WorkOrderTimelineItem["type"], LucideIcon> = {
+    CREATED: ClipboardCheck,
+    UPDATED: FilePenLine,
+    STATUS_CHANGED: RefreshCw,
+    DELIVERED: CheckCircle2,
+    REOPENED: RefreshCw,
+    CANCELLED: Ban,
+  };
+
+  return iconMap[type];
+}
+
+/**
+ * Maps audit event types to readable titles.
+ */
+function getWorkOrderEventTitle(type: WorkOrderTimelineItem["type"]): string {
+  const titleMap: Record<WorkOrderTimelineItem["type"], string> = {
+    CREATED: "Orden creada",
+    UPDATED: "Información actualizada",
+    STATUS_CHANGED: "Cambio de estado",
+    DELIVERED: "Orden entregada",
+    REOPENED: "Orden reabierta",
+    CANCELLED: "Orden anulada",
+  };
+
+  return titleMap[type];
+}
+
+/**
+ * Returns a safe fallback when older events do not have a description.
+ */
+function getWorkOrderEventFallback(
+  type: WorkOrderTimelineItem["type"],
+): string {
+  const fallbackMap: Record<WorkOrderTimelineItem["type"], string> = {
+    CREATED: "Se creó la orden de trabajo.",
+    UPDATED: "Se actualizó la información operativa de la orden.",
+    STATUS_CHANGED: "Se modificó el estado operativo de la orden.",
+    DELIVERED: "La orden fue marcada como entregada.",
+    REOPENED: "La orden fue reabierta con trazabilidad operativa.",
+    CANCELLED: "La orden fue anulada con motivo registrado.",
+  };
+
+  return fallbackMap[type];
+}
+
+/**
+ * Formats audit timestamps with date and time for operational traceability.
+ */
+function formatWorkOrderEventDateTime(value: string): string {
+  return new Intl.DateTimeFormat("es-AR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(value));
 }
 
 /**
@@ -362,6 +658,10 @@ function getStatusIndicatorClasses(status: WorkOrder["status"]): {
     DELIVERED: {
       text: "text-success",
       dot: "bg-success text-success",
+    },
+    CANCELLED: {
+      text: "text-muted-foreground",
+      dot: "bg-muted-foreground text-muted-foreground",
     },
   };
 

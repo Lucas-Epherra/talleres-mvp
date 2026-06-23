@@ -4,11 +4,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, WorkOrderStatus } from '@prisma/client';
+import { Prisma, WorkOrderEventType, WorkOrderStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { UpdateWorkOrderStatusDto } from './dto/update-work-order-status.dto';
 import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
+import { ReopenWorkOrderDto } from './dto/reopen-work-order.dto';
+import { CancelWorkOrderDto } from './dto/cancel-work-order.dto';
 import { FindWorkOrdersQueryDto } from './dto/find-work-orders-query.dto';
 
 const INITIAL_ORDER_NUMBER = 1000;
@@ -173,7 +175,7 @@ export class WorkOrdersService {
         id,
         workshopId,
       },
-      include: this.getDefaultInclude(),
+      include: this.getDetailInclude(),
     });
 
     if (!workOrder) {
@@ -189,7 +191,7 @@ export class WorkOrdersService {
    * The order number is generated per workshop and guarded by a database unique
    * constraint plus retry logic to handle concurrent requests.
    */
-  async create(workshopId: string, dto: CreateWorkOrderDto) {
+  async create(workshopId: string, userId: string, dto: CreateWorkOrderDto) {
     const data = {
       vehicleId: dto.vehicleId,
       reportedIssue: this.normalizeRequiredText(
@@ -246,6 +248,16 @@ export class WorkOrdersService {
             include: this.getDefaultInclude(),
           });
 
+          await this.createWorkOrderEvent({
+            prisma: tx,
+            workshopId,
+            workOrderId: workOrder.id,
+            userId,
+            type: WorkOrderEventType.CREATED,
+            toStatus: workOrder.status,
+            description: `Se creó la orden #${workOrder.orderNumber}.`,
+          });
+
           if (typeof data.entryMileage === 'number') {
             await this.updateVehicleMileageIfNeeded(
               workshopId,
@@ -277,9 +289,28 @@ export class WorkOrdersService {
   /**
    * Updates a work order if it belongs to the authenticated user's workshop.
    */
-  async update(workshopId: string, id: string, dto: UpdateWorkOrderDto) {
+  async update(
+    workshopId: string,
+    userId: string,
+    id: string,
+    dto: UpdateWorkOrderDto,
+  ) {
     const currentWorkOrder = await this.findOne(workshopId, id);
+    if (currentWorkOrder.status === WorkOrderStatus.DELIVERED) {
+      throw new BadRequestException(
+        'Una orden entregada no puede editarse. Reabrila primero con un motivo.',
+      );
+    }
 
+    if (currentWorkOrder.status === WorkOrderStatus.CANCELLED) {
+      throw new BadRequestException('Una orden anulada no puede editarse.');
+    }
+
+    if (dto.status === WorkOrderStatus.CANCELLED) {
+      throw new BadRequestException(
+        'Para anular una orden usá la acción de anulación con motivo.',
+      );
+    }
     const nextStatus = dto.status;
     const deliveryDate = this.resolveDeliveryDate(
       currentWorkOrder.status,
@@ -288,62 +319,90 @@ export class WorkOrdersService {
     );
 
     try {
-      const updatedWorkOrder = await this.prisma.workOrder.update({
-        where: {
-          id: currentWorkOrder.id,
-        },
-        data: {
-          reportedIssue:
-            dto.reportedIssue !== undefined
-              ? this.normalizeRequiredText(
-                  dto.reportedIssue,
-                  'Problema reportado',
-                  500,
-                )
-              : undefined,
-          diagnosis: this.normalizeOptionalNullableText(
-            dto.diagnosis,
-            'Diagnóstico',
-            1000,
-          ),
-          workDone: this.normalizeOptionalNullableText(
-            dto.workDone,
-            'Trabajo realizado',
-            1000,
-          ),
-          partsUsed: this.normalizeOptionalNullableMultilineText(
-            dto.partsUsed,
-            'Repuestos usados',
-            2000,
-          ),
-          entryMileage: this.normalizeMileage(dto.entryMileage),
-          laborCost: this.normalizeMoney(dto.laborCost, 'Mano de obra'),
-          partsCost: this.normalizeMoney(dto.partsCost, 'Repuestos'),
-          estimatedTotal: this.normalizeMoney(
-            dto.estimatedTotal,
-            'Total estimado',
-          ),
-          finalTotal: this.normalizeMoney(dto.finalTotal, 'Total final'),
-          status: nextStatus,
-          deliveryDate,
-          notes: this.normalizeOptionalNullableMultilineText(
-            dto.notes,
-            'Notas',
-            800,
-          ),
-        },
-        include: this.getDefaultInclude(),
-      });
+      return await this.prisma.$transaction(async (tx) => {
+        const updatedWorkOrder = await tx.workOrder.update({
+          where: {
+            id: currentWorkOrder.id,
+          },
+          data: {
+            reportedIssue:
+              dto.reportedIssue !== undefined
+                ? this.normalizeRequiredText(
+                    dto.reportedIssue,
+                    'Problema reportado',
+                    500,
+                  )
+                : undefined,
+            diagnosis: this.normalizeOptionalNullableText(
+              dto.diagnosis,
+              'Diagnóstico',
+              1000,
+            ),
+            workDone: this.normalizeOptionalNullableText(
+              dto.workDone,
+              'Trabajo realizado',
+              1000,
+            ),
+            partsUsed: this.normalizeOptionalNullableMultilineText(
+              dto.partsUsed,
+              'Repuestos usados',
+              2000,
+            ),
+            entryMileage: this.normalizeMileage(dto.entryMileage),
+            laborCost: this.normalizeMoney(dto.laborCost, 'Mano de obra'),
+            partsCost: this.normalizeMoney(dto.partsCost, 'Repuestos'),
+            estimatedTotal: this.normalizeMoney(
+              dto.estimatedTotal,
+              'Total estimado',
+            ),
+            finalTotal: this.normalizeMoney(dto.finalTotal, 'Total final'),
+            status: nextStatus,
+            deliveryDate,
+            notes: this.normalizeOptionalNullableMultilineText(
+              dto.notes,
+              'Notas',
+              800,
+            ),
+          },
+          include: this.getDefaultInclude(),
+        });
 
-      if (typeof dto.entryMileage === 'number') {
-        await this.updateVehicleMileageIfNeeded(
-          workshopId,
-          currentWorkOrder.vehicleId,
-          dto.entryMileage,
+        if (typeof dto.entryMileage === 'number') {
+          await this.updateVehicleMileageIfNeeded(
+            workshopId,
+            currentWorkOrder.vehicleId,
+            dto.entryMileage,
+            tx,
+          );
+        }
+
+        const eventType = this.resolveUpdateEventType(
+          currentWorkOrder.status,
+          updatedWorkOrder.status,
+          nextStatus,
         );
-      }
+        const isStatusEvent =
+          eventType === WorkOrderEventType.STATUS_CHANGED ||
+          eventType === WorkOrderEventType.DELIVERED;
 
-      return updatedWorkOrder;
+        await this.createWorkOrderEvent({
+          prisma: tx,
+          workshopId,
+          workOrderId: updatedWorkOrder.id,
+          userId,
+          type: eventType,
+          fromStatus: isStatusEvent ? currentWorkOrder.status : null,
+          toStatus: isStatusEvent ? updatedWorkOrder.status : null,
+          description: this.getWorkOrderEventDescription(
+            eventType,
+            updatedWorkOrder.orderNumber,
+            currentWorkOrder.status,
+            updatedWorkOrder.status,
+          ),
+        });
+
+        return updatedWorkOrder;
+      });
     } catch (error) {
       this.handlePrismaWriteError(error);
     }
@@ -354,10 +413,23 @@ export class WorkOrdersService {
    */
   async updateStatus(
     workshopId: string,
+    userId: string,
     id: string,
     dto: UpdateWorkOrderStatusDto,
   ) {
     const currentWorkOrder = await this.findOne(workshopId, id);
+
+    if (currentWorkOrder.status === WorkOrderStatus.CANCELLED) {
+      throw new BadRequestException(
+        'Una orden anulada no puede volver al flujo operativo.',
+      );
+    }
+
+    if (dto.status === WorkOrderStatus.CANCELLED) {
+      throw new BadRequestException(
+        'Para anular una orden usá la acción de anulación con motivo.',
+      );
+    }
 
     const deliveryDate = this.resolveDeliveryDate(
       currentWorkOrder.status,
@@ -366,19 +438,269 @@ export class WorkOrdersService {
     );
 
     try {
-      return await this.prisma.workOrder.update({
-        where: {
-          id: currentWorkOrder.id,
-        },
-        data: {
-          status: dto.status,
-          deliveryDate,
-        },
-        include: this.getDefaultInclude(),
+      return await this.prisma.$transaction(async (tx) => {
+        const updatedWorkOrder = await tx.workOrder.update({
+          where: {
+            id: currentWorkOrder.id,
+          },
+          data: {
+            status: dto.status,
+            deliveryDate,
+          },
+          include: this.getDefaultInclude(),
+        });
+
+        const eventType =
+          dto.status === WorkOrderStatus.DELIVERED
+            ? WorkOrderEventType.DELIVERED
+            : WorkOrderEventType.STATUS_CHANGED;
+
+        await this.createWorkOrderEvent({
+          prisma: tx,
+          workshopId,
+          workOrderId: updatedWorkOrder.id,
+          userId,
+          type: eventType,
+          fromStatus: currentWorkOrder.status,
+          toStatus: updatedWorkOrder.status,
+          description: this.getWorkOrderEventDescription(
+            eventType,
+            updatedWorkOrder.orderNumber,
+            currentWorkOrder.status,
+            updatedWorkOrder.status,
+          ),
+        });
+
+        return updatedWorkOrder;
       });
     } catch (error) {
       this.handlePrismaWriteError(error);
     }
+  }
+  /**
+   * Reopens a delivered work order and keeps the operation auditable.
+   *
+   * Delivered orders cannot be moved backwards through the normal status flow.
+   * This explicit operation requires a reason and always returns the order to
+   * READY, leaving the correction visible in the timeline.
+   */
+  async reopen(
+    workshopId: string,
+    userId: string,
+    id: string,
+    dto: ReopenWorkOrderDto,
+  ) {
+    const currentWorkOrder = await this.findOne(workshopId, id);
+
+    if (currentWorkOrder.status !== WorkOrderStatus.DELIVERED) {
+      throw new BadRequestException(
+        'Solo se puede reabrir una orden entregada.',
+      );
+    }
+
+    const reason = this.normalizeRequiredText(
+      dto.reason,
+      'Motivo de reapertura',
+      500,
+    );
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const updatedWorkOrder = await tx.workOrder.update({
+          where: {
+            id: currentWorkOrder.id,
+          },
+          data: {
+            status: WorkOrderStatus.READY,
+            deliveryDate: null,
+          },
+          include: this.getDefaultInclude(),
+        });
+
+        await this.createWorkOrderEvent({
+          prisma: tx,
+          workshopId,
+          workOrderId: updatedWorkOrder.id,
+          userId,
+          type: WorkOrderEventType.REOPENED,
+          fromStatus: WorkOrderStatus.DELIVERED,
+          toStatus: WorkOrderStatus.READY,
+          description: `La orden #${updatedWorkOrder.orderNumber} fue reabierta. Motivo: ${reason}`,
+        });
+
+        return updatedWorkOrder;
+      });
+    } catch (error) {
+      this.handlePrismaWriteError(error);
+    }
+  }
+
+  /**
+   * Cancels an open work order and keeps the operation auditable.
+   *
+   * Delivered orders must be reopened first before cancellation. Cancelled
+   * orders cannot return to the normal workflow.
+   */
+  async cancel(
+    workshopId: string,
+    userId: string,
+    id: string,
+    dto: CancelWorkOrderDto,
+  ) {
+    const currentWorkOrder = await this.findOne(workshopId, id);
+
+    if (currentWorkOrder.status === WorkOrderStatus.DELIVERED) {
+      throw new BadRequestException(
+        'Una orden entregada no puede anularse directamente. Reabrila primero con un motivo.',
+      );
+    }
+
+    if (currentWorkOrder.status === WorkOrderStatus.CANCELLED) {
+      throw new BadRequestException('Esta orden ya está anulada.');
+    }
+
+    const reason = this.normalizeRequiredText(
+      dto.reason,
+      'Motivo de anulación',
+      500,
+    );
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const updatedWorkOrder = await tx.workOrder.update({
+          where: {
+            id: currentWorkOrder.id,
+          },
+          data: {
+            status: WorkOrderStatus.CANCELLED,
+            deliveryDate: null,
+          },
+          include: this.getDefaultInclude(),
+        });
+
+        await this.createWorkOrderEvent({
+          prisma: tx,
+          workshopId,
+          workOrderId: updatedWorkOrder.id,
+          userId,
+          type: WorkOrderEventType.CANCELLED,
+          fromStatus: currentWorkOrder.status,
+          toStatus: WorkOrderStatus.CANCELLED,
+          description: `La orden #${updatedWorkOrder.orderNumber} fue anulada. Motivo: ${reason}`,
+        });
+
+        return updatedWorkOrder;
+      });
+    } catch (error) {
+      this.handlePrismaWriteError(error);
+    }
+  }
+
+  /**
+   * Persists one immutable audit event for a work order operation.
+   */
+  private async createWorkOrderEvent({
+    prisma,
+    workshopId,
+    workOrderId,
+    userId,
+    type,
+    fromStatus,
+    toStatus,
+    description,
+  }: {
+    prisma: WorkOrdersPrismaClient;
+    workshopId: string;
+    workOrderId: string;
+    userId: string;
+    type: WorkOrderEventType;
+    fromStatus?: WorkOrderStatus | null;
+    toStatus?: WorkOrderStatus | null;
+    description?: string;
+  }): Promise<void> {
+    await prisma.workOrderEvent.create({
+      data: {
+        workshopId,
+        workOrderId,
+        userId,
+        type,
+        fromStatus: fromStatus ?? null,
+        toStatus: toStatus ?? null,
+        description,
+      },
+    });
+  }
+
+  /**
+   * Resolves the event type for a general work order update.
+   */
+  private resolveUpdateEventType(
+    currentStatus: WorkOrderStatus,
+    updatedStatus: WorkOrderStatus,
+    requestedStatus?: WorkOrderStatus,
+  ): WorkOrderEventType {
+    if (!requestedStatus || currentStatus === updatedStatus) {
+      return WorkOrderEventType.UPDATED;
+    }
+
+    if (updatedStatus === WorkOrderStatus.DELIVERED) {
+      return WorkOrderEventType.DELIVERED;
+    }
+
+    return WorkOrderEventType.STATUS_CHANGED;
+  }
+
+  /**
+   * Builds a human-readable audit description for work order events.
+   */
+  private getWorkOrderEventDescription(
+    type: WorkOrderEventType,
+    orderNumber: number,
+    fromStatus?: WorkOrderStatus,
+    toStatus?: WorkOrderStatus,
+  ): string {
+    if (type === WorkOrderEventType.CREATED) {
+      return `Se creó la orden #${orderNumber}.`;
+    }
+
+    if (type === WorkOrderEventType.UPDATED) {
+      return `Se actualizó la información operativa de la orden #${orderNumber}.`;
+    }
+
+    if (type === WorkOrderEventType.DELIVERED) {
+      return `La orden #${orderNumber} fue marcada como entregada.`;
+    }
+
+    if (type === WorkOrderEventType.REOPENED) {
+      return `La orden #${orderNumber} fue reabierta.`;
+    }
+
+        if (type === WorkOrderEventType.CANCELLED) {
+      return `La orden #${orderNumber} fue anulada.`;
+    }
+
+    return `La orden #${orderNumber} pasó de ${this.formatReadableStatus(
+      fromStatus,
+    )} a ${this.formatReadableStatus(toStatus)}.`;
+  }
+
+  /**
+   * Converts work order status values into readable Spanish labels for audit logs.
+   */
+  private formatReadableStatus(status?: WorkOrderStatus): string {
+    if (!status) {
+      return 'estado anterior';
+    }
+
+    const statusLabels: Record<WorkOrderStatus, string> = {
+      PENDING: 'Pendiente',
+      IN_PROGRESS: 'En progreso',
+      READY: 'Lista para entregar',
+      DELIVERED: 'Entregada',
+      CANCELLED: 'Anulada',
+    };
+
+    return statusLabels[status];
   }
 
   /**
@@ -746,6 +1068,32 @@ export class WorkOrdersService {
     }
 
     throw error;
+  }
+
+  /**
+   * Detail relation shape returned by the single work order endpoint.
+   *
+   * Events are intentionally included only in the detail view to keep list
+   * queries lightweight.
+   */
+  private getDetailInclude() {
+    return {
+      ...this.getDefaultInclude(),
+      events: {
+        orderBy: {
+          createdAt: 'desc',
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      },
+    } satisfies Prisma.WorkOrderInclude;
   }
 
   /**

@@ -21,6 +21,7 @@ const WORK_ORDER_STATUS_OPTIONS: WorkOrderStatus[] = [
   "IN_PROGRESS",
   "READY",
   "DELIVERED",
+  "CANCELLED",
 ];
 
 /**

@@ -13,9 +13,13 @@ import { AuthGuard } from '../auth/guards/auth.guard';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { FindWorkOrdersQueryDto } from './dto/find-work-orders-query.dto';
+import { ReopenWorkOrderDto } from './dto/reopen-work-order.dto';
 import { UpdateWorkOrderStatusDto } from './dto/update-work-order-status.dto';
 import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
+import { CancelWorkOrderDto } from './dto/cancel-work-order.dto';
 import { WorkOrdersService } from './work-orders.service';
+
+
 
 /**
  * HTTP controller for work order operations.
@@ -51,7 +55,7 @@ export class WorkOrdersController {
    */
   @Post()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateWorkOrderDto) {
-    return this.workOrdersService.create(user.workshopId, dto);
+    return this.workOrdersService.create(user.workshopId, user.id, dto);
   }
 
   /**
@@ -63,7 +67,7 @@ export class WorkOrdersController {
     @Param('id') id: string,
     @Body() dto: UpdateWorkOrderDto,
   ) {
-    return this.workOrdersService.update(user.workshopId, id, dto);
+    return this.workOrdersService.update(user.workshopId, user.id, id, dto);
   }
 
   /**
@@ -75,6 +79,38 @@ export class WorkOrdersController {
     @Param('id') id: string,
     @Body() dto: UpdateWorkOrderStatusDto,
   ) {
-    return this.workOrdersService.updateStatus(user.workshopId, id, dto);
+    return this.workOrdersService.updateStatus(
+      user.workshopId,
+      user.id,
+      id,
+      dto,
+    );
   }
+
+  /**
+   * Reopens a delivered work order with an auditable required reason.
+   */
+  @Patch(':id/reopen')
+  reopen(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: ReopenWorkOrderDto,
+  ) {
+    return this.workOrdersService.reopen(user.workshopId, user.id, id, dto);
+  }
+
+    /**
+   * Cancels an open work order with an auditable required reason.
+   */
+  @Patch(':id/cancel')
+  cancel(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: CancelWorkOrderDto,
+  ) {
+    return this.workOrdersService.cancel(user.workshopId, user.id, id, dto);
+  }
+
 }
+
+

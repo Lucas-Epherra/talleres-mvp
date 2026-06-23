@@ -270,7 +270,7 @@ export default async function CustomerDetailPage({
         <SectionHeading
           headingId="customer-history-heading"
           title="Historial del cliente"
-          description="Órdenes entregadas asociadas a los vehículos de este cliente."
+          description="Órdenes entregadas o anuladas asociadas a los vehículos de este cliente."
           count={`${deliveredWorkOrders.length} orden${
             deliveredWorkOrders.length === 1 ? "" : "es"
           }`}
@@ -289,8 +289,8 @@ export default async function CustomerDetailPage({
         ) : (
           <EmptyState
             eyebrow="Sin historial"
-            title="Este cliente todavía no tiene trabajos entregados"
-            description="Cuando una orden pase a entregada, va a quedar disponible como historial del cliente."
+            title="Este cliente todavía no tiene historial cerrado"
+            description="Cuando una orden sea entregada o anulada, va a quedar disponible como historial del cliente."
             actions={[
               {
                 label: "Ver vehículos",
@@ -350,17 +350,24 @@ function getCustomerWorkOrders(
 }
 
 /**
- * Returns non-delivered work orders.
+ * Returns work orders that are still inside the operational workflow.
  */
 function getActiveWorkOrders(workOrders: WorkOrder[]): WorkOrder[] {
-  return workOrders.filter((workOrder) => workOrder.status !== "DELIVERED");
+  return workOrders.filter((workOrder) => !isClosedWorkOrder(workOrder));
 }
 
 /**
- * Returns delivered work orders used as customer history.
+ * Returns closed work orders used as customer history.
  */
 function getDeliveredWorkOrders(workOrders: WorkOrder[]): WorkOrder[] {
-  return workOrders.filter((workOrder) => workOrder.status === "DELIVERED");
+  return workOrders.filter(isClosedWorkOrder);
+}
+
+/**
+ * Closed work orders are kept as history and must not appear as active work.
+ */
+function isClosedWorkOrder(workOrder: WorkOrder): boolean {
+  return workOrder.status === "DELIVERED" || workOrder.status === "CANCELLED";
 }
 
 type SummaryMetricProps = {

@@ -1,14 +1,20 @@
 "use client";
 
-import { ChevronDown, ListChecks } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronDown,
+  ListChecks,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { apiFetch, getApiErrorMessage } from "../../../lib/api";
+import { getApiErrorMessage } from "../../../lib/api";
 import {
   formatWorkOrderStatus,
   type WorkOrderStatus,
 } from "../../../lib/format";
-import type { UpdateWorkOrderStatusInput, WorkOrder } from "../types";
+import { updateWorkOrderStatus } from "../work-orders.client";
+import type { WorkOrder } from "../types";
 
 type WorkOrderStatusMenuProps = {
   workOrderId: string;
@@ -20,7 +26,6 @@ type StatusAction = {
   nextStatus: WorkOrderStatus;
   label: string;
   description: string;
-  confirmationMessage?: string;
 };
 
 /**
@@ -39,6 +44,8 @@ export function WorkOrderStatusMenu({
   const menuRef = useRef<HTMLDivElement>(null);
 
   const [isOpen, setIsOpen] = useState(false);
+  const [isDeliveryConfirmationVisible, setIsDeliveryConfirmationVisible] =
+    useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -59,7 +66,7 @@ export function WorkOrderStatusMenu({
         event.target instanceof Node &&
         !menuRef.current.contains(event.target)
       ) {
-        setIsOpen(false);
+        closeMenu();
       }
     }
 
@@ -68,7 +75,7 @@ export function WorkOrderStatusMenu({
      */
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        setIsOpen(false);
+        closeMenu();
       }
     }
 
@@ -91,35 +98,76 @@ export function WorkOrderStatusMenu({
   }
 
   /**
-   * Advances the work order to the next allowed workflow status.
+   * Closes the status menu and resets transient confirmation state.
    */
-  async function handleStatusUpdate() {
+  function closeMenu() {
+    setIsOpen(false);
+    setIsDeliveryConfirmationVisible(false);
+  }
+
+  /**
+   * Toggles the inline menu and clears pending confirmation when closing.
+   */
+  function handleMenuToggle() {
+    if (isOpen) {
+      closeMenu();
+      return;
+    }
+
+    setErrorMessage(null);
+    setIsOpen(true);
+  }
+
+  /**
+   * Starts the next status transition or asks for delivery confirmation first.
+   */
+  function handleStatusUpdate() {
     const selectedAction = action;
 
     if (!selectedAction || isSubmitting) {
       return;
     }
 
-    if (
-      selectedAction.confirmationMessage &&
-      !window.confirm(selectedAction.confirmationMessage)
-    ) {
-      setIsOpen(false);
+    if (selectedAction.nextStatus === "DELIVERED") {
+      setErrorMessage(null);
+      setIsDeliveryConfirmationVisible(true);
       return;
     }
 
+    void submitStatusUpdate(selectedAction);
+  }
+
+  /**
+   * Confirms the critical delivery transition.
+   */
+  function handleConfirmDelivery() {
+    const selectedAction = action;
+
+    if (!selectedAction || isSubmitting) {
+      return;
+    }
+
+    void submitStatusUpdate(selectedAction);
+  }
+
+  /**
+   * Cancels the critical delivery transition without mutating the order.
+   */
+  function handleCancelDelivery() {
+    closeMenu();
+  }
+
+  /**
+   * Persists the selected status transition and refreshes server data.
+   */
+  async function submitStatusUpdate(selectedAction: StatusAction) {
     setErrorMessage(null);
-    setIsOpen(false);
+    closeMenu();
     setIsSubmitting(true);
 
     try {
-      const body: UpdateWorkOrderStatusInput = {
+      await updateWorkOrderStatus(workOrderId, {
         status: selectedAction.nextStatus,
-      };
-
-      await apiFetch<WorkOrder>(`/work-orders/${workOrderId}/status`, {
-        method: "PATCH",
-        body: JSON.stringify(body),
       });
 
       router.refresh();
@@ -147,19 +195,16 @@ export function WorkOrderStatusMenu({
         <button
           type="button"
           disabled={isSubmitting}
-          onClick={() => setIsOpen((currentValue) => !currentValue)}
+          onClick={handleMenuToggle}
           className="absolute inset-0 z-10 cursor-pointer rounded-md bg-transparent text-transparent outline-none focus-visible:ring-2 focus-visible:ring-primary/20 disabled:cursor-not-allowed"
           aria-expanded={isOpen}
-          aria-haspopup="menu"
+          aria-haspopup="dialog"
           aria-label={`Estado actual: ${formattedCurrentStatus}. Abrir acciones para la orden #${orderNumber}`}
         />
       </div>
 
       {isOpen ? (
-        <div
-          role="menu"
-          className="mt-3 w-full max-w-64 overflow-hidden rounded-xl border border-border-strong bg-surface-elevated text-left shadow-(--shadow-industrial) ring-1 ring-white/3"
-        >
+        <div className="mt-3 w-full max-w-80 overflow-hidden rounded-xl border border-border-strong bg-surface-elevated text-left shadow-(--shadow-industrial) ring-1 ring-white/3">
           <div className="border-b border-border bg-surface-muted/70 px-4 py-3">
             <p className="text-[0.62rem] font-black uppercase tracking-[0.18em] text-primary">
               Estado actual
@@ -170,33 +215,82 @@ export function WorkOrderStatusMenu({
             </p>
           </div>
 
-          <button
-            type="button"
-            role="menuitem"
-            disabled={isSubmitting}
-            onClick={handleStatusUpdate}
-            className="group flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-xl border border-border-strong bg-surface-muted text-primary transition group-hover:border-primary/50">
-              <ListChecks className="size-4" aria-hidden="true" />
-            </span>
-
-            <span className="min-w-0">
-              <span
-                className={
-                  action.nextStatus === "DELIVERED"
-                    ? "block text-sm font-black text-primary"
-                    : "block text-sm font-black text-foreground group-hover:text-primary"
-                }
-              >
-                {action.label}
+          {!isDeliveryConfirmationVisible ? (
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={handleStatusUpdate}
+              className="group flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-xl border border-border-strong bg-surface-muted text-primary transition group-hover:border-primary/50">
+                <ListChecks className="size-4" aria-hidden="true" />
               </span>
 
-              <span className="mt-1 block text-xs font-semibold leading-5 text-muted-foreground">
-                {action.description}
+              <span className="min-w-0">
+                <span
+                  className={
+                    action.nextStatus === "DELIVERED"
+                      ? "block text-sm font-black text-primary"
+                      : "block text-sm font-black text-foreground group-hover:text-primary"
+                  }
+                >
+                  {action.label}
+                </span>
+
+                <span className="mt-1 block text-xs font-semibold leading-5 text-muted-foreground">
+                  {action.description}
+                </span>
               </span>
-            </span>
-          </button>
+            </button>
+          ) : (
+            <div className="border-t border-primary/25 bg-primary/10 px-4 py-4">
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-xl border border-primary/35 bg-surface text-primary">
+                  <AlertTriangle className="size-4" aria-hidden="true" />
+                </span>
+
+                <div className="min-w-0">
+                  <p className="text-sm font-black text-foreground">
+                    Confirmar entrega
+                  </p>
+
+                  <p className="mt-1 text-xs font-semibold leading-5 text-muted-foreground">
+                    Vas a marcar la orden #{orderNumber} como entregada. Esta
+                    acción cerrará la orden y bloqueará la edición directa.
+                  </p>
+
+                  <p className="mt-2 text-xs font-semibold leading-5 text-muted-foreground">
+                    Si fue un error, luego deberás reabrirla dejando un motivo
+                    en el historial operativo.
+                  </p>
+
+                  <div className="mt-3 grid gap-2">
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={handleConfirmDelivery}
+                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-xs font-black text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <CheckCircle2
+                        className="size-4 shrink-0"
+                        aria-hidden="true"
+                      />
+                      Sí, marcar entregada
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={handleCancelDelivery}
+                      className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-4 text-xs font-black text-foreground transition hover:border-primary/60 hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : null}
 
@@ -275,9 +369,7 @@ function getNextStatusAction(status: WorkOrderStatus): StatusAction | null {
     READY: {
       nextStatus: "DELIVERED",
       label: "Marcar entregada",
-      description: "Cierra la orden y registra la entrega.",
-      confirmationMessage:
-        "Vas a marcar esta orden como entregada. Esta acción cierra la orden. ¿Querés continuar?",
+      description: "Pide confirmación antes de cerrar la orden.",
     },
   };
 
@@ -313,6 +405,10 @@ function getStatusIndicatorClasses(status: WorkOrderStatus): {
     DELIVERED: {
       text: "text-success",
       dot: "bg-success text-success",
+    },
+    CANCELLED: {
+      text: "text-muted-foreground",
+      dot: "bg-muted-foreground text-muted-foreground",
     },
   };
 

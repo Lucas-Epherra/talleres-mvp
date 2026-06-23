@@ -113,6 +113,7 @@ export class DashboardService {
         inProgress: statusCounts.IN_PROGRESS,
         ready: statusCounts.READY,
         delivered: statusCounts.DELIVERED,
+        cancelled: statusCounts.CANCELLED,
         active:
           statusCounts.PENDING + statusCounts.IN_PROGRESS + statusCounts.READY,
       },
@@ -172,6 +173,7 @@ export class DashboardService {
       [WorkOrderStatus.IN_PROGRESS]: 0,
       [WorkOrderStatus.READY]: 0,
       [WorkOrderStatus.DELIVERED]: 0,
+      [WorkOrderStatus.CANCELLED]: 0,
     };
 
     return groups.reduce<Record<WorkOrderStatus, number>>((acc, group) => {

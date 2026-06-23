@@ -31,6 +31,14 @@ export type UpdateWorkOrderStatusInput = {
   status: WorkOrderStatus;
 };
 
+export type ReopenWorkOrderInput = {
+  reason: string;
+};
+
+export type CancelWorkOrderInput = {
+  reason: string;
+};
+
 export type WorkOrderCustomer = {
   id: string;
   fullName: string;
@@ -46,6 +54,33 @@ export type WorkOrderVehicle = {
   year: number | null;
   mileage: number | null;
   customer: WorkOrderCustomer;
+};
+
+export type WorkOrderEventType =
+  | "CREATED"
+  | "UPDATED"
+  | "STATUS_CHANGED"
+  | "DELIVERED"
+  | "REOPENED"
+  | "CANCELLED";
+
+export type WorkOrderEventUser = {
+  id: string;
+  name: string;
+  email: string;
+};
+
+export type WorkOrderEvent = {
+  id: string;
+  workshopId: string;
+  workOrderId: string;
+  userId: string | null;
+  type: WorkOrderEventType;
+  fromStatus: WorkOrderStatus | null;
+  toStatus: WorkOrderStatus | null;
+  description: string | null;
+  createdAt: string;
+  user: WorkOrderEventUser | null;
 };
 
 export type WorkOrder = {
@@ -69,6 +104,7 @@ export type WorkOrder = {
   createdAt: string;
   updatedAt: string;
   vehicle: WorkOrderVehicle;
+  events?: WorkOrderEvent[];
 };
 
 export type PaginationMeta = {
