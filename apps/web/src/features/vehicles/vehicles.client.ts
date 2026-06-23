@@ -1,8 +1,11 @@
 import { apiFetch } from "../../lib/api";
 import type {
+  ArchiveVehicleInput,
   CreateVehicleInput,
+  RestoreVehicleInput,
   UpdateVehicleInput,
   VehicleListItem,
+  VehicleProfile,
 } from "./types";
 
 /**
@@ -30,6 +33,32 @@ export function updateVehicle(
   input: UpdateVehicleInput,
 ): Promise<VehicleListItem> {
   return apiFetch<VehicleListItem>(`/vehicles/${vehicleId}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+/**
+ * Archives a vehicle with a mandatory operational reason.
+ */
+export function archiveVehicle(
+  vehicleId: string,
+  input: ArchiveVehicleInput,
+): Promise<VehicleProfile> {
+  return apiFetch<VehicleProfile>(`/vehicles/${vehicleId}/archive`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+/**
+ * Restores an archived vehicle with a mandatory operational reason.
+ */
+export function restoreVehicle(
+  vehicleId: string,
+  input: RestoreVehicleInput,
+): Promise<VehicleProfile> {
+  return apiFetch<VehicleProfile>(`/vehicles/${vehicleId}/restore`, {
     method: "PATCH",
     body: JSON.stringify(input),
   });

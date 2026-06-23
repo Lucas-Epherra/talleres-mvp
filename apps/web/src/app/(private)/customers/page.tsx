@@ -6,6 +6,10 @@ import { Pagination } from "../../../components/ui/Pagination";
 import { SearchForm } from "../../../components/ui/SearchForm";
 import { CustomerCard } from "../../../features/customers/components/CustomerCard";
 import { getPaginatedCustomers } from "../../../features/customers/customers.server";
+import {
+  CUSTOMER_ARCHIVE_STATUSES,
+  type CustomerArchiveStatus,
+} from "../../../features/customers/types";
 
 export const metadata: Metadata = {
   title: "Clientes",
@@ -17,14 +21,15 @@ type CustomersPageProps = {
   searchParams: Promise<{
     search?: string | string[];
     page?: string | string[];
+    archiveStatus?: string | string[];
   }>;
 };
 
 /**
  * Customers list page.
  *
- * Search and pagination are handled server-side by the API so the list remains
- * performant when the workshop starts accumulating real operational data.
+ * Search, archive filtering and pagination are handled server-side by the API
+ * so the list remains performant when the workshop starts accumulating data.
  */
 export default async function CustomersPage({
   searchParams,
@@ -32,9 +37,13 @@ export default async function CustomersPage({
   const resolvedSearchParams = await searchParams;
   const search = normalizeSearchParam(resolvedSearchParams.search);
   const page = normalizePageParam(resolvedSearchParams.page);
+  const archiveStatus = normalizeArchiveStatusParam(
+    resolvedSearchParams.archiveStatus,
+  );
 
   const customersPage = await getPaginatedCustomers({
     search: search || undefined,
+    archiveStatus,
     page,
     limit: CUSTOMERS_PAGE_LIMIT,
   });
@@ -42,6 +51,7 @@ export default async function CustomersPage({
   const customers = customersPage.data;
   const meta = customersPage.meta;
   const hasSearch = search.length > 0;
+  const hasArchiveFilter = archiveStatus !== "active";
   const hasCustomers = customers.length > 0;
 
   return (
@@ -78,10 +88,17 @@ export default async function CustomersPage({
             label="Buscar"
             defaultValue={search}
             placeholder="Buscar por nombre, teléfono, email, dirección o notas..."
-            clearHref="/customers"
+            clearHref={buildCustomersHref({
+              archiveStatus,
+            })}
             showClearAction={hasSearch}
           />
         </div>
+
+        <CustomerArchiveFilters
+          currentStatus={archiveStatus}
+          search={search || undefined}
+        />
       </header>
 
       <section
@@ -94,7 +111,7 @@ export default async function CustomersPage({
               id="customers-results-heading"
               className="font-display text-lg font-black uppercase tracking-[0.04em] text-foreground"
             >
-              {hasSearch ? "Resultados" : "Registrados"}
+              {getResultsTitle(hasSearch, archiveStatus)}
             </h2>
 
             {meta.totalItems > 0 ? (
@@ -127,28 +144,21 @@ export default async function CustomersPage({
               totalPages={meta.totalPages}
               searchParams={{
                 search: search || undefined,
+                archiveStatus: hasArchiveFilter ? archiveStatus : undefined,
               }}
               ariaLabel="Paginación de clientes"
             />
           </>
         ) : (
           <EmptyState
-            eyebrow={hasSearch ? "Sin resultados" : "Primer paso"}
-            title={
-              hasSearch
-                ? "No se encontraron clientes"
-                : "Todavía no hay clientes cargados"
-            }
-            description={
-              hasSearch
-                ? "Probá limpiar la búsqueda o buscar por otro nombre, teléfono, email, dirección o nota interna."
-                : "Creá el primer cliente para poder asociarle vehículos, abrir fichas y registrar órdenes de trabajo."
-            }
+            eyebrow={getEmptyEyebrow(hasSearch, archiveStatus)}
+            title={getEmptyTitle(hasSearch, archiveStatus)}
+            description={getEmptyDescription(hasSearch, archiveStatus)}
             actions={
-              hasSearch
+              hasSearch || hasArchiveFilter
                 ? [
                     {
-                      label: "Limpiar búsqueda",
+                      label: "Limpiar filtros",
                       href: "/customers",
                       variant: "primary",
                     },
@@ -178,6 +188,110 @@ export default async function CustomersPage({
   );
 }
 
+type CustomerArchiveFiltersProps = {
+  currentStatus: CustomerArchiveStatus;
+  search?: string;
+};
+
+/**
+ * Server-rendered archive status filter for customer list navigation.
+ */
+function CustomerArchiveFilters({
+  currentStatus,
+  search,
+}: CustomerArchiveFiltersProps) {
+  const filters: Array<{
+    label: string;
+    value: CustomerArchiveStatus;
+  }> = [
+    {
+      label: "Activos",
+      value: "active",
+    },
+    {
+      label: "Archivados",
+      value: "archived",
+    },
+    {
+      label: "Todos",
+      value: "all",
+    },
+  ];
+
+  return (
+    <nav
+      aria-label="Filtro de estado de archivo de clientes"
+      className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap"
+    >
+      {filters.map((filter) => {
+        const isActive = currentStatus === filter.value;
+
+        return (
+          <Link
+            key={filter.value}
+            href={buildCustomersHref({
+              search,
+              archiveStatus: filter.value,
+            })}
+            aria-current={isActive ? "page" : undefined}
+            className={
+              isActive
+                ? "inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white"
+                : "inline-flex h-10 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated"
+            }
+          >
+            {filter.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+/**
+ * Builds a customers href preserving only meaningful filters.
+ */
+function buildCustomersHref({
+  search,
+  archiveStatus,
+}: {
+  search?: string;
+  archiveStatus?: CustomerArchiveStatus;
+}): string {
+  const params = new URLSearchParams();
+
+  if (search) {
+    params.set("search", search);
+  }
+
+  if (archiveStatus && archiveStatus !== "active") {
+    params.set("archiveStatus", archiveStatus);
+  }
+
+  const queryString = params.toString();
+
+  return queryString ? `/customers?${queryString}` : "/customers";
+}
+
+/**
+ * Normalizes archive status params into the supported filter values.
+ */
+function normalizeArchiveStatusParam(
+  value: string | string[] | undefined,
+): CustomerArchiveStatus {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+
+  if (
+    CUSTOMER_ARCHIVE_STATUSES.some(
+      (archiveStatus) => archiveStatus === rawValue,
+    )
+  ) {
+    return rawValue as CustomerArchiveStatus;
+  }
+
+  return "active";
+}
+
 /**
  * Normalizes a Next.js search param into a single trimmed string.
  */
@@ -201,4 +315,80 @@ function normalizePageParam(value: string | string[] | undefined): number {
   }
 
   return parsedValue;
+}
+
+/**
+ * Returns the title for the current result set.
+ */
+function getResultsTitle(
+  hasSearch: boolean,
+  archiveStatus: CustomerArchiveStatus,
+): string {
+  if (hasSearch) {
+    return "Resultados";
+  }
+
+  if (archiveStatus === "archived") {
+    return "Archivados";
+  }
+
+  if (archiveStatus === "all") {
+    return "Todos los clientes";
+  }
+
+  return "Registrados";
+}
+
+/**
+ * Returns an empty-state eyebrow for the current filters.
+ */
+function getEmptyEyebrow(
+  hasSearch: boolean,
+  archiveStatus: CustomerArchiveStatus,
+): string {
+  if (hasSearch) {
+    return "Sin resultados";
+  }
+
+  if (archiveStatus === "archived") {
+    return "Sin archivados";
+  }
+
+  return "Primer paso";
+}
+
+/**
+ * Returns an empty-state title for the current filters.
+ */
+function getEmptyTitle(
+  hasSearch: boolean,
+  archiveStatus: CustomerArchiveStatus,
+): string {
+  if (hasSearch) {
+    return "No se encontraron clientes";
+  }
+
+  if (archiveStatus === "archived") {
+    return "No hay clientes archivados";
+  }
+
+  return "Todavía no hay clientes cargados";
+}
+
+/**
+ * Returns an empty-state description for the current filters.
+ */
+function getEmptyDescription(
+  hasSearch: boolean,
+  archiveStatus: CustomerArchiveStatus,
+): string {
+  if (hasSearch) {
+    return "Probá limpiar la búsqueda o buscar por otro nombre, teléfono, email, dirección o nota interna.";
+  }
+
+  if (archiveStatus === "archived") {
+    return "Los clientes archivados quedan fuera del flujo operativo, pero se conservan para historial y trazabilidad.";
+  }
+
+  return "Creá el primer cliente para poder asociarle vehículos, abrir fichas y registrar órdenes de trabajo.";
 }

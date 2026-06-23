@@ -30,6 +30,16 @@ enum WorkOrderEventType {
   CANCELLED
 }
 
+enum VehicleEventType {
+  ARCHIVED
+  RESTORED
+}
+
+enum CustomerEventType {
+  ARCHIVED
+  RESTORED
+}
+
 model Workshop {
   id        String   @id @default(uuid())
   name      String
@@ -42,6 +52,8 @@ model Workshop {
   vehicles        Vehicle[]
   workOrders      WorkOrder[]
   workOrderEvents WorkOrderEvent[]
+  vehicleEvents   VehicleEvent[]
+  customerEvents  CustomerEvent[]
 
   @@map("workshops")
 }
@@ -54,16 +66,20 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  memberships     WorkshopMember[]
-  workOrderEvents WorkOrderEvent[]
+  memberships       WorkshopMember[]
+  workOrderEvents   WorkOrderEvent[]
+  vehicleEvents     VehicleEvent[]
+  archivedVehicles  Vehicle[]        @relation("VehicleArchivedByUser")
+  customerEvents    CustomerEvent[]
+  archivedCustomers Customer[]       @relation("CustomerArchivedByUser")
 
   @@map("users")
 }
 
 model WorkshopMember {
   id         String       @id @default(uuid())
-  workshopId String      @map("workshop_id")
-  userId     String      @map("user_id")
+  workshopId String       @map("workshop_id")
+  userId     String       @map("user_id")
   role       WorkshopRole @default(OPERATOR)
   createdAt  DateTime     @default(now()) @map("created_at")
   updatedAt  DateTime     @updatedAt @map("updated_at")
@@ -78,68 +94,82 @@ model WorkshopMember {
 }
 
 model Customer {
-  id         String   @id @default(uuid())
-  workshopId String  @map("workshop_id")
-  fullName   String  @map("full_name")
-  phone      String
-  email      String?
-  address    String?
-  notes      String?
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id               String    @id @default(uuid())
+  workshopId       String    @map("workshop_id")
+  fullName         String    @map("full_name")
+  phone            String
+  email            String?
+  address          String?
+  notes            String?
+  archivedAt       DateTime? @map("archived_at")
+  archivedReason   String?   @map("archived_reason")
+  archivedByUserId String?   @map("archived_by_user_id")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  workshop Workshop  @relation(fields: [workshopId], references: [id], onDelete: Cascade)
-  vehicles Vehicle[]
+  workshop       Workshop        @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  archivedByUser User?           @relation("CustomerArchivedByUser", fields: [archivedByUserId], references: [id], onDelete: SetNull)
+  vehicles       Vehicle[]
+  events         CustomerEvent[]
 
   @@unique([workshopId, phone])
   @@index([workshopId])
   @@index([phone])
+  @@index([archivedAt])
+  @@index([archivedByUserId])
   @@map("customers")
 }
 
 model Vehicle {
-  id           String   @id @default(uuid())
-  workshopId   String  @map("workshop_id")
-  customerId   String  @map("customer_id")
-  licensePlate String  @map("license_plate")
-  brand        String
-  model        String
-  year         Int?
-  mileage      Int?
-  notes        String?
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id               String    @id @default(uuid())
+  workshopId       String    @map("workshop_id")
+  customerId       String    @map("customer_id")
+  licensePlate     String    @map("license_plate")
+  brand            String
+  model            String
+  year             Int?
+  mileage          Int?
+  notes            String?
+  archivedAt       DateTime? @map("archived_at")
+  archivedReason   String?   @map("archived_reason")
+  archivedByUserId String?   @map("archived_by_user_id")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  workshop   Workshop    @relation(fields: [workshopId], references: [id], onDelete: Cascade)
-  customer   Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  workOrders WorkOrder[]
+  workshop       Workshop       @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  customer       Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  archivedByUser User?          @relation("VehicleArchivedByUser", fields: [archivedByUserId], references: [id], onDelete: SetNull)
+  workOrders     WorkOrder[]
+  events         VehicleEvent[]
 
   @@unique([workshopId, licensePlate])
   @@index([workshopId])
   @@index([customerId])
+  @@index([archivedAt])
+  @@index([archivedByUserId])
   @@map("vehicles")
 }
 
 model WorkOrder {
   id             String          @id @default(uuid())
-  workshopId     String         @map("workshop_id")
-  vehicleId      String         @map("vehicle_id")
-  orderNumber    Int            @map("order_number")
-  reportedIssue  String         @map("reported_issue")
+  workshopId     String          @map("workshop_id")
+  vehicleId      String          @map("vehicle_id")
+  orderNumber    Int             @map("order_number")
+  reportedIssue  String          @map("reported_issue")
   diagnosis      String?
-  workDone       String?        @map("work_done")
-  partsUsed      String?        @map("parts_used")
-  entryMileage   Int?           @map("entry_mileage")
-  laborCost      Decimal?       @map("labor_cost") @db.Decimal(12, 2)
-  partsCost      Decimal?       @map("parts_cost") @db.Decimal(12, 2)
-  estimatedTotal Decimal?       @map("estimated_total") @db.Decimal(12, 2)
-  finalTotal     Decimal?       @map("final_total") @db.Decimal(12, 2)
+  workDone       String?         @map("work_done")
+  partsUsed      String?         @map("parts_used")
+  entryMileage   Int?            @map("entry_mileage")
+  laborCost      Decimal?        @map("labor_cost") @db.Decimal(12, 2)
+  partsCost      Decimal?        @map("parts_cost") @db.Decimal(12, 2)
+  estimatedTotal Decimal?        @map("estimated_total") @db.Decimal(12, 2)
+  finalTotal     Decimal?        @map("final_total") @db.Decimal(12, 2)
   status         WorkOrderStatus @default(PENDING)
-  entryDate      DateTime       @default(now()) @map("entry_date")
-  deliveryDate   DateTime?      @map("delivery_date")
+  entryDate      DateTime        @default(now()) @map("entry_date")
+  deliveryDate   DateTime?       @map("delivery_date")
   notes          String?
-  createdAt      DateTime       @default(now()) @map("created_at")
-  updatedAt      DateTime       @updatedAt @map("updated_at")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
 
   workshop Workshop         @relation(fields: [workshopId], references: [id], onDelete: Cascade)
   vehicle  Vehicle          @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
@@ -153,15 +183,15 @@ model WorkOrder {
 }
 
 model WorkOrderEvent {
-  id          String              @id @default(uuid())
-  workshopId  String              @map("workshop_id")
-  workOrderId String              @map("work_order_id")
-  userId      String?             @map("user_id")
+  id          String             @id @default(uuid())
+  workshopId  String             @map("workshop_id")
+  workOrderId String             @map("work_order_id")
+  userId      String?            @map("user_id")
   type        WorkOrderEventType
-  fromStatus  WorkOrderStatus?    @map("from_status")
-  toStatus    WorkOrderStatus?    @map("to_status")
+  fromStatus  WorkOrderStatus?   @map("from_status")
+  toStatus    WorkOrderStatus?   @map("to_status")
   description String?
-  createdAt   DateTime            @default(now()) @map("created_at")
+  createdAt   DateTime           @default(now()) @map("created_at")
 
   workshop  Workshop  @relation(fields: [workshopId], references: [id], onDelete: Cascade)
   workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
@@ -173,4 +203,46 @@ model WorkOrderEvent {
   @@index([type])
   @@index([createdAt])
   @@map("work_order_events")
+}
+
+model VehicleEvent {
+  id          String           @id @default(uuid())
+  workshopId  String           @map("workshop_id")
+  vehicleId   String           @map("vehicle_id")
+  userId      String?          @map("user_id")
+  type        VehicleEventType
+  description String?
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  vehicle  Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([workshopId])
+  @@index([vehicleId])
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("vehicle_events")
+}
+
+model CustomerEvent {
+  id          String            @id @default(uuid())
+  workshopId  String            @map("workshop_id")
+  customerId  String            @map("customer_id")
+  userId      String?           @map("user_id")
+  type        CustomerEventType
+  description String?
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([workshopId])
+  @@index([customerId])
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("customer_events")
 }

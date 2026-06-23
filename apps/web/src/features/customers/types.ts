@@ -1,3 +1,7 @@
+export const CUSTOMER_ARCHIVE_STATUSES = ["active", "archived", "all"] as const;
+
+export type CustomerArchiveStatus = (typeof CUSTOMER_ARCHIVE_STATUSES)[number];
+
 export type Customer = {
   id: string;
   workshopId: string;
@@ -6,6 +10,9 @@ export type Customer = {
   email: string | null;
   address: string | null;
   notes: string | null;
+  archivedAt: string | null;
+  archivedReason: string | null;
+  archivedByUserId: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -34,6 +41,7 @@ export type CustomersQuery = {
   search?: string;
   page?: number;
   limit?: number;
+  archiveStatus?: CustomerArchiveStatus;
 };
 
 export type CreateCustomerInput = {
@@ -50,4 +58,12 @@ export type UpdateCustomerInput = {
   email?: string | null;
   address?: string | null;
   notes?: string | null;
+};
+
+export type ArchiveCustomerInput = {
+  reason: string;
+};
+
+export type RestoreCustomerInput = {
+  reason: string;
 };
