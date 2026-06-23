@@ -41,7 +41,7 @@ export default async function VehicleProfilePage({
 
       <VehicleWorkOrdersPanel
         title="Historial"
-        description="Trabajos anteriores ya entregados."
+        description="Trabajos cerrados por entrega o anulación."
         emptyMessage="Este vehículo todavía no tiene historial cerrado."
         workOrders={profile.history}
       />

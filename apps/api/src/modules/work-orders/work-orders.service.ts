@@ -33,6 +33,12 @@ type PaginationMeta = {
 
 type WorkOrdersPrismaClient = PrismaService | Prisma.TransactionClient;
 
+type WorkOrderVehicleContext = {
+  id: string;
+  mileage: number | null;
+  archivedAt: Date | null;
+};
+
 /**
  * Handles work order persistence and operational updates.
  *
@@ -670,12 +676,11 @@ export class WorkOrdersService {
     if (type === WorkOrderEventType.DELIVERED) {
       return `La orden #${orderNumber} fue marcada como entregada.`;
     }
-
     if (type === WorkOrderEventType.REOPENED) {
       return `La orden #${orderNumber} fue reabierta.`;
     }
 
-        if (type === WorkOrderEventType.CANCELLED) {
+    if (type === WorkOrderEventType.CANCELLED) {
       return `La orden #${orderNumber} fue anulada.`;
     }
 
@@ -706,11 +711,12 @@ export class WorkOrdersService {
   /**
    * Ensures a vehicle exists in the authenticated user's workshop before creating a work order.
    */
+
   private async ensureVehicleBelongsToWorkshop(
     workshopId: string,
     vehicleId: string,
     prisma: WorkOrdersPrismaClient = this.prisma,
-  ) {
+  ): Promise<WorkOrderVehicleContext> {
     const vehicle = await prisma.vehicle.findFirst({
       where: {
         id: vehicleId,
@@ -719,11 +725,18 @@ export class WorkOrdersService {
       select: {
         id: true,
         mileage: true,
+        archivedAt: true,
       },
     });
 
     if (!vehicle) {
       throw new NotFoundException('Vehículo no encontrado.');
+    }
+
+    if (vehicle.archivedAt) {
+      throw new ConflictException(
+        'No se puede crear una orden para un vehículo archivado.',
+      );
     }
 
     return vehicle;

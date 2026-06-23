@@ -6,6 +6,10 @@ import { Pagination } from "../../../components/ui/Pagination";
 import { SearchForm } from "../../../components/ui/SearchForm";
 import { VehicleCard } from "../../../features/vehicles/components/VehicleCard";
 import { getPaginatedVehicles } from "../../../features/vehicles/vehicles.server";
+import {
+  VEHICLE_ARCHIVE_STATUSES,
+  type VehicleArchiveStatus,
+} from "../../../features/vehicles/types";
 import { normalizeSearchParam } from "../../../lib/format";
 
 export const metadata: Metadata = {
@@ -18,14 +22,15 @@ type VehiclesPageProps = {
   searchParams: Promise<{
     search?: string | string[];
     page?: string | string[];
+    archiveStatus?: string | string[];
   }>;
 };
 
 /**
  * Vehicles list page.
  *
- * Search and pagination are handled server-side by the API so the list remains
- * performant when the workshop starts accumulating real operational data.
+ * Search, archive filtering and pagination are handled server-side by the API
+ * so the list remains performant when the workshop accumulates real data.
  */
 export default async function VehiclesPage({
   searchParams,
@@ -33,9 +38,13 @@ export default async function VehiclesPage({
   const resolvedSearchParams = await searchParams;
   const search = normalizeSearchParam(resolvedSearchParams.search);
   const page = normalizePageParam(resolvedSearchParams.page);
+  const archiveStatus = normalizeArchiveStatusParam(
+    resolvedSearchParams.archiveStatus,
+  );
 
   const vehiclesPage = await getPaginatedVehicles({
     search: search || undefined,
+    archiveStatus,
     page,
     limit: VEHICLES_PAGE_LIMIT,
   });
@@ -43,6 +52,7 @@ export default async function VehiclesPage({
   const vehicles = vehiclesPage.data;
   const meta = vehiclesPage.meta;
   const hasSearch = Boolean(search);
+  const hasArchiveFilter = archiveStatus !== "active";
   const hasVehicles = vehicles.length > 0;
 
   return (
@@ -79,10 +89,17 @@ export default async function VehiclesPage({
             label="Buscar"
             defaultValue={search}
             placeholder="Buscar por patente, cliente o teléfono..."
-            clearHref="/vehicles"
+            clearHref={buildVehiclesHref({
+              archiveStatus,
+            })}
             showClearAction={hasSearch}
           />
         </div>
+
+        <VehicleArchiveFilters
+          currentStatus={archiveStatus}
+          search={search || undefined}
+        />
       </header>
 
       <section aria-labelledby="vehicles-results-heading" className="space-y-4">
@@ -92,7 +109,7 @@ export default async function VehiclesPage({
               id="vehicles-results-heading"
               className="font-display text-lg font-black uppercase tracking-[0.04em] text-foreground"
             >
-              {hasSearch ? "Resultados" : "Registrados"}
+              {getResultsTitle(hasSearch, archiveStatus)}
             </h2>
 
             {meta.totalItems > 0 ? (
@@ -125,28 +142,21 @@ export default async function VehiclesPage({
               totalPages={meta.totalPages}
               searchParams={{
                 search: search || undefined,
+                archiveStatus: hasArchiveFilter ? archiveStatus : undefined,
               }}
               ariaLabel="Paginación de vehículos"
             />
           </>
         ) : (
           <EmptyState
-            eyebrow={hasSearch ? "Sin resultados" : "Primer vehículo"}
-            title={
-              hasSearch
-                ? "No se encontraron vehículos"
-                : "Todavía no hay vehículos cargados"
-            }
-            description={
-              hasSearch
-                ? "Probá limpiar la búsqueda o buscar por otra patente, cliente, marca, modelo o teléfono."
-                : "Cargá el primer vehículo para empezar a construir su ficha, asociar cliente y registrar órdenes de trabajo."
-            }
+            eyebrow={getEmptyEyebrow(hasSearch, archiveStatus)}
+            title={getEmptyTitle(hasSearch, archiveStatus)}
+            description={getEmptyDescription(hasSearch, archiveStatus)}
             actions={
-              hasSearch
+              hasSearch || hasArchiveFilter
                 ? [
                     {
-                      label: "Limpiar búsqueda",
+                      label: "Limpiar filtros",
                       href: "/vehicles",
                       variant: "primary",
                     },
@@ -176,6 +186,108 @@ export default async function VehiclesPage({
   );
 }
 
+type VehicleArchiveFiltersProps = {
+  currentStatus: VehicleArchiveStatus;
+  search?: string;
+};
+
+/**
+ * Server-rendered archive status filter for vehicle list navigation.
+ */
+function VehicleArchiveFilters({
+  currentStatus,
+  search,
+}: VehicleArchiveFiltersProps) {
+  const filters: Array<{
+    label: string;
+    value: VehicleArchiveStatus;
+  }> = [
+    {
+      label: "Activos",
+      value: "active",
+    },
+    {
+      label: "Archivados",
+      value: "archived",
+    },
+    {
+      label: "Todos",
+      value: "all",
+    },
+  ];
+
+  return (
+    <nav
+      aria-label="Filtro de estado de archivo de vehículos"
+      className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap"
+    >
+      {filters.map((filter) => {
+        const isActive = currentStatus === filter.value;
+
+        return (
+          <Link
+            key={filter.value}
+            href={buildVehiclesHref({
+              search,
+              archiveStatus: filter.value,
+            })}
+            aria-current={isActive ? "page" : undefined}
+            className={
+              isActive
+                ? "inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white"
+                : "inline-flex h-10 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated"
+            }
+          >
+            {filter.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+/**
+ * Builds a vehicles href preserving only meaningful filters.
+ */
+function buildVehiclesHref({
+  search,
+  archiveStatus,
+}: {
+  search?: string;
+  archiveStatus?: VehicleArchiveStatus;
+}): string {
+  const params = new URLSearchParams();
+
+  if (search) {
+    params.set("search", search);
+  }
+
+  if (archiveStatus && archiveStatus !== "active") {
+    params.set("archiveStatus", archiveStatus);
+  }
+
+  const queryString = params.toString();
+
+  return queryString ? `/vehicles?${queryString}` : "/vehicles";
+}
+
+/**
+ * Normalizes archive status params into the supported filter values.
+ */
+function normalizeArchiveStatusParam(
+  value: string | string[] | undefined,
+): VehicleArchiveStatus {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+
+  if (
+    VEHICLE_ARCHIVE_STATUSES.some((archiveStatus) => archiveStatus === rawValue)
+  ) {
+    return rawValue as VehicleArchiveStatus;
+  }
+
+  return "active";
+}
+
 /**
  * Normalizes a page search param into a safe positive integer.
  */
@@ -188,4 +300,80 @@ function normalizePageParam(value: string | string[] | undefined): number {
   }
 
   return parsedValue;
+}
+
+/**
+ * Returns the title for the current result set.
+ */
+function getResultsTitle(
+  hasSearch: boolean,
+  archiveStatus: VehicleArchiveStatus,
+): string {
+  if (hasSearch) {
+    return "Resultados";
+  }
+
+  if (archiveStatus === "archived") {
+    return "Archivados";
+  }
+
+  if (archiveStatus === "all") {
+    return "Todos los vehículos";
+  }
+
+  return "Registrados";
+}
+
+/**
+ * Returns an empty-state eyebrow for the current filters.
+ */
+function getEmptyEyebrow(
+  hasSearch: boolean,
+  archiveStatus: VehicleArchiveStatus,
+): string {
+  if (hasSearch) {
+    return "Sin resultados";
+  }
+
+  if (archiveStatus === "archived") {
+    return "Sin archivados";
+  }
+
+  return "Primer vehículo";
+}
+
+/**
+ * Returns an empty-state title for the current filters.
+ */
+function getEmptyTitle(
+  hasSearch: boolean,
+  archiveStatus: VehicleArchiveStatus,
+): string {
+  if (hasSearch) {
+    return "No se encontraron vehículos";
+  }
+
+  if (archiveStatus === "archived") {
+    return "No hay vehículos archivados";
+  }
+
+  return "Todavía no hay vehículos cargados";
+}
+
+/**
+ * Returns an empty-state description for the current filters.
+ */
+function getEmptyDescription(
+  hasSearch: boolean,
+  archiveStatus: VehicleArchiveStatus,
+): string {
+  if (hasSearch) {
+    return "Probá limpiar la búsqueda o buscar por otra patente, cliente, marca, modelo o teléfono.";
+  }
+
+  if (archiveStatus === "archived") {
+    return "Los vehículos archivados quedan fuera del flujo operativo, pero se conservan para historial y trazabilidad.";
+  }
+
+  return "Cargá el primer vehículo para empezar a construir su ficha, asociar cliente y registrar órdenes de trabajo.";
 }

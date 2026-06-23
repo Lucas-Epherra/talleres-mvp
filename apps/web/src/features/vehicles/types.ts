@@ -1,5 +1,9 @@
 import type { WorkOrderStatus } from "../../lib/format";
 
+export const VEHICLE_ARCHIVE_STATUSES = ["active", "archived", "all"] as const;
+
+export type VehicleArchiveStatus = (typeof VEHICLE_ARCHIVE_STATUSES)[number];
+
 export type VehicleCustomer = {
   id: string;
   fullName: string;
@@ -17,6 +21,9 @@ export type VehicleListItem = {
   year: number | null;
   mileage: number | null;
   notes: string | null;
+  archivedAt: string | null;
+  archivedReason: string | null;
+  archivedByUserId: string | null;
   createdAt: string;
   updatedAt: string;
   customer: VehicleCustomer;
@@ -43,6 +50,7 @@ export type VehiclesQuery = {
   search?: string;
   page?: number;
   limit?: number;
+  archiveStatus?: VehicleArchiveStatus;
 };
 
 export type CreateVehicleInput = {
@@ -64,6 +72,14 @@ export type UpdateVehicleInput = {
   notes?: string | null;
 };
 
+export type ArchiveVehicleInput = {
+  reason: string;
+};
+
+export type RestoreVehicleInput = {
+  reason: string;
+};
+
 export type VehicleProfileCustomer = VehicleCustomer & {
   address: string | null;
   notes: string | null;
@@ -81,6 +97,9 @@ export type VehicleProfileVehicle = {
   year: number | null;
   mileage: number | null;
   notes: string | null;
+  archivedAt: string | null;
+  archivedReason: string | null;
+  archivedByUserId: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -114,8 +133,11 @@ export type VehicleProfile = {
   summary: {
     totalWorkOrders: number;
     activeWorkOrders: number;
+    closedWorkOrders: number;
     deliveredWorkOrders: number;
+    cancelledWorkOrders: number;
     latestWorkOrder: VehicleProfileWorkOrder | null;
     latestActiveWorkOrder: VehicleProfileWorkOrder | null;
+    latestClosedWorkOrder: VehicleProfileWorkOrder | null;
   };
 };
