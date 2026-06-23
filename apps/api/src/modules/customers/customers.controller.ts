@@ -12,8 +12,10 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CustomersService } from './customers.service';
+import { ArchiveCustomerDto } from './dto/archive-customer.dto';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { FindCustomersQueryDto } from './dto/find-customers-query.dto';
+import { RestoreCustomerDto } from './dto/restore-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 
 /**
@@ -64,5 +66,29 @@ export class CustomersController {
     @Body() dto: UpdateCustomerDto,
   ) {
     return this.customersService.update(user.workshopId, id, dto);
+  }
+
+  /**
+   * Archives a customer when none of their vehicles has active work orders.
+   */
+  @Patch(':id/archive')
+  archive(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: ArchiveCustomerDto,
+  ) {
+    return this.customersService.archive(user.workshopId, id, user.id, dto);
+  }
+
+  /**
+   * Restores an archived customer to the operational customer list.
+   */
+  @Patch(':id/restore')
+  restore(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: RestoreCustomerDto,
+  ) {
+    return this.customersService.restore(user.workshopId, id, user.id, dto);
   }
 }

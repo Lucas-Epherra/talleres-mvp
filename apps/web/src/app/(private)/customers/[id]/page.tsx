@@ -1,4 +1,4 @@
-import { ArrowLeft, CarFront, Eye, Pencil } from "lucide-react";
+import { Archive, ArrowLeft, CarFront, Eye, Pencil } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -8,7 +8,9 @@ import {
   DetailSheetRow,
 } from "../../../../components/ui/DetailSheet";
 import { NotesValue } from "../../../../components/ui/NotesValue";
+import { CustomerArchiveActions } from "../../../../features/customers/components/CustomerArchiveActions";
 import { ApiError } from "../../../../lib/api";
+import { formatDate } from "../../../../lib/format";
 import { getCustomer } from "../../../../features/customers/customers.server";
 import type { Customer } from "../../../../features/customers/types";
 import { VehicleCard } from "../../../../features/vehicles/components/VehicleCard";
@@ -32,7 +34,7 @@ export const metadata: Metadata = {
  * Customer detail page.
  *
  * Shows customer contact data, associated vehicles, active work orders and
- * historical delivered work orders for the selected customer.
+ * historical closed work orders for the selected customer.
  */
 export default async function CustomerDetailPage({
   params,
@@ -41,10 +43,13 @@ export default async function CustomerDetailPage({
 
   const [customer, vehicles, workOrders] = await Promise.all([
     resolveCustomer(id),
-    getVehicles(),
+    getVehicles({
+      archiveStatus: "all",
+    }),
     getWorkOrders(),
   ]);
 
+  const isArchived = Boolean(customer.archivedAt);
   const associatedVehicles = getCustomerVehicles(vehicles, customer.id);
   const customerWorkOrders = getCustomerWorkOrders(workOrders, customer.id);
   const activeWorkOrders = getActiveWorkOrders(customerWorkOrders);
@@ -63,9 +68,13 @@ export default async function CustomerDetailPage({
               Volver a clientes
             </Link>
 
-            <p className="mt-6 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
-              Ficha del cliente
-            </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+                Ficha del cliente
+              </p>
+
+              {isArchived ? <ArchivedBadge /> : null}
+            </div>
 
             <h1 className="mt-3 wrap-anywhere font-display text-2xl font-black uppercase tracking-[0.04em] text-foreground sm:text-3xl">
               {customer.fullName}
@@ -86,13 +95,20 @@ export default async function CustomerDetailPage({
               Editar cliente
             </Link>
 
-            <Link
-              href={`/vehicles/new?customerId=${customer.id}`}
-              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
-            >
-              <CarFront className="size-4 shrink-0" aria-hidden="true" />
-              Cargar vehículo
-            </Link>
+            {!isArchived ? (
+              <Link
+                href={`/vehicles/new?customerId=${customer.id}`}
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
+              >
+                <CarFront className="size-4 shrink-0" aria-hidden="true" />
+                Cargar vehículo
+              </Link>
+            ) : (
+              <span className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface-muted px-5 text-sm font-bold text-muted-foreground sm:w-auto">
+                <Archive className="size-4 shrink-0" aria-hidden="true" />
+                Sin nuevos vehículos
+              </span>
+            )}
 
             <Link
               href="#customer-vehicles-heading"
@@ -134,6 +150,27 @@ export default async function CustomerDetailPage({
           }
         />
         <DetailSheetRow
+          label="Estado de ficha"
+          value={isArchived ? "Archivado" : "Activo"}
+        />
+        {isArchived ? (
+          <>
+            <DetailSheetRow
+              label="Archivado el"
+              value={formatDate(customer.archivedAt)}
+            />
+            <DetailSheetRow
+              label="Motivo de archivado"
+              value={
+                <NotesValue
+                  value={customer.archivedReason}
+                  fallback="Sin motivo registrado"
+                />
+              }
+            />
+          </>
+        ) : null}
+        <DetailSheetRow
           label="Notas"
           value={<NotesValue value={customer.notes} fallback="Sin notas" />}
         />
@@ -158,7 +195,7 @@ export default async function CustomerDetailPage({
           </div>
 
           <p className="w-fit rounded-full border border-border-strong bg-surface-muted px-3 py-1.5 text-[0.66rem] font-black uppercase tracking-[0.18em] text-muted-foreground">
-            Cliente activo
+            {isArchived ? "Cliente archivado" : "Cliente activo"}
           </p>
         </div>
 
@@ -177,6 +214,13 @@ export default async function CustomerDetailPage({
           />
         </dl>
       </section>
+
+      <CustomerArchiveActions
+        customerId={customer.id}
+        isArchived={isArchived}
+        activeWorkOrdersCount={activeWorkOrders.length}
+        archivedReason={customer.archivedReason}
+      />
 
       <section
         aria-labelledby="customer-vehicles-heading"
@@ -205,19 +249,33 @@ export default async function CustomerDetailPage({
           <EmptyState
             eyebrow="Sin vehículos"
             title="Este cliente todavía no tiene vehículos asociados"
-            description="Cargá el primer vehículo para empezar a construir su ficha operativa y registrar órdenes de trabajo."
-            actions={[
-              {
-                label: "Cargar vehículo",
-                href: `/vehicles/new?customerId=${customer.id}`,
-                variant: "primary",
-              },
-              {
-                label: "Volver a clientes",
-                href: "/customers",
-                variant: "secondary",
-              },
-            ]}
+            description={
+              isArchived
+                ? "El cliente está archivado. Para cargar vehículos nuevos, primero restauralo."
+                : "Cargá el primer vehículo para empezar a construir su ficha operativa y registrar órdenes de trabajo."
+            }
+            actions={
+              isArchived
+                ? [
+                    {
+                      label: "Volver a clientes",
+                      href: "/customers",
+                      variant: "primary",
+                    },
+                  ]
+                : [
+                    {
+                      label: "Cargar vehículo",
+                      href: `/vehicles/new?customerId=${customer.id}`,
+                      variant: "primary",
+                    },
+                    {
+                      label: "Volver a clientes",
+                      href: "/customers",
+                      variant: "secondary",
+                    },
+                  ]
+            }
           />
         )}
       </section>
@@ -250,18 +308,28 @@ export default async function CustomerDetailPage({
             eyebrow="Sin órdenes activas"
             title="Este cliente no tiene trabajos activos"
             description="Cuando se cree una orden desde la ficha de alguno de sus vehículos, va a aparecer en esta sección."
-            actions={[
-              {
-                label: "Cargar vehículo",
-                href: `/vehicles/new?customerId=${customer.id}`,
-                variant: "primary",
-              },
-              {
-                label: "Volver a clientes",
-                href: "/customers",
-                variant: "secondary",
-              },
-            ]}
+            actions={
+              isArchived
+                ? [
+                    {
+                      label: "Ver vehículos",
+                      href: `/customers/${customer.id}#customer-vehicles-heading`,
+                      variant: "primary",
+                    },
+                  ]
+                : [
+                    {
+                      label: "Cargar vehículo",
+                      href: `/vehicles/new?customerId=${customer.id}`,
+                      variant: "primary",
+                    },
+                    {
+                      label: "Volver a clientes",
+                      href: "/customers",
+                      variant: "secondary",
+                    },
+                  ]
+            }
           />
         )}
       </section>
@@ -307,6 +375,18 @@ export default async function CustomerDetailPage({
         )}
       </section>
     </section>
+  );
+}
+
+/**
+ * Shows the archived state beside the customer profile eyebrow.
+ */
+function ArchivedBadge() {
+  return (
+    <span className="inline-flex w-fit items-center gap-2 rounded-full border border-border-strong bg-surface-muted px-3 py-1.5 text-[0.65rem] font-black uppercase tracking-[0.16em] text-muted-foreground">
+      <Archive className="size-3.5 shrink-0" aria-hidden="true" />
+      Archivado
+    </span>
   );
 }
 

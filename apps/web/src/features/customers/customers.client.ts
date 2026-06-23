@@ -1,7 +1,9 @@
 import { apiFetch } from "../../lib/api";
 import type {
+  ArchiveCustomerInput,
   CreateCustomerInput,
   Customer,
+  RestoreCustomerInput,
   UpdateCustomerInput,
 } from "./types";
 
@@ -28,6 +30,32 @@ export function updateCustomer(
   input: UpdateCustomerInput,
 ): Promise<Customer> {
   return apiFetch<Customer>(`/customers/${customerId}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+/**
+ * Archives a customer with a mandatory operational reason.
+ */
+export function archiveCustomer(
+  customerId: string,
+  input: ArchiveCustomerInput,
+): Promise<Customer> {
+  return apiFetch<Customer>(`/customers/${customerId}/archive`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+/**
+ * Restores an archived customer with a mandatory operational reason.
+ */
+export function restoreCustomer(
+  customerId: string,
+  input: RestoreCustomerInput,
+): Promise<Customer> {
+  return apiFetch<Customer>(`/customers/${customerId}/restore`, {
     method: "PATCH",
     body: JSON.stringify(input),
   });

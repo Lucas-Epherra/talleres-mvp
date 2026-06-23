@@ -634,11 +634,17 @@ export class VehiclesService {
       },
       select: {
         id: true,
+        archivedAt: true,
       },
     });
 
     if (!customer) {
       throw new NotFoundException('Cliente no encontrado.');
+    }
+    if (customer.archivedAt) {
+      throw new ConflictException(
+        'No se puede crear un vehículo para un cliente archivado.',
+      );
     }
   }
 

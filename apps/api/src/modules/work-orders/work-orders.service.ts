@@ -37,6 +37,9 @@ type WorkOrderVehicleContext = {
   id: string;
   mileage: number | null;
   archivedAt: Date | null;
+  customer: {
+    archivedAt: Date | null;
+  };
 };
 
 /**
@@ -726,6 +729,11 @@ export class WorkOrdersService {
         id: true,
         mileage: true,
         archivedAt: true,
+        customer: {
+          select: {
+            archivedAt: true,
+          },
+        },
       },
     });
 
@@ -736,6 +744,12 @@ export class WorkOrdersService {
     if (vehicle.archivedAt) {
       throw new ConflictException(
         'No se puede crear una orden para un vehículo archivado.',
+      );
+    }
+    
+    if (vehicle.customer.archivedAt) {
+      throw new ConflictException(
+        'No se puede crear una orden para un cliente archivado.',
       );
     }
 
