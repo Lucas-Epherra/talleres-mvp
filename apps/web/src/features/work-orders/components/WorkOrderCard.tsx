@@ -1,4 +1,4 @@
-import { CarFront, Eye, Pencil, UserRound } from "lucide-react";
+import { ArrowUpRight, CalendarPlus, Eye, Pencil } from "lucide-react";
 import Link from "next/link";
 import type { WorkOrder } from "../types";
 import { WorkOrderStatusMenu } from "./WorkOrderStatusMenu";
@@ -14,8 +14,8 @@ type WorkOrderCardProps = {
  * Displays a compact work order summary for large work order lists.
  *
  * Full operational, financial and historical details are available from the
- * order detail page, so this card only exposes customer, vehicle and order
- * identification data.
+ * order detail page, so this card only exposes customer, vehicle and primary
+ * order actions.
  */
 export function WorkOrderCard({
   workOrder,
@@ -23,6 +23,7 @@ export function WorkOrderCard({
 }: WorkOrderCardProps) {
   const { vehicle, status } = workOrder;
   const customer = vehicle.customer;
+  const isClosed = status === "DELIVERED" || status === "CANCELLED";
 
   return (
     <article
@@ -87,32 +88,28 @@ export function WorkOrderCard({
               Ver orden
             </Link>
 
-            {workOrder.status !== "DELIVERED" &&
-            workOrder.status !== "CANCELLED" ? (
-              <Link
-                href={`/work-orders/${workOrder.id}/edit`}
-                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-elevated px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
-              >
-                <Pencil className="size-4 shrink-0" aria-hidden="true" />
-                Editar orden
-              </Link>
+            {!isClosed ? (
+              <>
+                <Link
+                  href={`/appointments/new?workOrderId=${workOrder.id}`}
+                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-elevated px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
+                >
+                  <CalendarPlus
+                    className="size-4 shrink-0"
+                    aria-hidden="true"
+                  />
+                  Agendar
+                </Link>
+
+                <Link
+                  href={`/work-orders/${workOrder.id}/edit`}
+                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-elevated px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
+                >
+                  <Pencil className="size-4 shrink-0" aria-hidden="true" />
+                  Editar
+                </Link>
+              </>
             ) : null}
-
-            <Link
-              href={`/vehicles/${vehicle.id}`}
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-elevated px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
-            >
-              <CarFront className="size-4 shrink-0" aria-hidden="true" />
-              Ver ficha
-            </Link>
-
-            <Link
-              href={`/customers/${customer.id}`}
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-elevated px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
-            >
-              <UserRound className="size-4 shrink-0" aria-hidden="true" />
-              Ver cliente
-            </Link>
           </div>
         </aside>
       </div>
@@ -139,8 +136,12 @@ function SummaryContextBox({
   return (
     <Link
       href={href}
-      className="block rounded-2xl border border-border bg-surface-elevated/80 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.64)] transition hover:border-primary/45 hover:bg-surface"
+      className="group relative block rounded-2xl border border-border bg-surface-elevated/80 p-3.5 pr-11 shadow-[inset_0_1px_0_rgba(255,255,255,0.64)] transition hover:border-primary/45 hover:bg-surface"
     >
+      <span className="absolute right-3 top-3 grid size-7 place-items-center rounded-xl border border-border bg-surface-muted text-muted-foreground transition group-hover:border-primary/40 group-hover:text-primary">
+        <ArrowUpRight className="size-3.5" aria-hidden="true" />
+      </span>
+
       <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
         {label}
       </p>

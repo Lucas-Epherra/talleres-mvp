@@ -40,6 +40,10 @@ export function getPaginatedAppointments(
     params.set("to", query.to);
   }
 
+  if (query.workOrderId) {
+    params.set("workOrderId", query.workOrderId);
+  }
+
   const queryString = params.toString();
   const path = queryString ? `/appointments?${queryString}` : "/appointments";
 

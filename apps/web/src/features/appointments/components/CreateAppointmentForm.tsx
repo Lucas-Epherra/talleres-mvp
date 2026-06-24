@@ -20,6 +20,7 @@ type CreateAppointmentFormProps = {
   customers: CustomerListItem[];
   vehicles: VehicleListItem[];
   workOrders: WorkOrder[];
+  defaultWorkOrderId?: string;
 };
 
 type FormStatus = "idle" | "loading" | "error";
@@ -40,6 +41,7 @@ export function CreateAppointmentForm({
   customers,
   vehicles,
   workOrders,
+  defaultWorkOrderId,
 }: CreateAppointmentFormProps) {
   const router = useRouter();
 
@@ -61,7 +63,12 @@ export function CreateAppointmentForm({
     [workOrders],
   );
 
-  const [selectedWorkOrderId, setSelectedWorkOrderId] = useState("");
+  const [selectedWorkOrderId, setSelectedWorkOrderId] = useState(() =>
+    defaultWorkOrderId &&
+    activeWorkOrders.some((workOrder) => workOrder.id === defaultWorkOrderId)
+      ? defaultWorkOrderId
+      : "",
+  );
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
 
@@ -151,8 +158,12 @@ export function CreateAppointmentForm({
         scheduledStart: startDate.toISOString(),
         scheduledEnd: endDate.toISOString(),
         workOrderId: selectedWorkOrderId || undefined,
-        customerId: selectedWorkOrderId ? undefined : selectedCustomerId || undefined,
-        vehicleId: selectedWorkOrderId ? undefined : selectedVehicleId || undefined,
+        customerId: selectedWorkOrderId
+          ? undefined
+          : selectedCustomerId || undefined,
+        vehicleId: selectedWorkOrderId
+          ? undefined
+          : selectedVehicleId || undefined,
       });
 
       router.replace("/appointments");

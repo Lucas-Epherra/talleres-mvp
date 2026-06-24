@@ -79,6 +79,7 @@ export type AppointmentsQuery = {
   status?: AppointmentStatus;
   from?: string;
   to?: string;
+  workOrderId?: string;
 };
 
 export type CreateAppointmentInput = {

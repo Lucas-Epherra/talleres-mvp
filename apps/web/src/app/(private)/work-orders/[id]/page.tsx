@@ -24,6 +24,8 @@ import {
   formatWorkOrderStatus,
 } from "../../../../lib/format";
 import { UpdateWorkOrderStatusForm } from "../../../../features/work-orders/components/UpdateWorkOrderStatusForm";
+import { getPaginatedAppointments } from "../../../../features/appointments/appointments.server";
+import { WorkOrderAppointmentsPanel } from "../../../../features/work-orders/components/WorkOrderAppointmentsPanel";
 import { ReopenWorkOrderForm } from "../../../../features/work-orders/components/ReopenWorkOrderForm";
 import { CancelWorkOrderForm } from "../../../../features/work-orders/components/CancelWorkOrderForm";
 import {
@@ -58,7 +60,13 @@ export default async function WorkOrderDetailPage({
   params,
 }: WorkOrderDetailPageProps) {
   const resolvedParams = await params;
-  const workOrder = await getWorkOrderOrNotFound(resolvedParams.id);
+  const [workOrder, linkedAppointmentsPage] = await Promise.all([
+    getWorkOrderOrNotFound(resolvedParams.id),
+    getPaginatedAppointments({
+      workOrderId: resolvedParams.id,
+      limit: 50,
+    }),
+  ]);
   const { vehicle } = workOrder;
   const customer = vehicle.customer;
   const isDelivered = workOrder.status === "DELIVERED";
@@ -98,6 +106,7 @@ export default async function WorkOrderDetailPage({
         </div>
 
         <div className="relative mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          
           {!isClosed ? (
             <Link
               href={`/work-orders/${workOrder.id}/edit`}
@@ -205,7 +214,10 @@ export default async function WorkOrderDetailPage({
               value={formatMoney(workOrder.finalTotal)}
             />
           </DetailSheet>
-
+          <WorkOrderAppointmentsPanel
+            workOrder={workOrder}
+            appointments={linkedAppointmentsPage.data}
+          />
           {!isClosed ? (
             <section
               aria-labelledby="work-order-status-heading"

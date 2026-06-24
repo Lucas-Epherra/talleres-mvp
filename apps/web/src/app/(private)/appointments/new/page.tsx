@@ -10,6 +10,12 @@ export const metadata: Metadata = {
   title: "Nuevo turno",
 };
 
+type NewAppointmentPageProps = {
+  searchParams: Promise<{
+    workOrderId?: string | string[];
+  }>;
+};
+
 /**
  * Appointment creation page.
  *
@@ -17,7 +23,14 @@ export const metadata: Metadata = {
  * client form can link agenda planning with operational records without
  * fetching from the browser.
  */
-export default async function NewAppointmentPage() {
+export default async function NewAppointmentPage({
+  searchParams,
+}: NewAppointmentPageProps) {
+  const resolvedSearchParams = await searchParams;
+  const requestedWorkOrderId = normalizeSearchParam(
+    resolvedSearchParams.workOrderId,
+  );
+
   const [customers, vehicles, workOrders] = await Promise.all([
     getCustomers({
       archiveStatus: "active",
@@ -27,6 +40,11 @@ export default async function NewAppointmentPage() {
     }),
     getWorkOrders(),
   ]);
+
+  const defaultWorkOrderId = getValidWorkOrderId(
+    workOrders,
+    requestedWorkOrderId,
+  );
 
   return (
     <section className="space-y-8">
@@ -58,7 +76,41 @@ export default async function NewAppointmentPage() {
         customers={customers}
         vehicles={vehicles}
         workOrders={workOrders}
+        defaultWorkOrderId={defaultWorkOrderId}
       />
     </section>
   );
+}
+
+/**
+ * Normalizes a Next.js search param into a single string value.
+ */
+function normalizeSearchParam(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) {
+    return value[0] ?? "";
+  }
+
+  return value ?? "";
+}
+
+/**
+ * Returns the requested work order id only when it exists in the current
+ * workshop work order list.
+ */
+function getValidWorkOrderId(
+  workOrders: Array<{ id: string; status: string }>,
+  requestedWorkOrderId: string,
+): string | undefined {
+  if (!requestedWorkOrderId) {
+    return undefined;
+  }
+
+  const exists = workOrders.some(
+    (workOrder) =>
+      workOrder.id === requestedWorkOrderId &&
+      workOrder.status !== "DELIVERED" &&
+      workOrder.status !== "CANCELLED",
+  );
+
+  return exists ? requestedWorkOrderId : undefined;
 }
