@@ -6,6 +6,7 @@ import { CustomersModule } from './modules/customers/customers.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { VehiclesModule } from './modules/vehicles/vehicles.module';
 import { WorkOrdersModule } from './modules/work-orders/work-orders.module';
+import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 /**
@@ -20,6 +21,7 @@ import { PrismaModule } from './prisma/prisma.module';
     CustomersModule,
     VehiclesModule,
     WorkOrdersModule,
+    AppointmentsModule,
     DashboardModule,
   ],
   controllers: [AppController],
