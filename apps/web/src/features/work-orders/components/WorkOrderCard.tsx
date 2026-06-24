@@ -1,4 +1,4 @@
-import { CarFront, Eye, Pencil, UserRound } from "lucide-react";
+import { CalendarPlus, CarFront, Eye, Pencil, UserRound } from "lucide-react";
 import Link from "next/link";
 import type { WorkOrder } from "../types";
 import { WorkOrderStatusMenu } from "./WorkOrderStatusMenu";
@@ -86,7 +86,16 @@ export function WorkOrderCard({
               <Eye className="size-4 shrink-0" aria-hidden="true" />
               Ver orden
             </Link>
-
+            {workOrder.status !== "DELIVERED" &&
+            workOrder.status !== "CANCELLED" ? (
+              <Link
+                href={`/appointments/new?workOrderId=${workOrder.id}`}
+                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-elevated px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
+              >
+                <CalendarPlus className="size-4 shrink-0" aria-hidden="true" />
+                Agendar
+              </Link>
+            ) : null}
             {workOrder.status !== "DELIVERED" &&
             workOrder.status !== "CANCELLED" ? (
               <Link

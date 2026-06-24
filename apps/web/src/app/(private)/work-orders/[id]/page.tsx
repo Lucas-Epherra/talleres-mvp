@@ -1,5 +1,6 @@
 import {
   ArrowLeft,
+  CalendarPlus,
   Ban,
   CarFront,
   CheckCircle2,
@@ -98,6 +99,16 @@ export default async function WorkOrderDetailPage({
         </div>
 
         <div className="relative mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          {!isClosed ? (
+            <Link
+              href={`/appointments/new?workOrderId=${workOrder.id}`}
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
+            >
+              <CalendarPlus className="size-4 shrink-0" aria-hidden="true" />
+              Agendar seguimiento
+            </Link>
+          ) : null}
+
           {!isClosed ? (
             <Link
               href={`/work-orders/${workOrder.id}/edit`}
