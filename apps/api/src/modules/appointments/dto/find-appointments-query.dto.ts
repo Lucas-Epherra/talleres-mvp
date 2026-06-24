@@ -6,6 +6,7 @@ import {
   IsISO8601,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   MaxLength,
   Min,
@@ -40,6 +41,10 @@ export class FindAppointmentsQueryDto {
   @IsOptional()
   @IsEnum(AppointmentStatus)
   status?: AppointmentStatus;
+
+  @IsOptional()
+  @IsUUID()
+  workOrderId?: string;
 
   @IsOptional()
   @IsISO8601({ strict: true })

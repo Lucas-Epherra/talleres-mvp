@@ -65,6 +65,7 @@ export class AppointmentsService {
     const where: Prisma.AppointmentWhereInput = {
       workshopId,
       ...(query.status ? { status: query.status } : {}),
+      ...(query.workOrderId ? { workOrderId: query.workOrderId } : {}),
       ...this.buildDateRangeFilter(query.from, query.to),
       ...(normalizedSearch
         ? {
