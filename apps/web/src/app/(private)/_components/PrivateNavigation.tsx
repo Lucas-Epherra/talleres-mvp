@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  CalendarDays,
   CarFront,
   ClipboardList,
   LayoutGrid,
@@ -23,6 +24,11 @@ const PRIVATE_NAVIGATION_ITEMS: PrivateNavigationItem[] = [
     href: "/dashboard",
     label: "Panel de control",
     icon: LayoutGrid,
+  },
+  {
+    href: "/appointments",
+    label: "Agenda",
+    icon: CalendarDays,
   },
   {
     href: "/customers",
