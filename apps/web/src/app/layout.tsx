@@ -17,11 +17,11 @@ const exo = Exo_2({
 
 export const metadata: Metadata = {
   title: {
-    default: "Mi Taller",
-    template: "%s | Mi Taller",
+    default: "Mi Taller 360",
+    template: "%s | Mi Taller 360",
   },
   description:
-    "Sistema operativo para centralizar clientes, vehículos, órdenes de trabajo e historial de taller mecánico.",
+    "Sistema de gestión integral para talleres mecánicos: clientes, vehículos, órdenes, agenda y recibos en un solo lugar.",
 };
 
 /**
