@@ -26,6 +26,7 @@ type AppointmentsPageProps = {
     page?: string | string[];
     status?: string | string[];
     range?: string | string[];
+    workOrderId?: string | string[];
   }>;
 };
 
@@ -40,6 +41,7 @@ export default async function AppointmentsPage({
 }: AppointmentsPageProps) {
   const resolvedSearchParams = await searchParams;
   const search = normalizeSearchParam(resolvedSearchParams.search);
+  const workOrderId = normalizeSearchParam(resolvedSearchParams.workOrderId);
   const page = normalizePageParam(resolvedSearchParams.page);
   const status = normalizeStatusParam(resolvedSearchParams.status);
   const range = normalizeRangeParam(resolvedSearchParams.range);
@@ -52,6 +54,7 @@ export default async function AppointmentsPage({
     to: dateRange.to,
     page,
     limit: APPOINTMENTS_PAGE_LIMIT,
+    workOrderId: workOrderId || undefined,
   });
 
   const appointments =
@@ -61,8 +64,8 @@ export default async function AppointmentsPage({
 
   const meta = appointmentsPage.meta;
   const hasSearch = search.length > 0;
-  const hasFilters = hasSearch || Boolean(status) || range !== "week";
-
+  const hasFilters =
+    hasSearch || Boolean(status) || range !== "week" || Boolean(workOrderId);
   return (
     <section className="space-y-6 sm:space-y-8">
       <header className="relative overflow-hidden rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
@@ -100,6 +103,7 @@ export default async function AppointmentsPage({
           clearHref={buildAppointmentsHref({
             range,
             status,
+            workOrderId: workOrderId || undefined,
           })}
           showClearAction={hasSearch}
         />
@@ -108,12 +112,14 @@ export default async function AppointmentsPage({
           currentRange={range}
           search={search || undefined}
           status={status}
+          workOrderId={workOrderId || undefined}
         />
 
         <AppointmentStatusFilters
           currentStatus={status}
           search={search || undefined}
           range={range}
+          workOrderId={workOrderId || undefined}
         />
       </header>
 
@@ -174,6 +180,7 @@ export default async function AppointmentsPage({
                 search: search || undefined,
                 status,
                 range: range !== "week" ? range : undefined,
+                workOrderId: workOrderId || undefined,
               }}
               ariaLabel="Paginación de agenda"
             />
@@ -244,55 +251,110 @@ type AppointmentRangeFiltersProps = {
   currentRange: AgendaRange;
   search?: string;
   status?: AppointmentStatus;
+  workOrderId?: string;
 };
 
 /**
- * Server-rendered range filters for agenda navigation.
+ * Server-rendered agenda view filters.
+ *
+ * Desktop uses quick buttons. Mobile uses a select to avoid dense horizontal
+ * chip rows and make "Atrasados" easier to understand as a view.
  */
 function AppointmentRangeFilters({
   currentRange,
   search,
   status,
+  workOrderId,
 }: AppointmentRangeFiltersProps) {
   const filters: Array<{
     label: string;
+    shortLabel: string;
     value: AgendaRange;
   }> = [
-    { label: "Hoy", value: "today" },
-    { label: "Mañana", value: "tomorrow" },
-    { label: "Semana", value: "week" },
-    { label: "Atrasados", value: "overdue" },
-    { label: "Todos", value: "all" },
+    { label: "Hoy", shortLabel: "Hoy", value: "today" },
+    { label: "Mañana", shortLabel: "Mañana", value: "tomorrow" },
+    { label: "Próximos 7 días", shortLabel: "Semana", value: "week" },
+    { label: "Atrasados", shortLabel: "Atrasados", value: "overdue" },
+    { label: "Todos los turnos", shortLabel: "Todos", value: "all" },
   ];
 
   return (
-    <nav
-      aria-label="Filtro de rango de agenda"
-      className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap"
+    <section
+      aria-labelledby="appointment-range-filter-heading"
+      className="mt-5"
     >
-      {filters.map((filter) => {
-        const isActive = currentRange === filter.value;
+      <div className="flex flex-col gap-1">
+        <h2
+          id="appointment-range-filter-heading"
+          className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary"
+        >
+          Vista de agenda
+        </h2>
 
-        return (
-          <Link
-            key={filter.value}
-            href={buildAppointmentsHref({
-              search,
-              status,
-              range: filter.value,
-            })}
-            aria-current={isActive ? "page" : undefined}
-            className={
-              isActive
-                ? "inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white"
-                : "inline-flex h-10 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated"
-            }
-          >
-            {filter.label}
-          </Link>
-        );
-      })}
-    </nav>
+        <p className="text-xs leading-5 text-muted-foreground">
+          Elegí qué ventana operativa querés revisar.
+        </p>
+      </div>
+
+      <form action="/appointments" className="mt-2 grid gap-2 sm:hidden">
+        {search ? <input type="hidden" name="search" value={search} /> : null}
+
+        {status ? <input type="hidden" name="status" value={status} /> : null}
+
+        {workOrderId ? (
+          <input type="hidden" name="workOrderId" value={workOrderId} />
+        ) : null}
+
+        <select
+          name="range"
+          defaultValue={currentRange}
+          aria-label="Seleccionar vista de agenda"
+          className="h-11 w-full rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+        >
+          {filters.map((filter) => (
+            <option key={filter.value} value={filter.value}>
+              {filter.label}
+            </option>
+          ))}
+        </select>
+
+        <button
+          type="submit"
+          className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white transition hover:bg-primary-hover"
+        >
+          Aplicar vista
+        </button>
+      </form>
+
+      <nav
+        aria-label="Filtro de vista de agenda"
+        className="mt-2 hidden flex-wrap gap-2 sm:flex"
+      >
+        {filters.map((filter) => {
+          const isActive = currentRange === filter.value;
+
+          return (
+            <Link
+              key={filter.value}
+              href={buildAppointmentsHref({
+                search,
+                status,
+                range: filter.value,
+                workOrderId,
+              })}
+              aria-current={isActive ? "page" : undefined}
+              className={
+                isActive
+                  ? "inline-flex h-10 items-center justify-center rounded-xl border border-primary bg-primary px-4 text-sm font-bold text-white"
+                  : "inline-flex h-10 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated"
+              }
+            >
+              {filter.shortLabel}
+            </Link>
+          );
+        })}
+      </nav>
+    </section>
   );
 }
 
@@ -300,21 +362,26 @@ type AppointmentStatusFiltersProps = {
   currentStatus?: AppointmentStatus;
   search?: string;
   range: AgendaRange;
+  workOrderId?: string;
 };
 
 /**
  * Server-rendered status filters for agenda navigation.
+ *
+ * Desktop uses buttons for quick filtering. Mobile uses a select to avoid a
+ * dense second row of chips.
  */
 function AppointmentStatusFilters({
   currentStatus,
   search,
   range,
+  workOrderId,
 }: AppointmentStatusFiltersProps) {
   const filters: Array<{
     label: string;
     value?: AppointmentStatus;
   }> = [
-    { label: "Todos" },
+    { label: "Todos los estados" },
     { label: "Programados", value: "SCHEDULED" },
     { label: "Confirmados", value: "CONFIRMED" },
     { label: "Completados", value: "COMPLETED" },
@@ -322,33 +389,84 @@ function AppointmentStatusFilters({
   ];
 
   return (
-    <nav
-      aria-label="Filtro de estado de agenda"
-      className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap"
+    <section
+      aria-labelledby="appointment-status-filter-heading"
+      className="mt-4"
     >
-      {filters.map((filter) => {
-        const isActive = currentStatus === filter.value;
+      <div className="flex flex-col gap-1">
+        <h2
+          id="appointment-status-filter-heading"
+          className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary"
+        >
+          Estado del turno
+        </h2>
 
-        return (
-          <Link
-            key={filter.value ?? "all"}
-            href={buildAppointmentsHref({
-              search,
-              range,
-              status: filter.value,
-            })}
-            aria-current={isActive ? "page" : undefined}
-            className={
-              isActive
-                ? "inline-flex h-10 items-center justify-center rounded-xl bg-foreground px-4 text-sm font-bold text-background"
-                : "inline-flex h-10 items-center justify-center rounded-xl border border-border-strong bg-surface px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated"
-            }
-          >
-            {filter.label}
-          </Link>
-        );
-      })}
-    </nav>
+        <p className="text-xs leading-5 text-muted-foreground">
+          Filtrá por avance operativo del turno.
+        </p>
+      </div>
+
+      <form action="/appointments" className="mt-2 grid gap-2 sm:hidden">
+        {search ? <input type="hidden" name="search" value={search} /> : null}
+
+        {range !== "week" ? (
+          <input type="hidden" name="range" value={range} />
+        ) : null}
+
+        {workOrderId ? (
+          <input type="hidden" name="workOrderId" value={workOrderId} />
+        ) : null}
+
+        <select
+          name="status"
+          defaultValue={currentStatus ?? ""}
+          aria-label="Filtrar por estado del turno"
+          className="h-11 w-full rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+        >
+          {filters.map((filter) => (
+            <option key={filter.value ?? "all"} value={filter.value ?? ""}>
+              {filter.label}
+            </option>
+          ))}
+        </select>
+
+        <button
+          type="submit"
+          className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white transition hover:bg-primary-hover"
+        >
+          Aplicar estado
+        </button>
+      </form>
+
+      <nav
+        aria-label="Filtro de estado de agenda"
+        className="mt-2 hidden flex-wrap gap-2 sm:flex"
+      >
+        {filters.map((filter) => {
+          const isActive = currentStatus === filter.value;
+
+          return (
+            <Link
+              key={filter.value ?? "all"}
+              href={buildAppointmentsHref({
+                search,
+                range,
+                status: filter.value,
+                workOrderId,
+              })}
+              aria-current={isActive ? "page" : undefined}
+              className={
+                isActive
+                  ? "inline-flex h-10 items-center justify-center rounded-xl border border-primary bg-primary px-4 text-sm font-bold text-white"
+                  : "inline-flex h-10 items-center justify-center rounded-xl border border-border-strong bg-surface px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated"
+              }
+            >
+              {filter.label}
+            </Link>
+          );
+        })}
+      </nav>
+    </section>
   );
 }
 
@@ -359,10 +477,12 @@ function buildAppointmentsHref({
   search,
   status,
   range,
+  workOrderId,
 }: {
   search?: string;
   status?: AppointmentStatus;
   range?: AgendaRange;
+  workOrderId?: string;
 }): string {
   const params = new URLSearchParams();
 
@@ -376,6 +496,10 @@ function buildAppointmentsHref({
 
   if (range && range !== "week") {
     params.set("range", range);
+  }
+
+  if (workOrderId) {
+    params.set("workOrderId", workOrderId);
   }
 
   const queryString = params.toString();
