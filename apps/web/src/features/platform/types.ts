@@ -97,7 +97,13 @@ export type CreatePlatformInvitationInput = {
 
 export type CreatePlatformInvitationResponse = {
   data: PlatformInvitation;
+  delivery?: {
+    sent: boolean;
+    providerMessageId: string | null;
+    reason: string | null;
+  };
   setupToken: string;
+  setupUrl: string;
 };
 
 export type PlatformInvitationAcceptanceResponse = {

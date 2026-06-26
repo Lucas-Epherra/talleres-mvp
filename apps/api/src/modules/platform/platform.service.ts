@@ -19,6 +19,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AcceptPlatformInvitationDto } from './dto/accept-platform-invitation.dto';
 import { CreatePlatformInvitationDto } from './dto/create-platform-invitation.dto';
 import { CreatePlatformWorkshopDto } from './dto/create-platform-workshop.dto';
+import { PlatformMailService } from './platform-mail.service';
 
 const PLATFORM_INTERNAL_WORKSHOP_SLUG = 'mi-taller-360-platform';
 const MAX_GENERATED_SLUG_ATTEMPTS = 20;
@@ -33,8 +34,10 @@ const INVITATION_EXPIRATION_DAYS = 7;
  */
 @Injectable()
 export class PlatformService {
-  constructor(private readonly prisma: PrismaService) {}
-
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly platformMailService: PlatformMailService,
+  ) {}
   /**
    * Returns platform dashboard summary metrics.
    */
@@ -254,6 +257,7 @@ export class PlatformService {
     const rawToken = createInvitationToken();
     const tokenHash = hashInvitationToken(rawToken);
     const expiresAt = getInvitationExpirationDate();
+    const invitationUrl = buildInvitationUrl(rawToken);
 
     const invitation = await this.prisma.invitation.create({
       data: {
@@ -268,9 +272,20 @@ export class PlatformService {
       select: getInvitationListSelect(),
     });
 
+    const delivery = await this.platformMailService.sendWorkshopInvitationEmail(
+      {
+        to: email,
+        workshopName: workshop.name,
+        invitationUrl,
+        expiresAt,
+      },
+    );
+
     return {
       data: serializePlatformInvitation(invitation),
+      delivery,
       setupToken: rawToken,
+      setupUrl: invitationUrl,
     };
   }
 
@@ -762,4 +777,16 @@ function isUniqueConstraintError(error: unknown): boolean {
     error instanceof Prisma.PrismaClientKnownRequestError &&
     error.code === 'P2002'
   );
+}
+
+/**
+ * Builds the public invitation acceptance URL.
+ */
+function buildInvitationUrl(token: string): string {
+  const appPublicUrl =
+    process.env.APP_PUBLIC_URL?.trim() || 'http://localhost:3000';
+
+  return `${appPublicUrl.replace(/\/+$/g, '')}/aceptar-invitacion?token=${encodeURIComponent(
+    token,
+  )}`;
 }

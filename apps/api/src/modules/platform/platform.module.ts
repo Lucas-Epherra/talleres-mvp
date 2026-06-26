@@ -4,6 +4,7 @@ import { AuthModule } from '../auth/auth.module';
 import { PlatformOwnerGuard } from './guards/platform-owner.guard';
 import { PlatformController } from './platform.controller';
 import { PlatformInvitationsController } from './platform-invitations.controller';
+import { PlatformMailService } from './platform-mail.service';
 import { PlatformService } from './platform.service';
 
 /**
@@ -14,6 +15,6 @@ import { PlatformService } from './platform.service';
 @Module({
   imports: [AuthModule, PrismaModule],
   controllers: [PlatformController, PlatformInvitationsController],
-  providers: [PlatformOwnerGuard, PlatformService],
+  providers: [PlatformOwnerGuard, PlatformService, PlatformMailService],
 })
 export class PlatformModule {}

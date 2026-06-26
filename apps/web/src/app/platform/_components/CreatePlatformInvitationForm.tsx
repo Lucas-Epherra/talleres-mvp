@@ -13,7 +13,7 @@ type FormStatus = "idle" | "loading" | "success" | "error";
 type CreatePlatformInvitationFormState = {
   status: FormStatus;
   message: string | null;
-  setupToken: string | null;
+  setupUrl: string | null;
 };
 
 type CreatePlatformInvitationFormProps = {
@@ -58,7 +58,7 @@ export function CreatePlatformInvitationForm({
   const [state, setState] = useState<CreatePlatformInvitationFormState>({
     status: "idle",
     message: null,
-    setupToken: null,
+    setupUrl: null,
   });
 
   const isLoading = state.status === "loading";
@@ -83,7 +83,7 @@ export function CreatePlatformInvitationForm({
       setState({
         status: "error",
         message: "Seleccioná un taller.",
-        setupToken: null,
+        setupUrl: null,
       });
 
       return;
@@ -93,7 +93,7 @@ export function CreatePlatformInvitationForm({
       setState({
         status: "error",
         message: "Ingresá el email de la persona que va a tener acceso.",
-        setupToken: null,
+        setupUrl: null,
       });
 
       return;
@@ -102,7 +102,7 @@ export function CreatePlatformInvitationForm({
     setState({
       status: "loading",
       message: null,
-      setupToken: null,
+      setupUrl: null,
     });
 
     try {
@@ -116,7 +116,7 @@ export function CreatePlatformInvitationForm({
       setState({
         status: "success",
         message: "Acceso creado correctamente.",
-        setupToken: response.setupToken,
+        setupUrl: response.setupUrl,
       });
 
       router.refresh();
@@ -124,7 +124,7 @@ export function CreatePlatformInvitationForm({
       setState({
         status: "error",
         message: getApiErrorMessage(error),
-        setupToken: null,
+        setupUrl: null,
       });
     }
   }
@@ -243,7 +243,7 @@ export function CreatePlatformInvitationForm({
         </p>
       ) : null}
 
-      {state.setupToken ? (
+      {state.setupUrl ? (
         <div className="rounded-xl border border-border bg-surface-muted p-4">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
             Link temporal de acceso
@@ -256,7 +256,7 @@ export function CreatePlatformInvitationForm({
 
           <textarea
             className="mt-3 min-h-24 w-full resize-y rounded-xl border border-border-strong bg-background/70 px-3 py-2 text-xs font-semibold text-foreground outline-none"
-            value={`/aceptar-invitacion?token=${state.setupToken}`}
+            value={`/aceptar-invitacion?token=${state.setupUrl}`}
             readOnly
           />
         </div>
