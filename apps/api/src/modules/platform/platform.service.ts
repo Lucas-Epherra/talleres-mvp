@@ -13,8 +13,10 @@ import {
   WorkshopRole,
   WorkshopStatus,
 } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 import { createHash, randomBytes } from 'node:crypto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AcceptPlatformInvitationDto } from './dto/accept-platform-invitation.dto';
 import { CreatePlatformInvitationDto } from './dto/create-platform-invitation.dto';
 import { CreatePlatformWorkshopDto } from './dto/create-platform-workshop.dto';
 
@@ -23,7 +25,7 @@ const MAX_GENERATED_SLUG_ATTEMPTS = 20;
 const INVITATION_EXPIRATION_DAYS = 7;
 
 /**
- * Handles platform-level operations for SaaS administration.
+ * Handles platform-level operations for internal Mi Taller 360 administration.
  *
  * The internal platform workshop is excluded from customer metrics because it
  * only exists to keep the current workshop-first authentication flow compatible
@@ -215,9 +217,9 @@ export class PlatformService {
   /**
    * Creates a pending invitation for a workshop user.
    *
-   * The raw token is returned once so the platform owner can use it during local
-   * QA. In the next step, this token will be sent by email instead of being used
-   * manually.
+   * The raw token is returned once so the internal administrator can use it
+   * during local QA. Later, this token should be delivered by email instead of
+   * being exposed manually.
    */
   async createInvitation(
     workshopId: string,
@@ -269,6 +271,159 @@ export class PlatformService {
     return {
       data: serializePlatformInvitation(invitation),
       setupToken: rawToken,
+    };
+  }
+
+  /**
+   * Returns safe invitation data before the invited user creates access.
+   */
+  async getInvitationAcceptance(token: string) {
+    const invitation = await this.getValidPendingInvitation(token);
+
+    return {
+      data: {
+        email: invitation.email,
+        role: invitation.role,
+        expiresAt: invitation.expiresAt.toISOString(),
+        workshop: {
+          id: invitation.workshop.id,
+          name: invitation.workshop.name,
+          slug: invitation.workshop.slug,
+        },
+      },
+    };
+  }
+
+  /**
+   * Accepts an invitation by creating a user and activating workshop access.
+   */
+  async acceptInvitation(dto: AcceptPlatformInvitationDto) {
+    const invitation = await this.getValidPendingInvitation(dto.token);
+    const passwordHash = await bcrypt.hash(dto.password, 12);
+    const acceptedAt = new Date();
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const currentInvitation = await tx.invitation.findUnique({
+        where: {
+          id: invitation.id,
+        },
+        select: {
+          id: true,
+          status: true,
+          email: true,
+          role: true,
+          workshopId: true,
+          expiresAt: true,
+        },
+      });
+
+      if (!currentInvitation) {
+        throw new NotFoundException(
+          'La invitación no existe o ya no está disponible.',
+        );
+      }
+
+      if (currentInvitation.status !== InvitationStatus.PENDING) {
+        throw new ConflictException('Esta invitación ya no está disponible.');
+      }
+
+      if (currentInvitation.expiresAt <= new Date()) {
+        await tx.invitation.update({
+          where: {
+            id: currentInvitation.id,
+          },
+          data: {
+            status: InvitationStatus.EXPIRED,
+          },
+        });
+
+        throw new BadRequestException(
+          'La invitación venció. Pedí un nuevo acceso.',
+        );
+      }
+
+      const existingUser = await tx.user.findUnique({
+        where: {
+          email: invitation.email,
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          status: true,
+        },
+      });
+
+      if (existingUser?.status === UserStatus.DISABLED) {
+        throw new ConflictException(
+          'Ese email pertenece a una cuenta deshabilitada.',
+        );
+      }
+
+      const user =
+        existingUser ??
+        (await tx.user.create({
+          data: {
+            name: dto.name.trim(),
+            email: invitation.email,
+            passwordHash,
+            platformRole: PlatformRole.NONE,
+            status: UserStatus.ACTIVE,
+          },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            status: true,
+          },
+        }));
+
+      await tx.workshopMember.upsert({
+        where: {
+          workshopId_userId: {
+            workshopId: invitation.workshopId,
+            userId: user.id,
+          },
+        },
+        update: {
+          role: invitation.role,
+          status: MembershipStatus.ACTIVE,
+        },
+        create: {
+          workshopId: invitation.workshopId,
+          userId: user.id,
+          role: invitation.role,
+          status: MembershipStatus.ACTIVE,
+        },
+      });
+
+      await tx.invitation.update({
+        where: {
+          id: invitation.id,
+        },
+        data: {
+          status: InvitationStatus.ACCEPTED,
+          acceptedAt,
+          acceptedByUserId: user.id,
+        },
+      });
+
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+        },
+      };
+    });
+
+    return {
+      user: result.user,
+      workshop: {
+        id: invitation.workshop.id,
+        name: invitation.workshop.name,
+        slug: invitation.workshop.slug,
+      },
     };
   }
 
@@ -386,6 +541,53 @@ export class PlatformService {
       'No se pudo generar un código interno disponible para este taller.',
     );
   }
+
+  /**
+   * Reads and validates a pending invitation by raw token.
+   */
+  private async getValidPendingInvitation(token: string) {
+    const tokenHash = hashInvitationToken(token);
+
+    const invitation = await this.prisma.invitation.findUnique({
+      where: {
+        tokenHash,
+      },
+      select: getInvitationAcceptanceSelect(),
+    });
+
+    if (!invitation) {
+      throw new NotFoundException(
+        'La invitación no existe o ya no está disponible.',
+      );
+    }
+
+    if (invitation.status !== InvitationStatus.PENDING) {
+      throw new ConflictException(
+        'Esta invitación ya fue utilizada o cancelada.',
+      );
+    }
+
+    if (invitation.expiresAt <= new Date()) {
+      await this.prisma.invitation.update({
+        where: {
+          id: invitation.id,
+        },
+        data: {
+          status: InvitationStatus.EXPIRED,
+        },
+      });
+
+      throw new BadRequestException(
+        'La invitación venció. Pedí un nuevo acceso.',
+      );
+    }
+
+    if (invitation.workshop.status !== WorkshopStatus.ACTIVE) {
+      throw new ConflictException('El taller no está activo.');
+    }
+
+    return invitation;
+  }
 }
 
 /**
@@ -437,6 +639,29 @@ function getInvitationListSelect() {
         id: true,
         name: true,
         email: true,
+      },
+    },
+  } satisfies Prisma.InvitationSelect;
+}
+
+/**
+ * Shared select for invitation acceptance.
+ */
+function getInvitationAcceptanceSelect() {
+  return {
+    id: true,
+    email: true,
+    role: true,
+    status: true,
+    tokenHash: true,
+    expiresAt: true,
+    workshopId: true,
+    workshop: {
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        status: true,
       },
     },
   } satisfies Prisma.InvitationSelect;
@@ -513,7 +738,7 @@ function createInvitationToken(): string {
 }
 
 /**
- * Hashes an invitation token before database persistence.
+ * Hashes an invitation token before database persistence or lookup.
  */
 function hashInvitationToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');

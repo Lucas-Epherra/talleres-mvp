@@ -99,3 +99,35 @@ export type CreatePlatformInvitationResponse = {
   data: PlatformInvitation;
   setupToken: string;
 };
+
+export type PlatformInvitationAcceptanceResponse = {
+  data: {
+    email: string;
+    role: AuthRole;
+    expiresAt: string;
+    workshop: {
+      id: string;
+      name: string;
+      slug: string;
+    };
+  };
+};
+
+export type AcceptPlatformInvitationInput = {
+  token: string;
+  name: string;
+  password: string;
+};
+
+export type AcceptPlatformInvitationResponse = {
+  user: {
+    id: string;
+    email: string;
+    name: string;
+  };
+  workshop: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+};

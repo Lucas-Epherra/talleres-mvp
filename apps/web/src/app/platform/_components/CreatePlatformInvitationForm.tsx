@@ -25,22 +25,22 @@ const ROLE_OPTIONS: Array<{
   label: string;
   description: string;
 }> = [
-  {
-    value: "OWNER",
-    label: "Responsable del taller",
-    description: "Puede administrar el taller y sus accesos.",
-  },
-  {
-    value: "ADMIN",
-    label: "Administración",
-    description: "Puede gestionar la operación diaria.",
-  },
-  {
-    value: "OPERATOR",
-    label: "Operario / equipo",
-    description: "Acceso operativo limitado.",
-  },
-];
+    {
+      value: "OWNER",
+      label: "Responsable del taller",
+      description: "Puede administrar el taller y sus accesos.",
+    },
+    {
+      value: "ADMIN",
+      label: "Administración",
+      description: "Puede gestionar la operación diaria.",
+    },
+    {
+      value: "OPERATOR",
+      label: "Operario / equipo",
+      description: "Acceso operativo limitado.",
+    },
+  ];
 
 /**
  * Client-side form used by internal administrators to create workshop access
@@ -246,17 +246,17 @@ export function CreatePlatformInvitationForm({
       {state.setupToken ? (
         <div className="rounded-xl border border-border bg-surface-muted p-4">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-            Token temporal de QA
+            Link temporal de acceso
           </p>
 
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Todavía no enviamos emails. Guardá este token para probar el flujo
-            de aceptación en el próximo paso.
+            Todavía no enviamos emails. Pasá este link manualmente para probar el
+            alta del usuario.
           </p>
 
           <textarea
             className="mt-3 min-h-24 w-full resize-y rounded-xl border border-border-strong bg-background/70 px-3 py-2 text-xs font-semibold text-foreground outline-none"
-            value={state.setupToken}
+            value={`/aceptar-invitacion?token=${state.setupToken}`}
             readOnly
           />
         </div>

@@ -23,8 +23,8 @@ import type {
 } from "@/features/platform/types";
 import { ApiError, isApiErrorWithStatus } from "@/lib/api";
 import { apiServerFetch } from "@/lib/api.server";
-import { CreatePlatformInvitationForm } from "../../features/platform/components/CreatePlatformInvitationForm";
-import { CreatePlatformWorkshopForm } from "../../features/platform/components/CreatePlatformWorkshopForm";
+import { CreatePlatformInvitationForm } from "./_components/CreatePlatformInvitationForm";
+import { CreatePlatformWorkshopForm } from "./_components/CreatePlatformWorkshopForm";
 
 export const metadata: Metadata = {
   title: "Plataforma",

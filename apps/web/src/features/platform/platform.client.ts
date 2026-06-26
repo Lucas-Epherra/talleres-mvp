@@ -39,3 +39,20 @@ export function createPlatformInvitation(
     },
   );
 }
+
+import type {
+  AcceptPlatformInvitationInput,
+  AcceptPlatformInvitationResponse,
+} from "./types";
+
+/**
+ * Accepts an invitation and creates workshop access for the invited user.
+ */
+export function acceptPlatformInvitation(
+  input: AcceptPlatformInvitationInput,
+): Promise<AcceptPlatformInvitationResponse> {
+  return apiFetch<AcceptPlatformInvitationResponse>("/invitations/accept", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}

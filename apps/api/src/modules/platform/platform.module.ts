@@ -1,19 +1,19 @@
 import { Module } from '@nestjs/common';
-import { AuthModule } from '../auth/auth.module';
 import { PrismaModule } from '../../prisma/prisma.module';
+import { AuthModule } from '../auth/auth.module';
 import { PlatformOwnerGuard } from './guards/platform-owner.guard';
 import { PlatformController } from './platform.controller';
+import { PlatformInvitationsController } from './platform-invitations.controller';
 import { PlatformService } from './platform.service';
 
 /**
  * Platform administration module.
  *
- * Handles SaaS-level administration such as platform owner checks, future
- * workshop creation, invitations and account control.
+ * Handles internal platform administration and public invitation acceptance.
  */
 @Module({
   imports: [AuthModule, PrismaModule],
-  controllers: [PlatformController],
+  controllers: [PlatformController, PlatformInvitationsController],
   providers: [PlatformOwnerGuard, PlatformService],
 })
 export class PlatformModule {}
