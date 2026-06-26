@@ -682,11 +682,11 @@ function InvitationStatusBadge({ status }: InvitationStatusBadgeProps) {
 }
 
 type PlatformUserStatusBadgeProps = {
-  status: PlatformUser["status"] | PlatformUser["user"]["status"];
+  status: PlatformUser["status"];
 };
 
 /**
- * Renders a platform user or membership status badge.
+ * Renders the workshop access status badge.
  */
 function PlatformUserStatusBadge({ status }: PlatformUserStatusBadgeProps) {
   const isActive = status === "ACTIVE";
@@ -699,7 +699,7 @@ function PlatformUserStatusBadge({ status }: PlatformUserStatusBadgeProps) {
           : "rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-[0.12em] text-primary"
       }
     >
-      {isActive ? "Activo" : "Deshabilitado"}
+      {isActive ? "Acceso activo" : "Acceso deshabilitado"}
     </span>
   );
 }
