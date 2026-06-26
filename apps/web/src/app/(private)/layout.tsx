@@ -8,11 +8,11 @@ import { PrivateFooter } from "./_components/PrivateFooter";
 import { PrivateNavigation } from "./_components/PrivateNavigation";
 
 /**
- * Private application layout.
+ * Private workshop application layout.
  *
- * Keeps the dark top shell and renders the private navigation as a compact
- * horizontal bar below the header. This maximizes workspace width while keeping
- * the industrial brand identity.
+ * This layout is reserved for workshop users. Platform owners are redirected to
+ * the SaaS administration area to avoid mixing platform control with workshop
+ * operations.
  */
 export default async function PrivateLayout({
   children,
@@ -23,6 +23,10 @@ export default async function PrivateLayout({
 
   if (!user) {
     redirect("/login");
+  }
+
+  if (user.platformRole === "OWNER") {
+    redirect("/platform");
   }
 
   return (
@@ -50,7 +54,7 @@ export default async function PrivateLayout({
               </p>
 
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                {user.role}
+                {user.workshopRole}
               </p>
             </div>
 

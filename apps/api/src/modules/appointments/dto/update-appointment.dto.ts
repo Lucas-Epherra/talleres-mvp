@@ -9,6 +9,14 @@ import {
 } from 'class-validator';
 
 /**
+ * Trims string values while preserving invalid non-string payloads so
+ * class-validator can reject them correctly.
+ */
+function trimStringValue(value: unknown): unknown {
+  return typeof value === 'string' ? value.trim() : value;
+}
+
+/**
  * Payload accepted when editing an appointment that is still operational.
  *
  * Completed and cancelled appointments are intentionally immutable from the
@@ -16,14 +24,14 @@ import {
  */
 export class UpdateAppointmentDto {
   @IsOptional()
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }: { value: unknown }) => trimStringValue(value))
   @IsString()
   @MinLength(3)
   @MaxLength(120)
   title?: string;
 
   @IsOptional()
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }: { value: unknown }) => trimStringValue(value))
   @IsString()
   @MaxLength(1000)
   description?: string;
