@@ -8,6 +8,7 @@ import type {
   CreatePlatformWorkshopResponse,
   RevokePlatformInvitationResponse,
   ResendPlatformInvitationResponse,
+  UpdatePlatformUserAccessResponse,
 } from "./types";
 
 /**
@@ -81,4 +82,32 @@ export function acceptPlatformInvitation(
     method: "POST",
     body: JSON.stringify(input),
   });
+}
+
+/**
+ * Disables a workshop user access from the internal platform panel.
+ */
+export function disablePlatformUserAccess(
+  membershipId: string,
+): Promise<UpdatePlatformUserAccessResponse> {
+  return apiFetch<UpdatePlatformUserAccessResponse>(
+    `/platform/users/${membershipId}/disable`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+/**
+ * Reactivates a workshop user access from the internal platform panel.
+ */
+export function enablePlatformUserAccess(
+  membershipId: string,
+): Promise<UpdatePlatformUserAccessResponse> {
+  return apiFetch<UpdatePlatformUserAccessResponse>(
+    `/platform/users/${membershipId}/enable`,
+    {
+      method: "POST",
+    },
+  );
 }

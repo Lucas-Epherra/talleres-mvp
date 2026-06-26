@@ -69,6 +69,14 @@ export class PlatformController {
     return this.platformService.listInvitations();
   }
 
+    /**
+   * Returns workshop users across the platform.
+   */
+  @Get('users')
+  users() {
+    return this.platformService.listUsers();
+  }
+
   /**
    * Creates a customer workshop.
    */
@@ -112,7 +120,33 @@ export class PlatformController {
   ) {
     return this.platformService.resendInvitation(invitationId);
   }
+
+
+    /**
+   * Disables a workshop user access.
+   */
+  @Post('users/:membershipId/disable')
+  @HttpCode(HttpStatus.OK)
+  disableUserAccess(
+    @Param('membershipId', new ParseUUIDPipe()) membershipId: string,
+  ) {
+    return this.platformService.disableUserAccess(membershipId);
+  }
+
+  /**
+   * Reactivates a workshop user access.
+   */
+  @Post('users/:membershipId/enable')
+  @HttpCode(HttpStatus.OK)
+  enableUserAccess(
+    @Param('membershipId', new ParseUUIDPipe()) membershipId: string,
+  ) {
+    return this.platformService.enableUserAccess(membershipId);
+  }
+  
 }
+
+
 
 /**
  * Centralizes platform capability labels exposed to the frontend.
@@ -122,9 +156,12 @@ function getPlatformCapabilities(): string[] {
     'PLATFORM_READ',
     'WORKSHOPS_READ',
     'WORKSHOPS_CREATE',
+    'USERS_READ',
     'INVITATIONS_READ',
     'INVITATIONS_CREATE',
     'INVITATIONS_REVOKE',
     'INVITATIONS_RESEND',
+    'USERS_DISABLE',
+    'USERS_ENABLE',
   ];
 }

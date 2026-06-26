@@ -174,6 +174,144 @@ export class PlatformService {
   }
 
   /**
+   * Lists workshop users across customer workshops.
+   */
+  async listUsers() {
+    const memberships = await this.prisma.workshopMember.findMany({
+      where: {
+        workshop: {
+          slug: {
+            not: PLATFORM_INTERNAL_WORKSHOP_SLUG,
+          },
+        },
+      },
+      select: getPlatformUserListSelect(),
+      orderBy: [
+        {
+          workshop: {
+            name: 'asc',
+          },
+        },
+        {
+          createdAt: 'desc',
+        },
+      ],
+      take: 100,
+    });
+
+    return {
+      data: memberships.map(serializePlatformUser),
+    };
+  }
+
+
+    /**
+   * Disables a workshop user access without deleting the user account.
+   */
+  async disableUserAccess(membershipId: string) {
+    const membership = await this.prisma.workshopMember.findFirst({
+      where: {
+        id: membershipId,
+        workshop: {
+          slug: {
+            not: PLATFORM_INTERNAL_WORKSHOP_SLUG,
+          },
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+
+    if (!membership) {
+      throw new NotFoundException('No se encontró el acceso del usuario.');
+    }
+
+    if (membership.status === MembershipStatus.DISABLED) {
+      throw new ConflictException('Este acceso ya está deshabilitado.');
+    }
+
+    const updatedMembership = await this.prisma.workshopMember.update({
+      where: {
+        id: membership.id,
+      },
+      data: {
+        status: MembershipStatus.DISABLED,
+      },
+      select: getPlatformUserListSelect(),
+    });
+
+    return {
+      data: serializePlatformUser(updatedMembership),
+    };
+  }
+
+  /**
+   * Reactivates a disabled workshop user access.
+   */
+  async enableUserAccess(membershipId: string) {
+    const membership = await this.prisma.workshopMember.findFirst({
+      where: {
+        id: membershipId,
+        workshop: {
+          slug: {
+            not: PLATFORM_INTERNAL_WORKSHOP_SLUG,
+          },
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+        user: {
+          select: {
+            status: true,
+          },
+        },
+        workshop: {
+          select: {
+            status: true,
+          },
+        },
+      },
+    });
+
+    if (!membership) {
+      throw new NotFoundException('No se encontró el acceso del usuario.');
+    }
+
+    if (membership.status === MembershipStatus.ACTIVE) {
+      throw new ConflictException('Este acceso ya está activo.');
+    }
+
+    if (membership.user.status !== UserStatus.ACTIVE) {
+      throw new ConflictException(
+        'No se puede reactivar el acceso porque el usuario está deshabilitado.',
+      );
+    }
+
+    if (membership.workshop.status !== WorkshopStatus.ACTIVE) {
+      throw new ConflictException(
+        'No se puede reactivar el acceso porque el taller está suspendido.',
+      );
+    }
+
+    const updatedMembership = await this.prisma.workshopMember.update({
+      where: {
+        id: membership.id,
+      },
+      data: {
+        status: MembershipStatus.ACTIVE,
+      },
+      select: getPlatformUserListSelect(),
+    });
+
+    return {
+      data: serializePlatformUser(updatedMembership),
+    };
+  }
+
+  /**
    * Creates a new customer workshop account.
    *
    * This does not create users or invitations yet. Access provisioning is
@@ -813,12 +951,47 @@ function getInvitationAcceptanceSelect() {
   } satisfies Prisma.InvitationSelect;
 }
 
+/**
+ * Shared select for platform user list responses.
+ */
+function getPlatformUserListSelect() {
+  return {
+    id: true,
+    role: true,
+    status: true,
+    createdAt: true,
+    updatedAt: true,
+    user: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    },
+    workshop: {
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        status: true,
+      },
+    },
+  } satisfies Prisma.WorkshopMemberSelect;
+}
+
 type PlatformWorkshopRecord = Prisma.WorkshopGetPayload<{
   select: ReturnType<typeof getWorkshopListSelect>;
 }>;
 
 type PlatformInvitationRecord = Prisma.InvitationGetPayload<{
   select: ReturnType<typeof getInvitationListSelect>;
+}>;
+
+type PlatformUserRecord = Prisma.WorkshopMemberGetPayload<{
+  select: ReturnType<typeof getPlatformUserListSelect>;
 }>;
 
 /**
@@ -858,6 +1031,28 @@ function serializePlatformInvitation(invitation: PlatformInvitationRecord) {
     updatedAt: invitation.updatedAt.toISOString(),
     workshop: invitation.workshop,
     createdByUser: invitation.createdByUser,
+  };
+}
+
+/**
+ * Serializes a workshop membership record for platform frontend usage.
+ */
+function serializePlatformUser(membership: PlatformUserRecord) {
+  return {
+    membershipId: membership.id,
+    role: membership.role,
+    status: membership.status,
+    createdAt: membership.createdAt.toISOString(),
+    updatedAt: membership.updatedAt.toISOString(),
+    user: {
+      id: membership.user.id,
+      name: membership.user.name,
+      email: membership.user.email,
+      status: membership.user.status,
+      createdAt: membership.user.createdAt.toISOString(),
+      updatedAt: membership.user.updatedAt.toISOString(),
+    },
+    workshop: membership.workshop,
   };
 }
 
