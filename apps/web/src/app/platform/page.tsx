@@ -17,6 +17,8 @@ import type {
   PlatformInvitationsResponse,
   PlatformMeResponse,
   PlatformSummaryResponse,
+  PlatformUser,
+  PlatformUsersResponse,
   PlatformWorkshop,
   PlatformWorkshopsResponse,
 } from "@/features/platform/types";
@@ -26,6 +28,7 @@ import { CreatePlatformInvitationForm } from "./_components/CreatePlatformInvita
 import { CreatePlatformWorkshopForm } from "./_components/CreatePlatformWorkshopForm";
 import { RevokePlatformInvitationButton } from "./_components/RevokePlatformInvitationButton";
 import { ResendPlatformInvitationButton } from "./_components/ResendPlatformInvitationButton";
+import { PlatformUserAccessButton } from "./_components/PlatformUserAccessButton";
 
 export const metadata: Metadata = {
   title: "Plataforma",
@@ -67,19 +70,23 @@ async function getProtectedPlatformResource<TResponse>(
  * operational workshop dashboard.
  */
 export default async function PlatformPage() {
-  const [platformContext, summary, workshopsPage, invitationsPage] =
-    await Promise.all([
-      getProtectedPlatformResource<PlatformMeResponse>("/platform/me"),
-      getProtectedPlatformResource<PlatformSummaryResponse>(
-        "/platform/summary",
-      ),
-      getProtectedPlatformResource<PlatformWorkshopsResponse>(
-        "/platform/workshops",
-      ),
-      getProtectedPlatformResource<PlatformInvitationsResponse>(
-        "/platform/invitations",
-      ),
-    ]);
+  const [
+    platformContext,
+    summary,
+    workshopsPage,
+    usersPage,
+    invitationsPage,
+  ] = await Promise.all([
+    getProtectedPlatformResource<PlatformMeResponse>("/platform/me"),
+    getProtectedPlatformResource<PlatformSummaryResponse>("/platform/summary"),
+    getProtectedPlatformResource<PlatformWorkshopsResponse>(
+      "/platform/workshops",
+    ),
+    getProtectedPlatformResource<PlatformUsersResponse>("/platform/users"),
+    getProtectedPlatformResource<PlatformInvitationsResponse>(
+      "/platform/invitations",
+    ),
+  ]);
 
   return (
     <main className="theme-light min-h-screen overflow-x-hidden bg-background text-foreground">
@@ -246,6 +253,45 @@ export default async function PlatformPage() {
               ) : (
                 <p className="mt-5 rounded-2xl border border-dashed border-border-strong bg-surface-muted/65 p-5 text-sm leading-6 text-muted-foreground">
                   Todavía no hay talleres registrados.
+                </p>
+              )}
+            </section>
+
+            <section className="rounded-[1.35rem] border border-border bg-surface p-5 sm:p-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+                    Usuarios registrados
+                  </p>
+
+                  <h2 className="mt-2 font-display text-2xl font-black uppercase tracking-[0.04em] text-foreground">
+                    Usuarios de la plataforma
+                  </h2>
+
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    Personas con acceso activo o administrativo dentro de los
+                    talleres cargados en Mi Taller 360.
+                  </p>
+                </div>
+
+                <span className="inline-flex w-fit items-center gap-2 rounded-full border border-border bg-surface-muted px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                  <Users className="size-3.5" aria-hidden="true" />
+                  {usersPage.data.length} usuarios
+                </span>
+              </div>
+
+              {usersPage.data.length > 0 ? (
+                <div className="mt-5 space-y-3">
+                  {usersPage.data.map((platformUser) => (
+                    <PlatformUserCard
+                      key={platformUser.membershipId}
+                      platformUser={platformUser}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-5 rounded-2xl border border-dashed border-border-strong bg-surface-muted/65 p-5 text-sm leading-6 text-muted-foreground">
+                  Todavía no hay usuarios registrados en talleres.
                 </p>
               )}
             </section>
@@ -445,6 +491,80 @@ function WorkshopCard({ workshop }: WorkshopCardProps) {
   );
 }
 
+type PlatformUserCardProps = {
+  platformUser: PlatformUser;
+};
+
+/**
+ * Renders a platform workshop user row.
+ */
+function PlatformUserCard({ platformUser }: PlatformUserCardProps) {
+  return (
+    <article className="rounded-[1.1rem] border border-border bg-surface-muted p-4">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="wrap-anywhere font-display text-lg font-black text-foreground">
+              {platformUser.user.name}
+            </h3>
+
+            <PlatformUserStatusBadge status={platformUser.status} />
+
+            {platformUser.user.status !== platformUser.status ? (
+              <PlatformUserStatusBadge status={platformUser.user.status} />
+            ) : null}
+          </div>
+
+          <p className="mt-1 wrap-anywhere text-sm font-semibold text-foreground">
+            {platformUser.user.email}
+          </p>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            Taller:{" "}
+            <span className="font-semibold text-foreground">
+              {platformUser.workshop.name}
+            </span>
+          </p>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            Rol:{" "}
+            <span className="font-semibold text-foreground">
+              {formatPlatformUserRole(platformUser.role)}
+            </span>
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-3 lg:items-end">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:w-80">
+            <div className="rounded-xl border border-border bg-surface px-3 py-2 text-sm">
+              <p className="font-semibold text-muted-foreground">Alta</p>
+              <p className="mt-1 font-bold text-foreground">
+                {formatPlatformDate(platformUser.createdAt)}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border bg-surface px-3 py-2 text-sm">
+              <p className="font-semibold text-muted-foreground">Taller</p>
+              <p className="mt-1 truncate font-bold text-foreground">
+                {platformUser.workshop.slug}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border bg-surface px-3 py-2 text-sm">
+              <p className="font-semibold text-muted-foreground">Acceso</p>
+              <p className="mt-1 font-bold text-foreground">
+                {formatPlatformUserRole(platformUser.role)}
+              </p>
+            </div>
+          </div>
+
+          <PlatformUserAccessButton platformUser={platformUser} />
+        </div>
+      </div>
+    </article>
+  );
+}
+
 type InvitationCardProps = {
   invitation: PlatformInvitation;
 };
@@ -561,6 +681,29 @@ function InvitationStatusBadge({ status }: InvitationStatusBadgeProps) {
   );
 }
 
+type PlatformUserStatusBadgeProps = {
+  status: PlatformUser["status"] | PlatformUser["user"]["status"];
+};
+
+/**
+ * Renders a platform user or membership status badge.
+ */
+function PlatformUserStatusBadge({ status }: PlatformUserStatusBadgeProps) {
+  const isActive = status === "ACTIVE";
+
+  return (
+    <span
+      className={
+        isActive
+          ? "rounded-full border border-success/30 bg-success/10 px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-[0.12em] text-success"
+          : "rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-[0.12em] text-primary"
+      }
+    >
+      {isActive ? "Activo" : "Deshabilitado"}
+    </span>
+  );
+}
+
 type WorkshopMiniMetricProps = {
   label: string;
   value: number;
@@ -598,6 +741,19 @@ function WorkshopMiniMetric({ label, value, icon }: WorkshopMiniMetricProps) {
  */
 function formatInvitationRole(role: PlatformInvitation["role"]): string {
   const roleLabelMap: Record<PlatformInvitation["role"], string> = {
+    OWNER: "Responsable del taller",
+    ADMIN: "Administración",
+    OPERATOR: "Operario / equipo",
+  };
+
+  return roleLabelMap[role];
+}
+
+/**
+ * Formats platform user roles into product-facing labels.
+ */
+function formatPlatformUserRole(role: PlatformUser["role"]): string {
+  const roleLabelMap: Record<PlatformUser["role"], string> = {
     OWNER: "Responsable del taller",
     ADMIN: "Administración",
     OPERATOR: "Operario / equipo",

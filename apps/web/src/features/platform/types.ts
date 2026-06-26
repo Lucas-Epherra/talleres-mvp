@@ -46,12 +46,46 @@ export type PlatformInvitation = {
   } | null;
 };
 
+export type PlatformMembershipStatus = "ACTIVE" | "DISABLED";
+
+export type PlatformUserStatus = "ACTIVE" | "DISABLED";
+
+export type PlatformUser = {
+  membershipId: string;
+  role: AuthRole;
+  status: PlatformMembershipStatus;
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    status: PlatformUserStatus;
+    createdAt: string;
+    updatedAt: string;
+  };
+  workshop: {
+    id: string;
+    name: string;
+    slug: string;
+    status: PlatformWorkshopStatus;
+  };
+};
+
 export type PlatformWorkshopsResponse = {
   data: PlatformWorkshop[];
 };
 
 export type PlatformInvitationsResponse = {
   data: PlatformInvitation[];
+};
+
+export type PlatformUsersResponse = {
+  data: PlatformUser[];
+};
+
+export type UpdatePlatformUserAccessResponse = {
+  data: PlatformUser;
 };
 
 export type PlatformSummaryResponse = {
