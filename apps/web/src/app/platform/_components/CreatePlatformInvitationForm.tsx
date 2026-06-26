@@ -32,22 +32,22 @@ const ROLE_OPTIONS: Array<{
   label: string;
   description: string;
 }> = [
-  {
-    value: "OWNER",
-    label: "Responsable del taller",
-    description: "Puede administrar el taller y su equipo.",
-  },
-  {
-    value: "ADMIN",
-    label: "Administración",
-    description: "Puede operar clientes, vehículos, órdenes y agenda.",
-  },
-  {
-    value: "OPERATOR",
-    label: "Operario / equipo",
-    description: "Acceso operativo para el trabajo diario.",
-  },
-];
+    {
+      value: "OWNER",
+      label: "Responsable del taller",
+      description: "Puede administrar el taller y su equipo.",
+    },
+    {
+      value: "ADMIN",
+      label: "Administración",
+      description: "Puede operar clientes, vehículos, órdenes y agenda.",
+    },
+    {
+      value: "OPERATOR",
+      label: "Operario / equipo",
+      description: "Acceso operativo para el trabajo diario.",
+    },
+  ];
 
 const shouldShowInvitationDebugLink =
   process.env.NEXT_PUBLIC_SHOW_INVITATION_DEBUG_LINK === "true";
@@ -76,6 +76,7 @@ export function CreatePlatformInvitationForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = event.currentTarget;
 
     if (isLoading || !hasWorkshops) {
       return;
@@ -119,7 +120,7 @@ export function CreatePlatformInvitationForm({
         delivery: response.delivery ?? null,
       });
 
-      event.currentTarget.reset();
+      form.reset();
       router.refresh();
     } catch (error) {
       setState({

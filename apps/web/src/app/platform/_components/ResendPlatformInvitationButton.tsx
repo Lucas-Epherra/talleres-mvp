@@ -97,7 +97,9 @@ function getResendSuccessMessage(delivery?: EmailDeliveryState): string {
   }
 
   if (delivery && !delivery.sent) {
-    return "El nuevo acceso fue generado, pero el email no pudo enviarse.";
+    return delivery.reason
+      ? `El nuevo acceso fue generado, pero el email no pudo enviarse. Motivo: ${delivery.reason}`
+      : "El nuevo acceso fue generado, pero el email no pudo enviarse.";
   }
 
   return "Invitación reenviada.";
