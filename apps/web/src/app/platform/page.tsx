@@ -510,9 +510,6 @@ function PlatformUserCard({ platformUser }: PlatformUserCardProps) {
 
             <PlatformUserStatusBadge status={platformUser.status} />
 
-            {platformUser.user.status !== platformUser.status ? (
-              <PlatformUserStatusBadge status={platformUser.user.status} />
-            ) : null}
           </div>
 
           <p className="mt-1 wrap-anywhere text-sm font-semibold text-foreground">
