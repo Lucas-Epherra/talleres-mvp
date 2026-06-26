@@ -39,7 +39,7 @@ export default async function LoginPage() {
             <BrandLogo
               variant="dark"
               priority
-              className="block h-auto w-[330px] object-contain sm:w-[390px]"
+             className="block h-auto w-[320px] object-contain sm:w-[350px]"
             />
           </div>
 

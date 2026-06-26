@@ -42,7 +42,7 @@ export default async function PrivateLayout({
               <BrandLogo
                 variant="dark"
                 priority
-                className="block h-auto w-[165px] object-contain sm:w-[220px]"
+                className="block h-auto w-[175px] object-contain xs:w-[195px] sm:w-[245px] lg:w-[270px]"
               />
             </Link>
           </div>

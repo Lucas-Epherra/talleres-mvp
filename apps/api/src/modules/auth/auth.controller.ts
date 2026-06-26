@@ -71,6 +71,15 @@ function shouldUseSecureCookie(): boolean {
 }
 
 /**
+ * Reads the cookie domain used to share auth between app and API subdomains.
+ */
+function getCookieDomain(): string | undefined {
+  const rawDomain = process.env.AUTH_COOKIE_DOMAIN?.trim();
+
+  return rawDomain || undefined;
+}
+
+/**
  * Builds the access token cookie options used by login and logout.
  */
 function getAccessTokenCookieOptions(): CookieOptions {
@@ -80,6 +89,7 @@ function getAccessTokenCookieOptions(): CookieOptions {
     httpOnly: true,
     sameSite,
     secure: sameSite === 'none' ? true : shouldUseSecureCookie(),
+    domain: getCookieDomain(),
     path: '/',
     maxAge: getAccessTokenMaxAgeMs(),
   };
@@ -95,6 +105,7 @@ function getClearAccessTokenCookieOptions(): CookieOptions {
     httpOnly: cookieOptions.httpOnly,
     sameSite: cookieOptions.sameSite,
     secure: cookieOptions.secure,
+    domain: cookieOptions.domain,
     path: cookieOptions.path,
   };
 }

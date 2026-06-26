@@ -15,17 +15,17 @@ export function PrivateFooter() {
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-5 py-8 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <BrandLogo
           variant="dark"
-          className="block h-auto w-[170px] object-contain sm:w-[205px]"
+          className="block h-auto w-[190px] object-contain xs:w-[205px] sm:w-[235px] lg:w-[255px]"
         />
 
         <div className="flex flex-col gap-2 sm:items-end">
-          <p>© {currentYear} · MVP operativo en desarrollo</p>
+          <p>© {currentYear} · Sistema de gestión para talleres mecánicos</p>
 
           <Link
             href="/dashboard"
             className="font-bold text-primary transition hover:text-primary-hover"
           >
-            Volver al panel
+            Volver al panel de control
           </Link>
         </div>
       </div>
