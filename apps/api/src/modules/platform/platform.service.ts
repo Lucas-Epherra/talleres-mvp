@@ -290,6 +290,137 @@ export class PlatformService {
   }
 
   /**
+   * Revokes a pending invitation so its acceptance link stops working.
+   */
+  async revokeInvitation(invitationId: string) {
+    const invitation = await this.prisma.invitation.findFirst({
+      where: {
+        id: invitationId,
+        workshop: {
+          slug: {
+            not: PLATFORM_INTERNAL_WORKSHOP_SLUG,
+          },
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+
+    if (!invitation) {
+      throw new NotFoundException('No se encontró la invitación.');
+    }
+
+    if (invitation.status !== InvitationStatus.PENDING) {
+      throw new ConflictException(
+        'Solo se pueden revocar invitaciones pendientes.',
+      );
+    }
+
+    const revokedInvitation = await this.prisma.invitation.update({
+      where: {
+        id: invitation.id,
+      },
+      data: {
+        status: InvitationStatus.REVOKED,
+        revokedAt: new Date(),
+      },
+      select: getInvitationListSelect(),
+    });
+
+    return {
+      data: serializePlatformInvitation(revokedInvitation),
+    };
+  }
+
+  /**
+   * Resends a pending or expired invitation with a fresh token.
+   *
+   * The previous invitation link stops working because the stored token hash is
+   * replaced with the new one.
+   */
+  async resendInvitation(invitationId: string) {
+    const invitation = await this.prisma.invitation.findFirst({
+      where: {
+        id: invitationId,
+        workshop: {
+          slug: {
+            not: PLATFORM_INTERNAL_WORKSHOP_SLUG,
+          },
+        },
+      },
+      select: {
+        id: true,
+        email: true,
+        status: true,
+        workshop: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    if (!invitation) {
+      throw new NotFoundException('No se encontró la invitación.');
+    }
+
+    if (invitation.status === InvitationStatus.ACCEPTED) {
+      throw new ConflictException(
+        'Esta invitación ya fue aceptada. No se puede reenviar.',
+      );
+    }
+
+    if (invitation.status === InvitationStatus.REVOKED) {
+      throw new ConflictException(
+        'Esta invitación fue revocada. Creá una invitación nueva.',
+      );
+    }
+
+    if (invitation.workshop.status !== WorkshopStatus.ACTIVE) {
+      throw new ConflictException('El taller no está activo.');
+    }
+
+    const rawToken = createInvitationToken();
+    const tokenHash = hashInvitationToken(rawToken);
+    const expiresAt = getInvitationExpirationDate();
+    const invitationUrl = buildInvitationUrl(rawToken);
+
+    const updatedInvitation = await this.prisma.invitation.update({
+      where: {
+        id: invitation.id,
+      },
+      data: {
+        status: InvitationStatus.PENDING,
+        tokenHash,
+        expiresAt,
+        revokedAt: null,
+      },
+      select: getInvitationListSelect(),
+    });
+
+    const delivery = await this.platformMailService.sendWorkshopInvitationEmail(
+      {
+        to: invitation.email,
+        workshopName: invitation.workshop.name,
+        invitationUrl,
+        expiresAt,
+      },
+    );
+
+    return {
+      data: serializePlatformInvitation(updatedInvitation),
+      delivery,
+      setupToken: rawToken,
+      setupUrl: invitationUrl,
+    };
+  }
+
+  /**
    * Returns safe invitation data before the invited user creates access.
    */
   async getInvitationAcceptance(token: string) {

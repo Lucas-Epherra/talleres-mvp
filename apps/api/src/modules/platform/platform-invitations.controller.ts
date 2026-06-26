@@ -1,4 +1,12 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { AcceptPlatformInvitationDto } from './dto/accept-platform-invitation.dto';
 import { InvitationTokenDto } from './dto/invitation-token.dto';
 import { PlatformService } from './platform.service';

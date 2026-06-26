@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import {
   Activity,
-  ArrowUpRight,
   Building2,
   CalendarDays,
   MailPlus,
@@ -25,6 +24,8 @@ import { ApiError, isApiErrorWithStatus } from "@/lib/api";
 import { apiServerFetch } from "@/lib/api.server";
 import { CreatePlatformInvitationForm } from "./_components/CreatePlatformInvitationForm";
 import { CreatePlatformWorkshopForm } from "./_components/CreatePlatformWorkshopForm";
+import { RevokePlatformInvitationButton } from "./_components/RevokePlatformInvitationButton";
+import { ResendPlatformInvitationButton } from "./_components/ResendPlatformInvitationButton";
 
 export const metadata: Metadata = {
   title: "Plataforma",
@@ -87,11 +88,11 @@ export default async function PlatformPage() {
           <BrandLogo
             variant="dark"
             priority
-            className="block h-auto w-[165px] object-contain sm:w-[220px]"
+            className="block h-auto w-41.25 object-contain sm:w-55"
           />
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-4">
-            <div className="hidden rounded-2xl border border-white/15 bg-white/[0.03] px-4 py-2 text-right sm:block">
+            <div className="hidden rounded-2xl border border-white/15 bg-white/3 px-4 py-2 text-right sm:block">
               <p className="text-sm font-semibold text-foreground">
                 {platformContext.user.name}
               </p>
@@ -408,7 +409,7 @@ function WorkshopCard({ workshop }: WorkshopCardProps) {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 lg:w-[28rem]">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 lg:w-md">
           <WorkshopMiniMetric
             label="Miembros"
             value={workshop.counts.members}
@@ -479,11 +480,27 @@ function InvitationCard({ invitation }: InvitationCardProps) {
           </p>
         </div>
 
-        <div className="rounded-xl border border-border bg-surface px-3 py-2 text-sm">
-          <p className="font-semibold text-muted-foreground">Vence</p>
-          <p className="mt-1 font-bold text-foreground">
-            {formatPlatformDate(invitation.expiresAt)}
-          </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start lg:items-end">
+          <div className="rounded-xl border border-border bg-surface px-3 py-2 text-sm">
+            <p className="font-semibold text-muted-foreground">Vence</p>
+            <p className="mt-1 font-bold text-foreground">
+              {formatPlatformDate(invitation.expiresAt)}
+            </p>
+          </div>
+
+          {canResendInvitation(invitation.status) ? (
+            <ResendPlatformInvitationButton
+              invitationId={invitation.id}
+              email={invitation.email}
+            />
+          ) : null}
+
+          {invitation.status === "PENDING" ? (
+            <RevokePlatformInvitationButton
+              invitationId={invitation.id}
+              email={invitation.email}
+            />
+          ) : null}
         </div>
       </div>
     </article>
@@ -528,14 +545,16 @@ function InvitationStatusBadge({ status }: InvitationStatusBadgeProps) {
     EXPIRED: "Vencida",
   };
 
-  const className =
-    status === "ACCEPTED"
-      ? "border-success/30 bg-success/10 text-success"
-      : "border-primary/30 bg-primary/10 text-primary";
+  const classNameMap: Record<PlatformInvitation["status"], string> = {
+    PENDING: "border-primary/30 bg-primary/10 text-primary",
+    ACCEPTED: "border-success/30 bg-success/10 text-success",
+    REVOKED: "border-border-strong bg-surface text-muted-foreground",
+    EXPIRED: "border-border-strong bg-surface text-muted-foreground",
+  };
 
   return (
     <span
-      className={`${className} rounded-full border px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-[0.12em]`}
+      className={`${classNameMap[status]} rounded-full border px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-[0.12em]`}
     >
       {statusLabelMap[status]}
     </span>
@@ -547,6 +566,13 @@ type WorkshopMiniMetricProps = {
   value: number;
   icon: ReactNode;
 };
+
+/**
+ * Determines if an invitation can be resent.
+ */
+function canResendInvitation(status: PlatformInvitation["status"]): boolean {
+  return status === "PENDING" || status === "EXPIRED";
+}
 
 /**
  * Small metric used inside each workshop row.

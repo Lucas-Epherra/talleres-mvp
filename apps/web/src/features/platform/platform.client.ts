@@ -1,9 +1,13 @@
 import { apiFetch } from "@/lib/api";
 import type {
+  AcceptPlatformInvitationInput,
+  AcceptPlatformInvitationResponse,
   CreatePlatformInvitationInput,
   CreatePlatformInvitationResponse,
   CreatePlatformWorkshopInput,
   CreatePlatformWorkshopResponse,
+  RevokePlatformInvitationResponse,
+  ResendPlatformInvitationResponse,
 } from "./types";
 
 /**
@@ -24,8 +28,7 @@ export function createPlatformWorkshop(
 /**
  * Creates an access invitation for a workshop user.
  *
- * Email delivery is not enabled yet, so the setup token is returned for local
- * QA and the next invitation-acceptance step.
+ * The invitation link is sent by email when email delivery is enabled.
  */
 export function createPlatformInvitation(
   workshopId: string,
@@ -40,10 +43,33 @@ export function createPlatformInvitation(
   );
 }
 
-import type {
-  AcceptPlatformInvitationInput,
-  AcceptPlatformInvitationResponse,
-} from "./types";
+/**
+ * Revokes a pending invitation.
+ */
+export function revokePlatformInvitation(
+  invitationId: string,
+): Promise<RevokePlatformInvitationResponse> {
+  return apiFetch<RevokePlatformInvitationResponse>(
+    `/platform/invitations/${invitationId}/revoke`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+/**
+ * Resends a pending or expired invitation with a fresh token.
+ */
+export function resendPlatformInvitation(
+  invitationId: string,
+): Promise<ResendPlatformInvitationResponse> {
+  return apiFetch<ResendPlatformInvitationResponse>(
+    `/platform/invitations/${invitationId}/resend`,
+    {
+      method: "POST",
+    },
+  );
+}
 
 /**
  * Accepts an invitation and creates workshop access for the invited user.

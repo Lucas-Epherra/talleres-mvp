@@ -90,6 +90,28 @@ export class PlatformController {
   ) {
     return this.platformService.createInvitation(workshopId, dto, user.id);
   }
+
+  /**
+   * Revokes a pending platform invitation.
+   */
+  @Post('invitations/:invitationId/revoke')
+  @HttpCode(HttpStatus.OK)
+  revokeInvitation(
+    @Param('invitationId', new ParseUUIDPipe()) invitationId: string,
+  ) {
+    return this.platformService.revokeInvitation(invitationId);
+  }
+
+  /**
+   * Resends a platform invitation with a fresh token.
+   */
+  @Post('invitations/:invitationId/resend')
+  @HttpCode(HttpStatus.OK)
+  resendInvitation(
+    @Param('invitationId', new ParseUUIDPipe()) invitationId: string,
+  ) {
+    return this.platformService.resendInvitation(invitationId);
+  }
 }
 
 /**
@@ -102,5 +124,7 @@ function getPlatformCapabilities(): string[] {
     'WORKSHOPS_CREATE',
     'INVITATIONS_READ',
     'INVITATIONS_CREATE',
+    'INVITATIONS_REVOKE',
+    'INVITATIONS_RESEND',
   ];
 }

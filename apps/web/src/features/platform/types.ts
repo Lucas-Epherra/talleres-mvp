@@ -106,6 +106,21 @@ export type CreatePlatformInvitationResponse = {
   setupUrl: string;
 };
 
+export type RevokePlatformInvitationResponse = {
+  data: PlatformInvitation;
+};
+
+export type ResendPlatformInvitationResponse = {
+  data: PlatformInvitation;
+  delivery?: {
+    sent: boolean;
+    providerMessageId: string | null;
+    reason: string | null;
+  };
+  setupToken: string;
+  setupUrl: string;
+};
+
 export type PlatformInvitationAcceptanceResponse = {
   data: {
     email: string;

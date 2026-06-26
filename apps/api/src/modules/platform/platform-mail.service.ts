@@ -30,7 +30,8 @@ export class PlatformMailService {
   async sendWorkshopInvitationEmail(
     input: SendWorkshopInvitationEmailInput,
   ): Promise<EmailDeliveryResult> {
-    const shouldSendEmail = process.env.SEND_PLATFORM_INVITATION_EMAILS === 'true';
+    const shouldSendEmail =
+      process.env.SEND_PLATFORM_INVITATION_EMAILS === 'true';
     const resendApiKey = process.env.RESEND_API_KEY;
     const from = process.env.EMAIL_FROM;
 
