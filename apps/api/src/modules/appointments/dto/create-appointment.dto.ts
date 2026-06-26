@@ -9,20 +9,28 @@ import {
 } from 'class-validator';
 
 /**
+ * Trims string values while preserving invalid non-string payloads so
+ * class-validator can reject them correctly.
+ */
+function trimStringValue(value: unknown): unknown {
+  return typeof value === 'string' ? value.trim() : value;
+}
+
+/**
  * Payload required to create an appointment inside the workshop agenda.
  *
  * Dates are stored as absolute DateTime values so the same model can later feed
  * agenda, day, week or calendar views.
  */
 export class CreateAppointmentDto {
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }: { value: unknown }) => trimStringValue(value))
   @IsString()
   @MinLength(3)
   @MaxLength(120)
   title!: string;
 
   @IsOptional()
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }: { value: unknown }) => trimStringValue(value))
   @IsString()
   @MaxLength(1000)
   description?: string;

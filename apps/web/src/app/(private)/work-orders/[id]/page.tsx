@@ -11,7 +11,6 @@ import {
   Pencil,
   RefreshCw,
   UserRound,
-  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -106,7 +105,6 @@ export default async function WorkOrderDetailPage({
         </div>
 
         <div className="relative mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          
           {!isClosed ? (
             <Link
               href={`/work-orders/${workOrder.id}/edit`}
@@ -214,10 +212,12 @@ export default async function WorkOrderDetailPage({
               value={formatMoney(workOrder.finalTotal)}
             />
           </DetailSheet>
+
           <WorkOrderAppointmentsPanel
             workOrder={workOrder}
             appointments={linkedAppointmentsPage.data}
           />
+
           {!isClosed ? (
             <section
               aria-labelledby="work-order-status-heading"
@@ -253,6 +253,7 @@ export default async function WorkOrderDetailPage({
               />
             </section>
           ) : null}
+
           {!isClosed ? (
             <section
               aria-labelledby="work-order-cancel-heading"
@@ -287,6 +288,7 @@ export default async function WorkOrderDetailPage({
               <CancelWorkOrderForm workOrderId={workOrder.id} />
             </section>
           ) : null}
+
           {isDelivered ? (
             <section
               aria-labelledby="work-order-reopen-heading"
@@ -320,6 +322,7 @@ export default async function WorkOrderDetailPage({
               <ReopenWorkOrderForm workOrderId={workOrder.id} />
             </section>
           ) : null}
+
           {isCancelled ? (
             <section
               aria-labelledby="work-order-cancelled-heading"
@@ -351,6 +354,7 @@ export default async function WorkOrderDetailPage({
               </div>
             </section>
           ) : null}
+
           <WorkOrderTimeline events={workOrder.events ?? []} />
         </div>
 
@@ -482,13 +486,11 @@ function WorkOrderTimeline({ events }: WorkOrderTimelineProps) {
  * Renders one audit event row inside the operational timeline.
  */
 function TimelineEvent({ event }: { event: WorkOrderTimelineItem }) {
-  const Icon = getWorkOrderEventIcon(event.type);
-
   return (
     <li className="rounded-2xl border border-border bg-surface-muted/75 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
       <div className="flex items-start gap-3">
         <div className="grid size-9 shrink-0 place-items-center rounded-xl border border-border-strong bg-surface-elevated text-primary">
-          <Icon className="size-4" aria-hidden="true" />
+          {renderWorkOrderEventIcon(event.type)}
         </div>
 
         <div className="min-w-0 flex-1">
@@ -529,21 +531,33 @@ function TimelineEvent({ event }: { event: WorkOrderTimelineItem }) {
 }
 
 /**
- * Maps audit event types to visual icons.
+ * Renders the icon for a work order timeline event.
+ *
+ * This avoids creating a dynamic component reference during render, which is
+ * blocked by the React Compiler static-components rule.
  */
-function getWorkOrderEventIcon(
-  type: WorkOrderTimelineItem["type"],
-): LucideIcon {
-  const iconMap: Record<WorkOrderTimelineItem["type"], LucideIcon> = {
-    CREATED: ClipboardCheck,
-    UPDATED: FilePenLine,
-    STATUS_CHANGED: RefreshCw,
-    DELIVERED: CheckCircle2,
-    REOPENED: RefreshCw,
-    CANCELLED: Ban,
-  };
+function renderWorkOrderEventIcon(type: WorkOrderTimelineItem["type"]) {
+  const iconClassName = "size-4";
 
-  return iconMap[type];
+  switch (type) {
+    case "CREATED":
+      return <ClipboardCheck className={iconClassName} aria-hidden="true" />;
+
+    case "UPDATED":
+      return <FilePenLine className={iconClassName} aria-hidden="true" />;
+
+    case "STATUS_CHANGED":
+      return <RefreshCw className={iconClassName} aria-hidden="true" />;
+
+    case "DELIVERED":
+      return <CheckCircle2 className={iconClassName} aria-hidden="true" />;
+
+    case "REOPENED":
+      return <RefreshCw className={iconClassName} aria-hidden="true" />;
+
+    case "CANCELLED":
+      return <Ban className={iconClassName} aria-hidden="true" />;
+  }
 }
 
 /**

@@ -746,7 +746,7 @@ export class WorkOrdersService {
         'No se puede crear una orden para un vehículo archivado.',
       );
     }
-    
+
     if (vehicle.customer.archivedAt) {
       throw new ConflictException(
         'No se puede crear una orden para un cliente archivado.',
