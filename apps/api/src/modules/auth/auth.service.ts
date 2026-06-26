@@ -1,6 +1,12 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { WorkshopRole } from '@prisma/client';
+import {
+  MembershipStatus,
+  PlatformRole,
+  UserStatus,
+  WorkshopRole,
+  WorkshopStatus,
+} from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
@@ -31,12 +37,19 @@ export class AuthService {
       },
       include: {
         memberships: {
+          where: {
+            status: MembershipStatus.ACTIVE,
+            workshop: {
+              status: WorkshopStatus.ACTIVE,
+            },
+          },
           include: {
             workshop: {
               select: {
                 id: true,
                 name: true,
                 slug: true,
+                status: true,
               },
             },
           },
@@ -47,7 +60,7 @@ export class AuthService {
       },
     });
 
-    if (!user) {
+    if (!user || user.status !== UserStatus.ACTIVE) {
       throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
     }
 
@@ -64,7 +77,7 @@ export class AuthService {
 
     if (!membership) {
       throw new UnauthorizedException(
-        'El usuario no pertenece a ningún taller.',
+        'El usuario no pertenece a ningún taller activo.',
       );
     }
 
@@ -72,6 +85,7 @@ export class AuthService {
       sub: user.id,
       workshopId: membership.workshopId,
       role: membership.role,
+      platformRole: user.platformRole,
     };
 
     const accessToken = await this.jwtService.signAsync(payload);
@@ -82,7 +96,10 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
+        platformRole: user.platformRole,
+        status: user.status,
         workshopId: membership.workshopId,
+        workshopRole: membership.role,
         role: membership.role,
       } satisfies AuthUser,
       workshop: membership.workshop,
@@ -99,6 +116,10 @@ export class AuthService {
       where: {
         userId: safePayload.sub,
         workshopId: safePayload.workshopId,
+        status: MembershipStatus.ACTIVE,
+        workshop: {
+          status: WorkshopStatus.ACTIVE,
+        },
       },
       include: {
         user: {
@@ -106,12 +127,14 @@ export class AuthService {
             id: true,
             email: true,
             name: true,
+            platformRole: true,
+            status: true,
           },
         },
       },
     });
 
-    if (!membership) {
+    if (!membership || membership.user.status !== UserStatus.ACTIVE) {
       throw new UnauthorizedException('Contexto de autenticación inválido.');
     }
 
@@ -119,7 +142,10 @@ export class AuthService {
       id: membership.user.id,
       email: membership.user.email,
       name: membership.user.name,
+      platformRole: membership.user.platformRole,
+      status: membership.user.status,
       workshopId: membership.workshopId,
+      workshopRole: membership.role,
       role: membership.role,
     };
   }
@@ -148,14 +174,20 @@ export class AuthService {
    * Validates the minimum runtime shape expected from the access token payload.
    */
   private validateJwtPayload(payload: JwtPayload): JwtPayload {
-    const isValidRole = Object.values(WorkshopRole).includes(payload.role);
+    const isValidWorkshopRole = Object.values(WorkshopRole).includes(
+      payload.role,
+    );
+    const isValidPlatformRole = Object.values(PlatformRole).includes(
+      payload.platformRole,
+    );
 
     if (
       typeof payload.sub !== 'string' ||
       !payload.sub ||
       typeof payload.workshopId !== 'string' ||
       !payload.workshopId ||
-      !isValidRole
+      !isValidWorkshopRole ||
+      !isValidPlatformRole
     ) {
       throw new UnauthorizedException('Contexto de autenticación inválido.');
     }

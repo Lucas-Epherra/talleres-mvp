@@ -11,14 +11,14 @@ export const metadata: Metadata = {
 /**
  * Public login page.
  *
- * Authenticated users are redirected to the private dashboard. The login form
- * keeps authentication logic isolated in a leaf Client Component.
+ * Authenticated users are redirected to the correct area depending on whether
+ * they are platform owners or workshop users.
  */
 export default async function LoginPage() {
   const user = await getCurrentUser();
 
   if (user) {
-    redirect("/dashboard");
+    redirect(user.platformRole === "OWNER" ? "/platform" : "/dashboard");
   }
 
   return (

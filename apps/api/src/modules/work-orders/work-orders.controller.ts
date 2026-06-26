@@ -19,8 +19,6 @@ import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
 import { CancelWorkOrderDto } from './dto/cancel-work-order.dto';
 import { WorkOrdersService } from './work-orders.service';
 
-
-
 /**
  * HTTP controller for work order operations.
  *
@@ -99,7 +97,7 @@ export class WorkOrdersController {
     return this.workOrdersService.reopen(user.workshopId, user.id, id, dto);
   }
 
-    /**
+  /**
    * Cancels an open work order with an auditable required reason.
    */
   @Patch(':id/cancel')
@@ -110,7 +108,4 @@ export class WorkOrdersController {
   ) {
     return this.workOrdersService.cancel(user.workshopId, user.id, id, dto);
   }
-
 }
-
-

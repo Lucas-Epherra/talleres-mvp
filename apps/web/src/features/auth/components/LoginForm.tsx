@@ -59,9 +59,11 @@ export function LoginForm() {
     });
 
     try {
-      await login({ email, password });
+      const response = await login({ email, password });
+      const nextPath =
+        response.user.platformRole === "OWNER" ? "/platform" : "/dashboard";
 
-      router.replace("/dashboard");
+      router.replace(nextPath);
       router.refresh();
     } catch (error) {
       setState({
