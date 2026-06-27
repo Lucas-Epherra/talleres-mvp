@@ -88,6 +88,14 @@ export type UpdatePlatformUserAccessResponse = {
   data: PlatformUser;
 };
 
+export type UpdatePlatformUserRoleInput = {
+  role: AuthRole;
+};
+
+export type UpdatePlatformUserRoleResponse = {
+  data: PlatformUser;
+};
+
 export type PlatformSummaryResponse = {
   workshops: {
     total: number;

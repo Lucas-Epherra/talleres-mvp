@@ -9,6 +9,8 @@ import type {
   RevokePlatformInvitationResponse,
   ResendPlatformInvitationResponse,
   UpdatePlatformUserAccessResponse,
+  UpdatePlatformUserRoleInput,
+  UpdatePlatformUserRoleResponse,
 } from "./types";
 
 /**
@@ -108,6 +110,22 @@ export function enablePlatformUserAccess(
     `/platform/users/${membershipId}/enable`,
     {
       method: "POST",
+    },
+  );
+}
+
+/**
+ * Updates a workshop user role from the internal platform panel.
+ */
+export function updatePlatformUserRole(
+  membershipId: string,
+  input: UpdatePlatformUserRoleInput,
+): Promise<UpdatePlatformUserRoleResponse> {
+  return apiFetch<UpdatePlatformUserRoleResponse>(
+    `/platform/users/${membershipId}/role`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
     },
   );
 }

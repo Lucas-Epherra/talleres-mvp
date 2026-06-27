@@ -29,6 +29,7 @@ import { CreatePlatformWorkshopForm } from "./_components/CreatePlatformWorkshop
 import { RevokePlatformInvitationButton } from "./_components/RevokePlatformInvitationButton";
 import { ResendPlatformInvitationButton } from "./_components/ResendPlatformInvitationButton";
 import { PlatformUserAccessButton } from "./_components/PlatformUserAccessButton";
+import { PlatformUserRoleForm } from "./_components/PlatformUserRoleForm";
 
 export const metadata: Metadata = {
   title: "Plataforma",
@@ -555,7 +556,10 @@ function PlatformUserCard({ platformUser }: PlatformUserCardProps) {
             </div>
           </div>
 
-          <PlatformUserAccessButton platformUser={platformUser} />
+          <div className="flex flex-col gap-3 lg:items-end">
+            <PlatformUserRoleForm platformUser={platformUser} />
+            <PlatformUserAccessButton platformUser={platformUser} />
+          </div>
         </div>
       </div>
     </article>

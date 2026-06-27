@@ -7,6 +7,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Patch,
   UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -14,6 +15,7 @@ import { AuthGuard } from '../auth/guards/auth.guard';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CreatePlatformInvitationDto } from './dto/create-platform-invitation.dto';
 import { CreatePlatformWorkshopDto } from './dto/create-platform-workshop.dto';
+import { UpdatePlatformUserRoleDto } from './dto/update-platform-user-role.dto';
 import { PlatformOwnerGuard } from './guards/platform-owner.guard';
 import { PlatformService } from './platform.service';
 
@@ -69,7 +71,7 @@ export class PlatformController {
     return this.platformService.listInvitations();
   }
 
-    /**
+  /**
    * Returns workshop users across the platform.
    */
   @Get('users')
@@ -121,8 +123,7 @@ export class PlatformController {
     return this.platformService.resendInvitation(invitationId);
   }
 
-
-    /**
+  /**
    * Disables a workshop user access.
    */
   @Post('users/:membershipId/disable')
@@ -143,10 +144,19 @@ export class PlatformController {
   ) {
     return this.platformService.enableUserAccess(membershipId);
   }
-  
+
+  /**
+   * Updates a workshop user role.
+   */
+  @Patch('users/:membershipId/role')
+  @HttpCode(HttpStatus.OK)
+  updateUserRole(
+    @Param('membershipId', new ParseUUIDPipe()) membershipId: string,
+    @Body() dto: UpdatePlatformUserRoleDto,
+  ) {
+    return this.platformService.updateUserRole(membershipId, dto.role);
+  }
 }
-
-
 
 /**
  * Centralizes platform capability labels exposed to the frontend.
@@ -163,5 +173,6 @@ function getPlatformCapabilities(): string[] {
     'INVITATIONS_RESEND',
     'USERS_DISABLE',
     'USERS_ENABLE',
+    'USERS_UPDATE_ROLE',
   ];
 }

@@ -204,8 +204,7 @@ export class PlatformService {
     };
   }
 
-
-    /**
+  /**
    * Disables a workshop user access without deleting the user account.
    */
   async disableUserAccess(membershipId: string) {
@@ -302,6 +301,48 @@ export class PlatformService {
       },
       data: {
         status: MembershipStatus.ACTIVE,
+      },
+      select: getPlatformUserListSelect(),
+    });
+
+    return {
+      data: serializePlatformUser(updatedMembership),
+    };
+  }
+
+  /**
+   * Updates a workshop user role without changing access status.
+   */
+  async updateUserRole(membershipId: string, role: WorkshopRole) {
+    const membership = await this.prisma.workshopMember.findFirst({
+      where: {
+        id: membershipId,
+        workshop: {
+          slug: {
+            not: PLATFORM_INTERNAL_WORKSHOP_SLUG,
+          },
+        },
+      },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+
+    if (!membership) {
+      throw new NotFoundException('No se encontró el acceso del usuario.');
+    }
+
+    if (membership.role === role) {
+      throw new ConflictException('Ese usuario ya tiene ese rol.');
+    }
+
+    const updatedMembership = await this.prisma.workshopMember.update({
+      where: {
+        id: membership.id,
+      },
+      data: {
+        role,
       },
       select: getPlatformUserListSelect(),
     });
