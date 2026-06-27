@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import {
@@ -36,6 +37,17 @@ export const metadata: Metadata = {
   title: "Plataforma",
 };
 
+type PlatformPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+type PlatformFiltersState = {
+  query: string;
+  workshopStatus: PlatformWorkshop["status"] | "ALL";
+  userStatus: PlatformUser["status"] | "ALL";
+  invitationStatus: PlatformInvitation["status"] | "ALL";
+};
+
 /**
  * Fetches a protected platform resource.
  *
@@ -71,7 +83,9 @@ async function getProtectedPlatformResource<TResponse>(
  * platform metrics and keeps administration visually aligned with the
  * operational workshop dashboard.
  */
-export default async function PlatformPage() {
+export default async function PlatformPage({ searchParams }: PlatformPageProps) {
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+
   const [
     platformContext,
     summary,
@@ -89,6 +103,15 @@ export default async function PlatformPage() {
       "/platform/invitations",
     ),
   ]);
+
+  const filters = parsePlatformFilters(resolvedSearchParams);
+  const filteredWorkshops = filterWorkshops(workshopsPage.data, filters);
+  const filteredUsers = filterUsers(usersPage.data, filters);
+  const filteredInvitations = filterInvitations(
+    invitationsPage.data,
+    filters,
+  );
+  const hasActiveFilters = hasPlatformActiveFilters(filters);
 
   return (
     <main className="theme-light min-h-screen overflow-x-hidden bg-background text-foreground">
@@ -221,6 +244,11 @@ export default async function PlatformPage() {
           />
         </section>
 
+        <PlatformFilters
+          filters={filters}
+          hasActiveFilters={hasActiveFilters}
+        />
+
         <section className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
           <div className="space-y-5">
             <section className="rounded-[1.35rem] border border-border bg-surface p-5 sm:p-6">
@@ -242,19 +270,19 @@ export default async function PlatformPage() {
 
                 <span className="inline-flex w-fit items-center gap-2 rounded-full border border-border bg-surface-muted px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
                   <Activity className="size-3.5" aria-hidden="true" />
-                  {workshopsPage.data.length} visibles
+                  {filteredWorkshops.length} de {workshopsPage.data.length}
                 </span>
               </div>
 
-              {workshopsPage.data.length > 0 ? (
+              {filteredWorkshops.length > 0 ? (
                 <div className="mt-5 space-y-3">
-                  {workshopsPage.data.map((workshop) => (
+                  {filteredWorkshops.map((workshop) => (
                     <WorkshopCard key={workshop.id} workshop={workshop} />
                   ))}
                 </div>
               ) : (
                 <p className="mt-5 rounded-2xl border border-dashed border-border-strong bg-surface-muted/65 p-5 text-sm leading-6 text-muted-foreground">
-                  Todavía no hay talleres registrados.
+                  No hay talleres que coincidan con los filtros actuales.
                 </p>
               )}
             </section>
@@ -278,13 +306,13 @@ export default async function PlatformPage() {
 
                 <span className="inline-flex w-fit items-center gap-2 rounded-full border border-border bg-surface-muted px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
                   <Users className="size-3.5" aria-hidden="true" />
-                  {usersPage.data.length} usuarios
+                  {filteredUsers.length} de {usersPage.data.length}
                 </span>
               </div>
 
-              {usersPage.data.length > 0 ? (
+              {filteredUsers.length > 0 ? (
                 <div className="mt-5 space-y-3">
-                  {usersPage.data.map((platformUser) => (
+                  {filteredUsers.map((platformUser) => (
                     <PlatformUserCard
                       key={platformUser.membershipId}
                       platformUser={platformUser}
@@ -293,7 +321,7 @@ export default async function PlatformPage() {
                 </div>
               ) : (
                 <p className="mt-5 rounded-2xl border border-dashed border-border-strong bg-surface-muted/65 p-5 text-sm leading-6 text-muted-foreground">
-                  Todavía no hay usuarios registrados en talleres.
+                  No hay usuarios que coincidan con los filtros actuales.
                 </p>
               )}
             </section>
@@ -316,13 +344,13 @@ export default async function PlatformPage() {
 
                 <span className="inline-flex w-fit items-center gap-2 rounded-full border border-border bg-surface-muted px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
                   <MailPlus className="size-3.5" aria-hidden="true" />
-                  {invitationsPage.data.length} registros
+                  {filteredInvitations.length} de {invitationsPage.data.length}
                 </span>
               </div>
 
-              {invitationsPage.data.length > 0 ? (
+              {filteredInvitations.length > 0 ? (
                 <div className="mt-5 space-y-3">
-                  {invitationsPage.data.map((invitation) => (
+                  {filteredInvitations.map((invitation) => (
                     <InvitationCard
                       key={invitation.id}
                       invitation={invitation}
@@ -331,7 +359,7 @@ export default async function PlatformPage() {
                 </div>
               ) : (
                 <p className="mt-5 rounded-2xl border border-dashed border-border-strong bg-surface-muted/65 p-5 text-sm leading-6 text-muted-foreground">
-                  Todavía no hay invitaciones registradas.
+                  No hay invitaciones que coincidan con los filtros actuales.
                 </p>
               )}
             </section>
@@ -425,6 +453,113 @@ function PlatformSummaryCard({
   );
 }
 
+type PlatformFiltersProps = {
+  filters: PlatformFiltersState;
+  hasActiveFilters: boolean;
+};
+
+/**
+ * Renders platform search and status filters.
+ */
+function PlatformFilters({
+  filters,
+  hasActiveFilters,
+}: PlatformFiltersProps) {
+  return (
+    <section className="mt-5 rounded-[1.35rem] border border-border bg-surface p-5 sm:p-6">
+      <div className="flex flex-col gap-2">
+        <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+          Búsqueda y filtros
+        </p>
+
+        <h2 className="font-display text-2xl font-black uppercase tracking-[0.04em] text-foreground">
+          Encontrar datos rápido
+        </h2>
+
+        <p className="text-sm leading-6 text-muted-foreground">
+          Filtrá talleres, usuarios e invitaciones sin salir del panel interno.
+        </p>
+      </div>
+
+      <form
+        action="/platform"
+        className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_11rem_12rem_13rem_auto]"
+      >
+        <label className="space-y-1.5">
+          <span className="text-xs font-bold text-foreground">Buscar</span>
+          <input
+            name="q"
+            defaultValue={filters.query}
+            placeholder="Taller, email, usuario o código..."
+            className="h-11 w-full rounded-xl border border-border bg-surface-muted px-3 text-sm font-semibold text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary"
+          />
+        </label>
+
+        <label className="space-y-1.5">
+          <span className="text-xs font-bold text-foreground">Talleres</span>
+          <select
+            name="workshopStatus"
+            defaultValue={filters.workshopStatus}
+            className="h-11 w-full rounded-xl border border-border bg-surface-muted px-3 text-sm font-semibold text-foreground outline-none transition focus:border-primary"
+          >
+            <option value="ALL">Todos</option>
+            <option value="ACTIVE">Activos</option>
+            <option value="DISABLED">Suspendidos</option>
+          </select>
+        </label>
+
+        <label className="space-y-1.5">
+          <span className="text-xs font-bold text-foreground">Usuarios</span>
+          <select
+            name="userStatus"
+            defaultValue={filters.userStatus}
+            className="h-11 w-full rounded-xl border border-border bg-surface-muted px-3 text-sm font-semibold text-foreground outline-none transition focus:border-primary"
+          >
+            <option value="ALL">Todos</option>
+            <option value="ACTIVE">Acceso activo</option>
+            <option value="DISABLED">Deshabilitados</option>
+          </select>
+        </label>
+
+        <label className="space-y-1.5">
+          <span className="text-xs font-bold text-foreground">
+            Invitaciones
+          </span>
+          <select
+            name="invitationStatus"
+            defaultValue={filters.invitationStatus}
+            className="h-11 w-full rounded-xl border border-border bg-surface-muted px-3 text-sm font-semibold text-foreground outline-none transition focus:border-primary"
+          >
+            <option value="ALL">Todas</option>
+            <option value="PENDING">Pendientes</option>
+            <option value="ACCEPTED">Aceptadas</option>
+            <option value="REVOKED">Revocadas</option>
+            <option value="EXPIRED">Vencidas</option>
+          </select>
+        </label>
+
+        <div className="flex flex-col gap-2 lg:justify-end">
+          <button
+            type="submit"
+            className="inline-flex h-11 items-center justify-center rounded-xl border border-primary bg-primary px-5 text-sm font-bold text-primary-foreground transition hover:bg-primary/90"
+          >
+            Aplicar
+          </button>
+
+          {hasActiveFilters ? (
+            <Link
+              href="/platform"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60"
+            >
+              Limpiar
+            </Link>
+          ) : null}
+        </div>
+      </form>
+    </section>
+  );
+}
+
 type WorkshopCardProps = {
   workshop: PlatformWorkshop;
 };
@@ -515,7 +650,6 @@ function PlatformUserCard({ platformUser }: PlatformUserCardProps) {
             </h3>
 
             <PlatformUserStatusBadge status={platformUser.status} />
-
           </div>
 
           <p className="mt-1 wrap-anywhere text-sm font-semibold text-foreground">
@@ -766,6 +900,174 @@ function formatPlatformUserRole(role: PlatformUser["role"]): string {
   };
 
   return roleLabelMap[role];
+}
+
+
+/**
+ * Parses platform filters from URL search params.
+ */
+function parsePlatformFilters(
+  searchParams: Record<string, string | string[] | undefined>,
+): PlatformFiltersState {
+  return {
+    query: getSearchParamValue(searchParams.q).trim(),
+    workshopStatus: getValidatedSearchOption(
+      getSearchParamValue(searchParams.workshopStatus),
+      ["ALL", "ACTIVE", "DISABLED"] as const,
+      "ALL",
+    ),
+    userStatus: getValidatedSearchOption(
+      getSearchParamValue(searchParams.userStatus),
+      ["ALL", "ACTIVE", "DISABLED"] as const,
+      "ALL",
+    ),
+    invitationStatus: getValidatedSearchOption(
+      getSearchParamValue(searchParams.invitationStatus),
+      ["ALL", "PENDING", "ACCEPTED", "REVOKED", "EXPIRED"] as const,
+      "ALL",
+    ),
+  };
+}
+
+/**
+ * Filters workshops by text and status.
+ */
+function filterWorkshops(
+  workshops: PlatformWorkshop[],
+  filters: PlatformFiltersState,
+): PlatformWorkshop[] {
+  return workshops.filter((workshop) => {
+    if (
+      filters.workshopStatus !== "ALL" &&
+      workshop.status !== filters.workshopStatus
+    ) {
+      return false;
+    }
+
+    return matchesPlatformQuery(
+      [workshop.name, workshop.slug, workshop.status],
+      filters.query,
+    );
+  });
+}
+
+/**
+ * Filters platform users by text and access status.
+ */
+function filterUsers(
+  users: PlatformUser[],
+  filters: PlatformFiltersState,
+): PlatformUser[] {
+  return users.filter((platformUser) => {
+    if (
+      filters.userStatus !== "ALL" &&
+      platformUser.status !== filters.userStatus
+    ) {
+      return false;
+    }
+
+    return matchesPlatformQuery(
+      [
+        platformUser.user.name,
+        platformUser.user.email,
+        platformUser.status,
+        platformUser.workshop.name,
+        platformUser.workshop.slug,
+        formatPlatformUserRole(platformUser.role),
+      ],
+      filters.query,
+    );
+  });
+}
+
+/**
+ * Filters invitations by text and invitation status.
+ */
+function filterInvitations(
+  invitations: PlatformInvitation[],
+  filters: PlatformFiltersState,
+): PlatformInvitation[] {
+  return invitations.filter((invitation) => {
+    if (
+      filters.invitationStatus !== "ALL" &&
+      invitation.status !== filters.invitationStatus
+    ) {
+      return false;
+    }
+
+    return matchesPlatformQuery(
+      [
+        invitation.email,
+        invitation.status,
+        invitation.workshop.name,
+        invitation.workshop.slug,
+        formatInvitationRole(invitation.role),
+      ],
+      filters.query,
+    );
+  });
+}
+
+/**
+ * Determines if any platform filter is active.
+ */
+function hasPlatformActiveFilters(filters: PlatformFiltersState): boolean {
+  return (
+    filters.query.length > 0 ||
+    filters.workshopStatus !== "ALL" ||
+    filters.userStatus !== "ALL" ||
+    filters.invitationStatus !== "ALL"
+  );
+}
+
+/**
+ * Returns the first string value from a URL search param.
+ */
+function getSearchParamValue(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) {
+    return value[0] ?? "";
+  }
+
+  return value ?? "";
+}
+
+/**
+ * Keeps only expected URL filter values.
+ */
+function getValidatedSearchOption<TOption extends string>(
+  value: string,
+  validOptions: readonly TOption[],
+  fallback: TOption,
+): TOption {
+  return validOptions.includes(value as TOption)
+    ? (value as TOption)
+    : fallback;
+}
+
+/**
+ * Matches a search query against multiple fields.
+ */
+function matchesPlatformQuery(fields: string[], query: string): boolean {
+  if (!query) {
+    return true;
+  }
+
+  const normalizedQuery = normalizePlatformSearchValue(query);
+
+  return fields.some((field) =>
+    normalizePlatformSearchValue(field).includes(normalizedQuery),
+  );
+}
+
+/**
+ * Normalizes text for accent-insensitive platform search.
+ */
+function normalizePlatformSearchValue(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
 /**
