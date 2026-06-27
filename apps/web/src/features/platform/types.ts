@@ -32,6 +32,7 @@ export type PlatformInvitation = {
   expiresAt: string;
   acceptedAt: string | null;
   revokedAt: string | null;
+  archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
   workshop: {
@@ -153,6 +154,10 @@ export type CreatePlatformInvitationResponse = {
 };
 
 export type RevokePlatformInvitationResponse = {
+  data: PlatformInvitation;
+};
+
+export type ArchivePlatformInvitationResponse = {
   data: PlatformInvitation;
 };
 

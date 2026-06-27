@@ -150,11 +150,14 @@ export class PlatformService {
   }
 
   /**
-   * Lists platform invitations.
+   * Lists non-archived platform invitations.
    */
   async listInvitations() {
+    await this.expireStaleInvitations();
+
     const invitations = await this.prisma.invitation.findMany({
       where: {
+        archivedAt: null,
         workshop: {
           slug: {
             not: PLATFORM_INTERNAL_WORKSHOP_SLUG,
@@ -680,6 +683,54 @@ export class PlatformService {
   }
 
   /**
+   * Archives a revoked or expired invitation without deleting its history.
+   */
+  async archiveInvitation(invitationId: string) {
+    const invitation = await this.prisma.invitation.findFirst({
+      where: {
+        id: invitationId,
+        archivedAt: null,
+        workshop: {
+          slug: {
+            not: PLATFORM_INTERNAL_WORKSHOP_SLUG,
+          },
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+
+    if (!invitation) {
+      throw new NotFoundException('No se encontró la invitación.');
+    }
+
+    if (
+      invitation.status !== InvitationStatus.REVOKED &&
+      invitation.status !== InvitationStatus.EXPIRED
+    ) {
+      throw new ConflictException(
+        'Solo se pueden archivar invitaciones revocadas o vencidas.',
+      );
+    }
+
+    const archivedInvitation = await this.prisma.invitation.update({
+      where: {
+        id: invitation.id,
+      },
+      data: {
+        archivedAt: new Date(),
+      },
+      select: getInvitationListSelect(),
+    });
+
+    return {
+      data: serializePlatformInvitation(archivedInvitation),
+    };
+  }
+
+  /**
    * Returns safe invitation data before the invited user creates access.
    */
   async getInvitationAcceptance(token: string) {
@@ -830,6 +881,29 @@ export class PlatformService {
         slug: invitation.workshop.slug,
       },
     };
+  }
+
+  /**
+   * Marks expired pending invitations before listing them.
+   */
+  private async expireStaleInvitations(): Promise<void> {
+    await this.prisma.invitation.updateMany({
+      where: {
+        status: InvitationStatus.PENDING,
+        expiresAt: {
+          lte: new Date(),
+        },
+        archivedAt: null,
+        workshop: {
+          slug: {
+            not: PLATFORM_INTERNAL_WORKSHOP_SLUG,
+          },
+        },
+      },
+      data: {
+        status: InvitationStatus.EXPIRED,
+      },
+    });
   }
 
   /**
@@ -1030,6 +1104,7 @@ function getInvitationListSelect() {
     expiresAt: true,
     acceptedAt: true,
     revokedAt: true,
+    archivedAt: true,
     createdAt: true,
     updatedAt: true,
     workshop: {
@@ -1148,6 +1223,7 @@ function serializePlatformInvitation(invitation: PlatformInvitationRecord) {
     expiresAt: invitation.expiresAt.toISOString(),
     acceptedAt: invitation.acceptedAt?.toISOString() ?? null,
     revokedAt: invitation.revokedAt?.toISOString() ?? null,
+    archivedAt: invitation.archivedAt?.toISOString() ?? null,
     createdAt: invitation.createdAt.toISOString(),
     updatedAt: invitation.updatedAt.toISOString(),
     workshop: invitation.workshop,

@@ -339,6 +339,7 @@ model Invitation {
   expiresAt       DateTime         @map("expires_at")
   acceptedAt      DateTime?        @map("accepted_at")
   revokedAt       DateTime?        @map("revoked_at")
+  archivedAt      DateTime?        @map("archived_at")
   createdByUserId String?          @map("created_by_user_id")
   acceptedByUserId String?         @map("accepted_by_user_id")
   createdAt       DateTime         @default(now()) @map("created_at")
@@ -354,5 +355,7 @@ model Invitation {
   @@index([expiresAt])
   @@index([createdByUserId])
   @@index([acceptedByUserId])
+  @@index([archivedAt])
   @@map("invitations")
+
 }

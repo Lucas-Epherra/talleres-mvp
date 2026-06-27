@@ -32,6 +32,7 @@ import { RevokePlatformInvitationButton } from "./_components/RevokePlatformInvi
 import { ResendPlatformInvitationButton } from "./_components/ResendPlatformInvitationButton";
 import { PlatformUserAccessButton } from "./_components/PlatformUserAccessButton";
 import { PlatformUserRoleForm } from "./_components/PlatformUserRoleForm";
+import { ArchivePlatformInvitationButton } from "./_components/ArchivePlatformInvitationButton";
 
 export const metadata: Metadata = {
   title: "Plataforma",
@@ -761,6 +762,13 @@ function InvitationCard({ invitation }: InvitationCardProps) {
               email={invitation.email}
             />
           ) : null}
+
+          {canArchiveInvitation(invitation.status) ? (
+            <ArchivePlatformInvitationButton
+              invitationId={invitation.id}
+              email={invitation.email}
+            />
+          ) : null}
         </div>
       </div>
     </article>
@@ -855,6 +863,13 @@ type WorkshopMiniMetricProps = {
  */
 function canResendInvitation(status: PlatformInvitation["status"]): boolean {
   return status === "PENDING" || status === "EXPIRED";
+}
+
+/**
+ * Determines if an invitation can be archived.
+ */
+function canArchiveInvitation(status: PlatformInvitation["status"]): boolean {
+  return status === "REVOKED" || status === "EXPIRED";
 }
 
 /**

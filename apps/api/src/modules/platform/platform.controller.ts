@@ -144,6 +144,17 @@ export class PlatformController {
   }
 
   /**
+   * Archives a revoked or expired platform invitation.
+   */
+  @Post('invitations/:invitationId/archive')
+  @HttpCode(HttpStatus.OK)
+  archiveInvitation(
+    @Param('invitationId', new ParseUUIDPipe()) invitationId: string,
+  ) {
+    return this.platformService.archiveInvitation(invitationId);
+  }
+
+  /**
    * Disables a workshop user access.
    */
   @Post('users/:membershipId/disable')
@@ -193,6 +204,7 @@ function getPlatformCapabilities(): string[] {
     'INVITATIONS_CREATE',
     'INVITATIONS_REVOKE',
     'INVITATIONS_RESEND',
+    'INVITATIONS_ARCHIVE',
     'USERS_DISABLE',
     'USERS_ENABLE',
     'USERS_UPDATE_ROLE',

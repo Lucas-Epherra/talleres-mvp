@@ -9,6 +9,7 @@ import type {
   UpdatePlatformWorkshopStatusResponse,
   RevokePlatformInvitationResponse,
   ResendPlatformInvitationResponse,
+  ArchivePlatformInvitationResponse,
   UpdatePlatformUserAccessResponse,
   UpdatePlatformUserRoleInput,
   UpdatePlatformUserRoleResponse,
@@ -60,6 +61,21 @@ export function revokePlatformInvitation(
     },
   );
 }
+
+/**
+ * Archives a revoked or expired invitation.
+ */
+export function archivePlatformInvitation(
+  invitationId: string,
+): Promise<ArchivePlatformInvitationResponse> {
+  return apiFetch<ArchivePlatformInvitationResponse>(
+    `/platform/invitations/${invitationId}/archive`,
+    {
+      method: "POST",
+    },
+  );
+}
+
 
 /**
  * Resends a pending or expired invitation with a fresh token.
