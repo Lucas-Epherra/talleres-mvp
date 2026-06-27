@@ -26,6 +26,7 @@ import { ApiError, isApiErrorWithStatus } from "@/lib/api";
 import { apiServerFetch } from "@/lib/api.server";
 import { CreatePlatformInvitationForm } from "./_components/CreatePlatformInvitationForm";
 import { CreatePlatformWorkshopForm } from "./_components/CreatePlatformWorkshopForm";
+import { PlatformWorkshopStatusButton } from "./_components/PlatformWorkshopStatusButton";
 import { RevokePlatformInvitationButton } from "./_components/RevokePlatformInvitationButton";
 import { ResendPlatformInvitationButton } from "./_components/ResendPlatformInvitationButton";
 import { PlatformUserAccessButton } from "./_components/PlatformUserAccessButton";
@@ -456,36 +457,40 @@ function WorkshopCard({ workshop }: WorkshopCardProps) {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 lg:w-md">
-          <WorkshopMiniMetric
-            label="Miembros"
-            value={workshop.counts.members}
-            icon={<Users className="size-3.5" aria-hidden="true" />}
-          />
+        <div className="flex flex-col gap-3 lg:items-end">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 lg:w-md">
+            <WorkshopMiniMetric
+              label="Miembros"
+              value={workshop.counts.members}
+              icon={<Users className="size-3.5" aria-hidden="true" />}
+            />
 
-          <WorkshopMiniMetric
-            label="Clientes"
-            value={workshop.counts.customers}
-            icon={<Users className="size-3.5" aria-hidden="true" />}
-          />
+            <WorkshopMiniMetric
+              label="Clientes"
+              value={workshop.counts.customers}
+              icon={<Users className="size-3.5" aria-hidden="true" />}
+            />
 
-          <WorkshopMiniMetric
-            label="Vehículos"
-            value={workshop.counts.vehicles}
-            icon={<Building2 className="size-3.5" aria-hidden="true" />}
-          />
+            <WorkshopMiniMetric
+              label="Vehículos"
+              value={workshop.counts.vehicles}
+              icon={<Building2 className="size-3.5" aria-hidden="true" />}
+            />
 
-          <WorkshopMiniMetric
-            label="Órdenes"
-            value={workshop.counts.workOrders}
-            icon={<Wrench className="size-3.5" aria-hidden="true" />}
-          />
+            <WorkshopMiniMetric
+              label="Órdenes"
+              value={workshop.counts.workOrders}
+              icon={<Wrench className="size-3.5" aria-hidden="true" />}
+            />
 
-          <WorkshopMiniMetric
-            label="Turnos"
-            value={workshop.counts.appointments}
-            icon={<CalendarDays className="size-3.5" aria-hidden="true" />}
-          />
+            <WorkshopMiniMetric
+              label="Turnos"
+              value={workshop.counts.appointments}
+              icon={<CalendarDays className="size-3.5" aria-hidden="true" />}
+            />
+          </div>
+
+          <PlatformWorkshopStatusButton workshop={workshop} />
         </div>
       </div>
     </article>

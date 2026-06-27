@@ -132,6 +132,10 @@ export type CreatePlatformWorkshopResponse = {
   data: PlatformWorkshop;
 };
 
+export type UpdatePlatformWorkshopStatusResponse = {
+  data: PlatformWorkshop;
+};
+
 export type CreatePlatformInvitationInput = {
   email: string;
   role: AuthRole;

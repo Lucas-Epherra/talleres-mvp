@@ -89,6 +89,26 @@ export class PlatformController {
   }
 
   /**
+   * Suspends a customer workshop.
+   */
+  @Post('workshops/:workshopId/disable')
+  @HttpCode(HttpStatus.OK)
+  disableWorkshop(
+    @Param('workshopId', new ParseUUIDPipe()) workshopId: string,
+  ) {
+    return this.platformService.disableWorkshop(workshopId);
+  }
+
+  /**
+   * Reactivates a suspended customer workshop.
+   */
+  @Post('workshops/:workshopId/enable')
+  @HttpCode(HttpStatus.OK)
+  enableWorkshop(@Param('workshopId', new ParseUUIDPipe()) workshopId: string) {
+    return this.platformService.enableWorkshop(workshopId);
+  }
+
+  /**
    * Creates an invitation for a workshop user.
    */
   @Post('workshops/:workshopId/invitations')
@@ -166,6 +186,8 @@ function getPlatformCapabilities(): string[] {
     'PLATFORM_READ',
     'WORKSHOPS_READ',
     'WORKSHOPS_CREATE',
+    'WORKSHOPS_DISABLE',
+    'WORKSHOPS_ENABLE',
     'USERS_READ',
     'INVITATIONS_READ',
     'INVITATIONS_CREATE',

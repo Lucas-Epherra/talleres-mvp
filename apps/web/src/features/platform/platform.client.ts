@@ -6,6 +6,7 @@ import type {
   CreatePlatformInvitationResponse,
   CreatePlatformWorkshopInput,
   CreatePlatformWorkshopResponse,
+  UpdatePlatformWorkshopStatusResponse,
   RevokePlatformInvitationResponse,
   ResendPlatformInvitationResponse,
   UpdatePlatformUserAccessResponse,
@@ -126,6 +127,34 @@ export function updatePlatformUserRole(
     {
       method: "PATCH",
       body: JSON.stringify(input),
+    },
+  );
+}
+
+/**
+ * Suspends a customer workshop from the internal platform panel.
+ */
+export function disablePlatformWorkshop(
+  workshopId: string,
+): Promise<UpdatePlatformWorkshopStatusResponse> {
+  return apiFetch<UpdatePlatformWorkshopStatusResponse>(
+    `/platform/workshops/${workshopId}/disable`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+/**
+ * Reactivates a suspended customer workshop from the internal platform panel.
+ */
+export function enablePlatformWorkshop(
+  workshopId: string,
+): Promise<UpdatePlatformWorkshopStatusResponse> {
+  return apiFetch<UpdatePlatformWorkshopStatusResponse>(
+    `/platform/workshops/${workshopId}/enable`,
+    {
+      method: "POST",
     },
   );
 }

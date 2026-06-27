@@ -397,6 +397,86 @@ export class PlatformService {
   }
 
   /**
+   * Suspends a customer workshop without deleting its data.
+   */
+  async disableWorkshop(workshopId: string) {
+    const workshop = await this.prisma.workshop.findFirst({
+      where: {
+        id: workshopId,
+        slug: {
+          not: PLATFORM_INTERNAL_WORKSHOP_SLUG,
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+
+    if (!workshop) {
+      throw new NotFoundException('No se encontró el taller.');
+    }
+
+    if (workshop.status === WorkshopStatus.DISABLED) {
+      throw new ConflictException('Este taller ya está suspendido.');
+    }
+
+    const updatedWorkshop = await this.prisma.workshop.update({
+      where: {
+        id: workshop.id,
+      },
+      data: {
+        status: WorkshopStatus.DISABLED,
+      },
+      select: getWorkshopListSelect(),
+    });
+
+    return {
+      data: serializePlatformWorkshop(updatedWorkshop),
+    };
+  }
+
+  /**
+   * Reactivates a suspended customer workshop.
+   */
+  async enableWorkshop(workshopId: string) {
+    const workshop = await this.prisma.workshop.findFirst({
+      where: {
+        id: workshopId,
+        slug: {
+          not: PLATFORM_INTERNAL_WORKSHOP_SLUG,
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+
+    if (!workshop) {
+      throw new NotFoundException('No se encontró el taller.');
+    }
+
+    if (workshop.status === WorkshopStatus.ACTIVE) {
+      throw new ConflictException('Este taller ya está activo.');
+    }
+
+    const updatedWorkshop = await this.prisma.workshop.update({
+      where: {
+        id: workshop.id,
+      },
+      data: {
+        status: WorkshopStatus.ACTIVE,
+      },
+      select: getWorkshopListSelect(),
+    });
+
+    return {
+      data: serializePlatformWorkshop(updatedWorkshop),
+    };
+  }
+
+  /**
    * Creates a pending invitation for a workshop user.
    *
    * The raw token is returned once so the internal administrator can use it
