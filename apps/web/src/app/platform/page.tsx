@@ -626,8 +626,16 @@ function WorkshopCard({ workshop }: WorkshopCardProps) {
             />
           </div>
 
-          <PlatformWorkshopStatusButton workshop={workshop} />
-        </div>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row lg:justify-end">
+            <Link
+              href={`/platform/workshops/${workshop.id}`}
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-border-strong bg-surface px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated"
+            >
+              Ver detalle
+            </Link>
+
+            <PlatformWorkshopStatusButton workshop={workshop} />
+          </div>        </div>
       </div>
     </article>
   );

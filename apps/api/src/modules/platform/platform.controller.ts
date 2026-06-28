@@ -64,6 +64,14 @@ export class PlatformController {
   }
 
   /**
+   * Returns a customer workshop detail.
+   */
+  @Get('workshops/:workshopId')
+  workshopDetail(@Param('workshopId', new ParseUUIDPipe()) workshopId: string) {
+    return this.platformService.getWorkshopDetail(workshopId);
+  }
+
+  /**
    * Returns pending and historical invitations.
    */
   @Get('invitations')

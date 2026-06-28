@@ -150,6 +150,57 @@ export class PlatformService {
   }
 
   /**
+   * Returns a full platform workshop detail.
+   */
+  async getWorkshopDetail(workshopId: string) {
+    await this.expireStaleInvitations();
+
+    const workshop = await this.prisma.workshop.findFirst({
+      where: {
+        id: workshopId,
+        slug: {
+          not: PLATFORM_INTERNAL_WORKSHOP_SLUG,
+        },
+      },
+      select: getWorkshopListSelect(),
+    });
+
+    if (!workshop) {
+      throw new NotFoundException('No se encontró el taller.');
+    }
+
+    const [memberships, invitations] = await Promise.all([
+      this.prisma.workshopMember.findMany({
+        where: {
+          workshopId: workshop.id,
+        },
+        select: getPlatformUserListSelect(),
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.invitation.findMany({
+        where: {
+          workshopId: workshop.id,
+          archivedAt: null,
+        },
+        select: getInvitationListSelect(),
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+    ]);
+
+    return {
+      data: {
+        workshop: serializePlatformWorkshop(workshop),
+        users: memberships.map(serializePlatformUser),
+        invitations: invitations.map(serializePlatformInvitation),
+      },
+    };
+  }
+
+  /**
    * Lists non-archived platform invitations.
    */
   async listInvitations() {

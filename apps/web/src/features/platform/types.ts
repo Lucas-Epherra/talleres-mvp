@@ -85,6 +85,14 @@ export type PlatformUsersResponse = {
   data: PlatformUser[];
 };
 
+export type PlatformWorkshopDetailResponse = {
+  data: {
+    workshop: PlatformWorkshop;
+    users: PlatformUser[];
+    invitations: PlatformInvitation[];
+  };
+};
+
 export type UpdatePlatformUserAccessResponse = {
   data: PlatformUser;
 };
