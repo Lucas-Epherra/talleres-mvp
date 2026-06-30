@@ -73,6 +73,49 @@ export type PlatformUser = {
   };
 };
 
+export type PlatformAuditAction =
+  | "WORKSHOP_CREATED"
+  | "WORKSHOP_DISABLED"
+  | "WORKSHOP_ENABLED"
+  | "INVITATION_CREATED"
+  | "INVITATION_REVOKED"
+  | "INVITATION_RESENT"
+  | "INVITATION_ARCHIVED"
+  | "USER_ACCESS_DISABLED"
+  | "USER_ACCESS_ENABLED"
+  | "USER_ROLE_UPDATED";
+
+export type PlatformAuditEntityType =
+  | "WORKSHOP"
+  | "INVITATION"
+  | "USER_ACCESS";
+
+export type PlatformAuditLog = {
+  id: string;
+  action: PlatformAuditAction;
+  entityType: PlatformAuditEntityType;
+  entityId: string;
+  workshopId: string | null;
+  summary: string;
+  metadata: unknown;
+  createdAt: string;
+  actorUser: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  workshop: {
+    id: string;
+    name: string;
+    slug: string;
+    status: PlatformWorkshopStatus;
+  } | null;
+};
+
+export type PlatformAuditLogsResponse = {
+  data: PlatformAuditLog[];
+};
+
 export type PlatformWorkshopsResponse = {
   data: PlatformWorkshop[];
 };
@@ -90,6 +133,7 @@ export type PlatformWorkshopDetailResponse = {
     workshop: PlatformWorkshop;
     users: PlatformUser[];
     invitations: PlatformInvitation[];
+    auditLogs: PlatformAuditLog[];
   };
 };
 

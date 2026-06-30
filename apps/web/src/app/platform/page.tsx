@@ -22,6 +22,8 @@ import type {
   PlatformUsersResponse,
   PlatformWorkshop,
   PlatformWorkshopsResponse,
+  PlatformAuditLog,
+  PlatformAuditLogsResponse,
 } from "@/features/platform/types";
 import { ApiError, isApiErrorWithStatus } from "@/lib/api";
 import { apiServerFetch } from "@/lib/api.server";
@@ -93,6 +95,7 @@ export default async function PlatformPage({ searchParams }: PlatformPageProps) 
     workshopsPage,
     usersPage,
     invitationsPage,
+    auditLogsPage,
   ] = await Promise.all([
     getProtectedPlatformResource<PlatformMeResponse>("/platform/me"),
     getProtectedPlatformResource<PlatformSummaryResponse>("/platform/summary"),
@@ -102,6 +105,9 @@ export default async function PlatformPage({ searchParams }: PlatformPageProps) 
     getProtectedPlatformResource<PlatformUsersResponse>("/platform/users"),
     getProtectedPlatformResource<PlatformInvitationsResponse>(
       "/platform/invitations",
+    ),
+    getProtectedPlatformResource<PlatformAuditLogsResponse>(
+      "/platform/audit-logs",
     ),
   ]);
 
@@ -400,6 +406,33 @@ export default async function PlatformPage({ searchParams }: PlatformPageProps) 
                 ))}
               </div>
             </section>
+
+            <section className="rounded-[1.35rem] border border-border bg-surface p-5 sm:p-6">
+              <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+                Actividad reciente
+              </p>
+
+              <h2 className="mt-2 font-display text-2xl font-black uppercase tracking-[0.04em] text-foreground">
+                Auditoría
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                Últimas acciones realizadas desde el panel interno.
+              </p>
+
+              {auditLogsPage.data.length > 0 ? (
+                <div className="mt-5 space-y-3">
+                  {auditLogsPage.data.slice(0, 8).map((auditLog) => (
+                    <AuditLogCard key={auditLog.id} auditLog={auditLog} />
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-5 rounded-2xl border border-dashed border-border-strong bg-surface-muted/65 p-4 text-sm leading-6 text-muted-foreground">
+                  Todavía no hay actividad registrada.
+                </p>
+              )}
+            </section>
+
           </aside>
         </section>
       </section>
@@ -1029,6 +1062,43 @@ function filterInvitations(
       filters.query,
     );
   });
+}
+
+type AuditLogCardProps = {
+  auditLog: PlatformAuditLog;
+};
+
+/**
+ * Renders a compact platform audit log row.
+ */
+function AuditLogCard({ auditLog }: AuditLogCardProps) {
+  return (
+    <article className="rounded-xl border border-border bg-surface-muted px-3 py-3">
+      <p className="text-sm font-bold leading-5 text-foreground">
+        {auditLog.summary}
+      </p>
+
+      <p className="mt-1 text-xs font-semibold leading-5 text-muted-foreground">
+        {auditLog.actorUser.name} · {formatPlatformDateTime(auditLog.createdAt)}
+      </p>
+
+      {auditLog.workshop ? (
+        <p className="mt-1 wrap-anywhere text-xs font-semibold leading-5 text-muted-foreground">
+          Taller: {auditLog.workshop.name}
+        </p>
+      ) : null}
+    </article>
+  );
+}
+
+/**
+ * Formats platform date and time in a compact readable format.
+ */
+function formatPlatformDateTime(value: string): string {
+  return new Intl.DateTimeFormat("es-AR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(value));
 }
 
 /**

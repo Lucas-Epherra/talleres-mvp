@@ -18,6 +18,7 @@ import type {
   PlatformUser,
   PlatformWorkshop,
   PlatformWorkshopDetailResponse,
+  PlatformAuditLog,
 } from "@/features/platform/types";
 import { ApiError, isApiErrorWithStatus } from "@/lib/api";
 import { apiServerFetch } from "@/lib/api.server";
@@ -83,8 +84,7 @@ export default async function PlatformWorkshopDetailPage({
     ),
   ]);
 
-  const { workshop, users, invitations } = detailPage.data;
-
+  const { workshop, users, invitations, auditLogs } = detailPage.data;
   return (
     <main className="theme-light min-h-screen overflow-x-hidden bg-background text-foreground">
       <header className="theme-dark-shell border-b border-white/10 bg-[#080A0D]">
@@ -286,6 +286,29 @@ export default async function PlatformWorkshopDetailPage({
                   value={invitations.length.toString()}
                 />
               </div>
+            </section>
+            <section className="rounded-[1.35rem] border border-border bg-surface p-5 sm:p-6">
+              <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+                Actividad del taller
+              </p>
+
+              <h2 className="mt-2 font-display text-2xl font-black uppercase tracking-[0.04em] text-foreground">
+                Auditoría
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                Últimas acciones internas relacionadas con este taller.
+              </p>
+
+              {auditLogs.length > 0 ? (
+                <div className="mt-5 space-y-3">
+                  {auditLogs.map((auditLog) => (
+                    <AuditLogCard key={auditLog.id} auditLog={auditLog} />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState message="Este taller todavía no tiene actividad interna registrada." />
+              )}
             </section>
           </aside>
         </section>
@@ -509,6 +532,37 @@ function SideInfo({ label, value }: SideInfoProps) {
       <p className="mt-1 wrap-anywhere font-bold text-foreground">{value}</p>
     </div>
   );
+}
+
+type AuditLogCardProps = {
+  auditLog: PlatformAuditLog;
+};
+
+/**
+ * Renders a compact platform audit log row.
+ */
+function AuditLogCard({ auditLog }: AuditLogCardProps) {
+  return (
+    <article className="rounded-xl border border-border bg-surface-muted px-3 py-3">
+      <p className="text-sm font-bold leading-5 text-foreground">
+        {auditLog.summary}
+      </p>
+
+      <p className="mt-1 text-xs font-semibold leading-5 text-muted-foreground">
+        {auditLog.actorUser.name} · {formatPlatformDateTime(auditLog.createdAt)}
+      </p>
+    </article>
+  );
+}
+
+/**
+ * Formats platform date and time in a compact readable format.
+ */
+function formatPlatformDateTime(value: string): string {
+  return new Intl.DateTimeFormat("es-AR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(value));
 }
 
 type EmptyStateProps = {

@@ -10,6 +10,8 @@ import {
   PlatformRole,
   Prisma,
   UserStatus,
+  PlatformAuditAction,
+  PlatformAuditEntityType,
   WorkshopRole,
   WorkshopStatus,
 } from '@prisma/client';
@@ -128,6 +130,23 @@ export class PlatformService {
   }
 
   /**
+   * Lists recent internal platform audit logs.
+   */
+  async listAuditLogs() {
+    const auditLogs = await this.prisma.platformAuditLog.findMany({
+      select: getPlatformAuditLogListSelect(),
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 30,
+    });
+
+    return {
+      data: auditLogs.map(serializePlatformAuditLog),
+    };
+  }
+
+  /**
    * Lists customer workshops registered in the platform.
    */
   async listWorkshops() {
@@ -169,7 +188,7 @@ export class PlatformService {
       throw new NotFoundException('No se encontró el taller.');
     }
 
-    const [memberships, invitations] = await Promise.all([
+    const [memberships, invitations, auditLogs] = await Promise.all([
       this.prisma.workshopMember.findMany({
         where: {
           workshopId: workshop.id,
@@ -189,6 +208,16 @@ export class PlatformService {
           createdAt: 'desc',
         },
       }),
+      this.prisma.platformAuditLog.findMany({
+        where: {
+          workshopId: workshop.id,
+        },
+        select: getPlatformAuditLogListSelect(),
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 20,
+      }),
     ]);
 
     return {
@@ -196,6 +225,7 @@ export class PlatformService {
         workshop: serializePlatformWorkshop(workshop),
         users: memberships.map(serializePlatformUser),
         invitations: invitations.map(serializePlatformInvitation),
+        auditLogs: auditLogs.map(serializePlatformAuditLog),
       },
     };
   }
@@ -261,7 +291,7 @@ export class PlatformService {
   /**
    * Disables a workshop user access without deleting the user account.
    */
-  async disableUserAccess(membershipId: string) {
+  async disableUserAccess(membershipId: string, actorUserId: string) {
     const membership = await this.prisma.workshopMember.findFirst({
       where: {
         id: membershipId,
@@ -274,6 +304,20 @@ export class PlatformService {
       select: {
         id: true,
         status: true,
+        role: true,
+        user: {
+          select: {
+            email: true,
+            name: true,
+          },
+        },
+        workshop: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
       },
     });
 
@@ -295,6 +339,23 @@ export class PlatformService {
       select: getPlatformUserListSelect(),
     });
 
+    await this.createAuditLog({
+      actorUserId,
+      action: PlatformAuditAction.USER_ACCESS_DISABLED,
+      entityType: PlatformAuditEntityType.USER_ACCESS,
+      entityId: membership.id,
+      workshopId: membership.workshop.id,
+      summary: `Se deshabilitó el acceso de ${membership.user.email} en ${membership.workshop.name}.`,
+      metadata: {
+        email: membership.user.email,
+        userName: membership.user.name,
+        workshopSlug: membership.workshop.slug,
+        role: membership.role,
+        previousStatus: MembershipStatus.ACTIVE,
+        newStatus: MembershipStatus.DISABLED,
+      },
+    });
+
     return {
       data: serializePlatformUser(updatedMembership),
     };
@@ -303,7 +364,7 @@ export class PlatformService {
   /**
    * Reactivates a disabled workshop user access.
    */
-  async enableUserAccess(membershipId: string) {
+  async enableUserAccess(membershipId: string, actorUserId: string) {
     const membership = await this.prisma.workshopMember.findFirst({
       where: {
         id: membershipId,
@@ -318,11 +379,16 @@ export class PlatformService {
         status: true,
         user: {
           select: {
+            email: true,
+            name: true,
             status: true,
           },
         },
         workshop: {
           select: {
+            id: true,
+            name: true,
+            slug: true,
             status: true,
           },
         },
@@ -359,6 +425,23 @@ export class PlatformService {
       select: getPlatformUserListSelect(),
     });
 
+    await this.createAuditLog({
+      actorUserId,
+      action: PlatformAuditAction.USER_ACCESS_ENABLED,
+      entityType: PlatformAuditEntityType.USER_ACCESS,
+      entityId: membership.id,
+      workshopId: membership.workshop.id,
+      summary: `Se reactivó el acceso de ${membership.user.email} en ${membership.workshop.name}.`,
+      metadata: {
+        email: membership.user.email,
+        userName: membership.user.name,
+        workshopSlug: membership.workshop.slug,
+        role: updatedMembership.role,
+        previousStatus: MembershipStatus.DISABLED,
+        newStatus: MembershipStatus.ACTIVE,
+      },
+    });
+
     return {
       data: serializePlatformUser(updatedMembership),
     };
@@ -367,7 +450,11 @@ export class PlatformService {
   /**
    * Updates a workshop user role without changing access status.
    */
-  async updateUserRole(membershipId: string, role: WorkshopRole) {
+  async updateUserRole(
+    membershipId: string,
+    role: WorkshopRole,
+    actorUserId: string,
+  ) {
     const membership = await this.prisma.workshopMember.findFirst({
       where: {
         id: membershipId,
@@ -380,6 +467,19 @@ export class PlatformService {
       select: {
         id: true,
         role: true,
+        user: {
+          select: {
+            email: true,
+            name: true,
+          },
+        },
+        workshop: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
       },
     });
 
@@ -401,6 +501,22 @@ export class PlatformService {
       select: getPlatformUserListSelect(),
     });
 
+    await this.createAuditLog({
+      actorUserId,
+      action: PlatformAuditAction.USER_ROLE_UPDATED,
+      entityType: PlatformAuditEntityType.USER_ACCESS,
+      entityId: membership.id,
+      workshopId: membership.workshop.id,
+      summary: `Se cambió el rol de ${membership.user.email} en ${membership.workshop.name}.`,
+      metadata: {
+        email: membership.user.email,
+        userName: membership.user.name,
+        workshopSlug: membership.workshop.slug,
+        previousRole: membership.role,
+        newRole: role,
+      },
+    });
+
     return {
       data: serializePlatformUser(updatedMembership),
     };
@@ -413,7 +529,7 @@ export class PlatformService {
    * intentionally handled as a separate step so tenant creation and user access
    * stay auditable.
    */
-  async createWorkshop(dto: CreatePlatformWorkshopDto) {
+  async createWorkshop(dto: CreatePlatformWorkshopDto, actorUserId: string) {
     const name = dto.name.trim();
     const requestedSlug = dto.slug?.trim().toLowerCase();
     const slug = requestedSlug ?? (await this.generateAvailableSlug(name));
@@ -436,6 +552,20 @@ export class PlatformService {
         select: getWorkshopListSelect(),
       });
 
+      await this.createAuditLog({
+        actorUserId,
+        action: PlatformAuditAction.WORKSHOP_CREATED,
+        entityType: PlatformAuditEntityType.WORKSHOP,
+        entityId: workshop.id,
+        workshopId: workshop.id,
+        summary: `Se creó el taller ${workshop.name}.`,
+        metadata: {
+          name: workshop.name,
+          slug: workshop.slug,
+          status: workshop.status,
+        },
+      });
+
       return {
         data: serializePlatformWorkshop(workshop),
       };
@@ -453,7 +583,7 @@ export class PlatformService {
   /**
    * Suspends a customer workshop without deleting its data.
    */
-  async disableWorkshop(workshopId: string) {
+  async disableWorkshop(workshopId: string, actorUserId: string) {
     const workshop = await this.prisma.workshop.findFirst({
       where: {
         id: workshopId,
@@ -464,6 +594,8 @@ export class PlatformService {
       select: {
         id: true,
         status: true,
+        name: true,
+        slug: true,
       },
     });
 
@@ -485,6 +617,21 @@ export class PlatformService {
       select: getWorkshopListSelect(),
     });
 
+    await this.createAuditLog({
+      actorUserId,
+      action: PlatformAuditAction.WORKSHOP_DISABLED,
+      entityType: PlatformAuditEntityType.WORKSHOP,
+      entityId: workshop.id,
+      workshopId: workshop.id,
+      summary: `Se suspendió el taller ${workshop.name}.`,
+      metadata: {
+        name: workshop.name,
+        slug: workshop.slug,
+        previousStatus: WorkshopStatus.ACTIVE,
+        newStatus: WorkshopStatus.DISABLED,
+      },
+    });
+
     return {
       data: serializePlatformWorkshop(updatedWorkshop),
     };
@@ -493,7 +640,7 @@ export class PlatformService {
   /**
    * Reactivates a suspended customer workshop.
    */
-  async enableWorkshop(workshopId: string) {
+  async enableWorkshop(workshopId: string, actorUserId: string) {
     const workshop = await this.prisma.workshop.findFirst({
       where: {
         id: workshopId,
@@ -504,6 +651,8 @@ export class PlatformService {
       select: {
         id: true,
         status: true,
+        name: true,
+        slug: true,
       },
     });
 
@@ -523,6 +672,21 @@ export class PlatformService {
         status: WorkshopStatus.ACTIVE,
       },
       select: getWorkshopListSelect(),
+    });
+
+    await this.createAuditLog({
+      actorUserId,
+      action: PlatformAuditAction.WORKSHOP_ENABLED,
+      entityType: PlatformAuditEntityType.WORKSHOP,
+      entityId: workshop.id,
+      workshopId: workshop.id,
+      summary: `Se reactivó el taller ${workshop.name}.`,
+      metadata: {
+        name: workshop.name,
+        slug: workshop.slug,
+        previousStatus: WorkshopStatus.DISABLED,
+        newStatus: WorkshopStatus.ACTIVE,
+      },
     });
 
     return {
@@ -594,6 +758,22 @@ export class PlatformService {
       },
     );
 
+    await this.createAuditLog({
+      actorUserId: createdByUserId,
+      action: PlatformAuditAction.INVITATION_CREATED,
+      entityType: PlatformAuditEntityType.INVITATION,
+      entityId: invitation.id,
+      workshopId: workshop.id,
+      summary: `Se invitó a ${invitation.email} al taller ${workshop.name}.`,
+      metadata: {
+        email: invitation.email,
+        role: invitation.role,
+        workshopSlug: workshop.slug,
+        deliverySent: delivery.sent,
+        deliveryReason: delivery.reason,
+      },
+    });
+
     return {
       data: serializePlatformInvitation(invitation),
       delivery,
@@ -605,7 +785,7 @@ export class PlatformService {
   /**
    * Revokes a pending invitation so its acceptance link stops working.
    */
-  async revokeInvitation(invitationId: string) {
+  async revokeInvitation(invitationId: string, actorUserId: string) {
     const invitation = await this.prisma.invitation.findFirst({
       where: {
         id: invitationId,
@@ -618,6 +798,15 @@ export class PlatformService {
       select: {
         id: true,
         status: true,
+        email: true,
+        role: true,
+        workshop: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
       },
     });
 
@@ -642,6 +831,22 @@ export class PlatformService {
       select: getInvitationListSelect(),
     });
 
+    await this.createAuditLog({
+      actorUserId,
+      action: PlatformAuditAction.INVITATION_REVOKED,
+      entityType: PlatformAuditEntityType.INVITATION,
+      entityId: invitation.id,
+      workshopId: invitation.workshop.id,
+      summary: `Se revocó la invitación de ${invitation.email} para ${invitation.workshop.name}.`,
+      metadata: {
+        email: invitation.email,
+        role: invitation.role,
+        workshopSlug: invitation.workshop.slug,
+        previousStatus: InvitationStatus.PENDING,
+        newStatus: InvitationStatus.REVOKED,
+      },
+    });
+
     return {
       data: serializePlatformInvitation(revokedInvitation),
     };
@@ -653,7 +858,7 @@ export class PlatformService {
    * The previous invitation link stops working because the stored token hash is
    * replaced with the new one.
    */
-  async resendInvitation(invitationId: string) {
+  async resendInvitation(invitationId: string, actorUserId: string) {
     const invitation = await this.prisma.invitation.findFirst({
       where: {
         id: invitationId,
@@ -725,6 +930,23 @@ export class PlatformService {
       },
     );
 
+    await this.createAuditLog({
+      actorUserId,
+      action: PlatformAuditAction.INVITATION_RESENT,
+      entityType: PlatformAuditEntityType.INVITATION,
+      entityId: invitation.id,
+      workshopId: invitation.workshop.id,
+      summary: `Se reenvió la invitación de ${invitation.email} para ${invitation.workshop.name}.`,
+      metadata: {
+        email: invitation.email,
+        workshopSlug: invitation.workshop.slug,
+        previousStatus: invitation.status,
+        newStatus: InvitationStatus.PENDING,
+        deliverySent: delivery.sent,
+        deliveryReason: delivery.reason,
+      },
+    });
+
     return {
       data: serializePlatformInvitation(updatedInvitation),
       delivery,
@@ -736,7 +958,7 @@ export class PlatformService {
   /**
    * Archives a revoked or expired invitation without deleting its history.
    */
-  async archiveInvitation(invitationId: string) {
+  async archiveInvitation(invitationId: string, actorUserId: string) {
     const invitation = await this.prisma.invitation.findFirst({
       where: {
         id: invitationId,
@@ -750,6 +972,15 @@ export class PlatformService {
       select: {
         id: true,
         status: true,
+        email: true,
+        role: true,
+        workshop: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
       },
     });
 
@@ -774,6 +1005,22 @@ export class PlatformService {
         archivedAt: new Date(),
       },
       select: getInvitationListSelect(),
+    });
+
+    await this.createAuditLog({
+      actorUserId,
+      action: PlatformAuditAction.INVITATION_ARCHIVED,
+      entityType: PlatformAuditEntityType.INVITATION,
+      entityId: invitation.id,
+      workshopId: invitation.workshop.id,
+      summary: `Se archivó la invitación de ${invitation.email} para ${invitation.workshop.name}.`,
+      metadata: {
+        email: invitation.email,
+        role: invitation.role,
+        workshopSlug: invitation.workshop.slug,
+        previousStatus: invitation.status,
+        archivedAt: archivedInvitation.archivedAt?.toISOString() ?? null,
+      },
     });
 
     return {
@@ -958,6 +1205,23 @@ export class PlatformService {
   }
 
   /**
+   * Stores an internal platform audit log.
+   */
+  private async createAuditLog(input: CreatePlatformAuditLogInput) {
+    await this.prisma.platformAuditLog.create({
+      data: {
+        actorUserId: input.actorUserId,
+        action: input.action,
+        entityType: input.entityType,
+        entityId: input.entityId,
+        workshopId: input.workshopId ?? null,
+        summary: input.summary,
+        ...(input.metadata === undefined ? {} : { metadata: input.metadata }),
+      },
+    });
+  }
+
+  /**
    * Prevents creating visually duplicated workshop accounts by name.
    */
   private async ensureWorkshopNameIsAvailable(name: string): Promise<void> {
@@ -1120,6 +1384,16 @@ export class PlatformService {
   }
 }
 
+type CreatePlatformAuditLogInput = {
+  actorUserId: string;
+  action: PlatformAuditAction;
+  entityType: PlatformAuditEntityType;
+  entityId: string;
+  workshopId?: string | null;
+  summary: string;
+  metadata?: Prisma.InputJsonValue;
+};
+
 /**
  * Shared select for platform workshop list responses.
  */
@@ -1241,6 +1515,41 @@ type PlatformUserRecord = Prisma.WorkshopMemberGetPayload<{
   select: ReturnType<typeof getPlatformUserListSelect>;
 }>;
 
+type PlatformAuditLogRecord = Prisma.PlatformAuditLogGetPayload<{
+  select: ReturnType<typeof getPlatformAuditLogListSelect>;
+}>;
+
+/**
+ * Shared select for platform audit log list responses.
+ */
+function getPlatformAuditLogListSelect() {
+  return {
+    id: true,
+    action: true,
+    entityType: true,
+    entityId: true,
+    workshopId: true,
+    summary: true,
+    metadata: true,
+    createdAt: true,
+    actorUser: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    },
+    workshop: {
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        status: true,
+      },
+    },
+  } satisfies Prisma.PlatformAuditLogSelect;
+}
+
 /**
  * Serializes a workshop record for platform frontend usage.
  */
@@ -1301,6 +1610,24 @@ function serializePlatformUser(membership: PlatformUserRecord) {
       updatedAt: membership.user.updatedAt.toISOString(),
     },
     workshop: membership.workshop,
+  };
+}
+
+/**
+ * Serializes an audit log record for platform frontend usage.
+ */
+function serializePlatformAuditLog(auditLog: PlatformAuditLogRecord) {
+  return {
+    id: auditLog.id,
+    action: auditLog.action,
+    entityType: auditLog.entityType,
+    entityId: auditLog.entityId,
+    workshopId: auditLog.workshopId,
+    summary: auditLog.summary,
+    metadata: auditLog.metadata,
+    createdAt: auditLog.createdAt.toISOString(),
+    actorUser: auditLog.actorUser,
+    workshop: auditLog.workshop,
   };
 }
 

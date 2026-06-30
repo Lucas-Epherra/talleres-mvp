@@ -6,8 +6,8 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
-  Post,
   Patch,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -56,6 +56,14 @@ export class PlatformController {
   }
 
   /**
+   * Returns recent platform audit logs.
+   */
+  @Get('audit-logs')
+  auditLogs() {
+    return this.platformService.listAuditLogs();
+  }
+
+  /**
    * Returns customer workshops.
    */
   @Get('workshops')
@@ -92,8 +100,11 @@ export class PlatformController {
    */
   @Post('workshops')
   @HttpCode(HttpStatus.CREATED)
-  createWorkshop(@Body() dto: CreatePlatformWorkshopDto) {
-    return this.platformService.createWorkshop(dto);
+  createWorkshop(
+    @Body() dto: CreatePlatformWorkshopDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.platformService.createWorkshop(dto, user.id);
   }
 
   /**
@@ -103,8 +114,9 @@ export class PlatformController {
   @HttpCode(HttpStatus.OK)
   disableWorkshop(
     @Param('workshopId', new ParseUUIDPipe()) workshopId: string,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.platformService.disableWorkshop(workshopId);
+    return this.platformService.disableWorkshop(workshopId, user.id);
   }
 
   /**
@@ -112,8 +124,11 @@ export class PlatformController {
    */
   @Post('workshops/:workshopId/enable')
   @HttpCode(HttpStatus.OK)
-  enableWorkshop(@Param('workshopId', new ParseUUIDPipe()) workshopId: string) {
-    return this.platformService.enableWorkshop(workshopId);
+  enableWorkshop(
+    @Param('workshopId', new ParseUUIDPipe()) workshopId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.platformService.enableWorkshop(workshopId, user.id);
   }
 
   /**
@@ -136,8 +151,9 @@ export class PlatformController {
   @HttpCode(HttpStatus.OK)
   revokeInvitation(
     @Param('invitationId', new ParseUUIDPipe()) invitationId: string,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.platformService.revokeInvitation(invitationId);
+    return this.platformService.revokeInvitation(invitationId, user.id);
   }
 
   /**
@@ -147,8 +163,9 @@ export class PlatformController {
   @HttpCode(HttpStatus.OK)
   resendInvitation(
     @Param('invitationId', new ParseUUIDPipe()) invitationId: string,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.platformService.resendInvitation(invitationId);
+    return this.platformService.resendInvitation(invitationId, user.id);
   }
 
   /**
@@ -158,8 +175,9 @@ export class PlatformController {
   @HttpCode(HttpStatus.OK)
   archiveInvitation(
     @Param('invitationId', new ParseUUIDPipe()) invitationId: string,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.platformService.archiveInvitation(invitationId);
+    return this.platformService.archiveInvitation(invitationId, user.id);
   }
 
   /**
@@ -169,8 +187,9 @@ export class PlatformController {
   @HttpCode(HttpStatus.OK)
   disableUserAccess(
     @Param('membershipId', new ParseUUIDPipe()) membershipId: string,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.platformService.disableUserAccess(membershipId);
+    return this.platformService.disableUserAccess(membershipId, user.id);
   }
 
   /**
@@ -180,8 +199,9 @@ export class PlatformController {
   @HttpCode(HttpStatus.OK)
   enableUserAccess(
     @Param('membershipId', new ParseUUIDPipe()) membershipId: string,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.platformService.enableUserAccess(membershipId);
+    return this.platformService.enableUserAccess(membershipId, user.id);
   }
 
   /**
@@ -192,8 +212,9 @@ export class PlatformController {
   updateUserRole(
     @Param('membershipId', new ParseUUIDPipe()) membershipId: string,
     @Body() dto: UpdatePlatformUserRoleDto,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.platformService.updateUserRole(membershipId, dto.role);
+    return this.platformService.updateUserRole(membershipId, dto.role, user.id);
   }
 }
 
@@ -203,18 +224,19 @@ export class PlatformController {
 function getPlatformCapabilities(): string[] {
   return [
     'PLATFORM_READ',
+    'PLATFORM_AUDIT_READ',
     'WORKSHOPS_READ',
     'WORKSHOPS_CREATE',
     'WORKSHOPS_DISABLE',
     'WORKSHOPS_ENABLE',
     'USERS_READ',
+    'USERS_DISABLE',
+    'USERS_ENABLE',
+    'USERS_UPDATE_ROLE',
     'INVITATIONS_READ',
     'INVITATIONS_CREATE',
     'INVITATIONS_REVOKE',
     'INVITATIONS_RESEND',
     'INVITATIONS_ARCHIVE',
-    'USERS_DISABLE',
-    'USERS_ENABLE',
-    'USERS_UPDATE_ROLE',
   ];
 }

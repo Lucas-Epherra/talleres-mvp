@@ -34,6 +34,25 @@ enum InvitationStatus {
   EXPIRED
 }
 
+enum PlatformAuditAction {
+  WORKSHOP_CREATED
+  WORKSHOP_DISABLED
+  WORKSHOP_ENABLED
+  INVITATION_CREATED
+  INVITATION_REVOKED
+  INVITATION_RESENT
+  INVITATION_ARCHIVED
+  USER_ACCESS_DISABLED
+  USER_ACCESS_ENABLED
+  USER_ROLE_UPDATED
+}
+
+enum PlatformAuditEntityType {
+  WORKSHOP
+  INVITATION
+  USER_ACCESS
+}
+
 enum WorkshopRole {
   OWNER
   ADMIN
@@ -87,6 +106,7 @@ model Workshop {
   vehicles        Vehicle[]
   workOrders      WorkOrder[]
   workOrderEvents WorkOrderEvent[]
+  platformAuditLogs PlatformAuditLog[]
   appointments    Appointment[]
   vehicleEvents   VehicleEvent[]
   customerEvents  CustomerEvent[]
@@ -114,6 +134,7 @@ model User {
   archivedCustomers Customer[]       @relation("CustomerArchivedByUser")
   createdInvitations  Invitation[] @relation("InvitationCreatedByUser")
   acceptedInvitations Invitation[] @relation("InvitationAcceptedByUser")
+  platformAuditLogs PlatformAuditLog[] @relation("PlatformAuditActor")
 
   @@index([platformRole])
   @@index([status])
@@ -358,4 +379,26 @@ model Invitation {
   @@index([archivedAt])
   @@map("invitations")
 
+}
+
+model PlatformAuditLog {
+  id          String                  @id @default(uuid())
+  actorUserId String                 @map("actor_user_id")
+  action      PlatformAuditAction
+  entityType  PlatformAuditEntityType @map("entity_type")
+  entityId    String                  @map("entity_id")
+  workshopId  String?                 @map("workshop_id")
+  summary     String
+  metadata    Json?
+  createdAt   DateTime                @default(now()) @map("created_at")
+
+  actorUser User      @relation("PlatformAuditActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+  workshop  Workshop? @relation(fields: [workshopId], references: [id], onDelete: SetNull)
+
+  @@index([actorUserId])
+  @@index([workshopId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("platform_audit_logs")
 }
