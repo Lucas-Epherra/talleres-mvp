@@ -562,6 +562,7 @@ function formatPlatformDateTime(value: string): string {
   return new Intl.DateTimeFormat("es-AR", {
     dateStyle: "short",
     timeStyle: "short",
+    timeZone: "America/Argentina/Buenos_Aires",
   }).format(new Date(value));
 }
 
@@ -703,5 +704,6 @@ function formatPlatformUserRole(role: PlatformUser["role"]): string {
 function formatPlatformDate(value: string): string {
   return new Intl.DateTimeFormat("es-AR", {
     dateStyle: "short",
+    timeZone: "America/Argentina/Buenos_Aires",
   }).format(new Date(value));
 }
