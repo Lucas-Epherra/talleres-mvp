@@ -174,3 +174,31 @@ export function enablePlatformWorkshop(
     },
   );
 }
+
+/**
+ * Archives a suspended customer workshop from the internal platform panel.
+ */
+export function archivePlatformWorkshop(
+  workshopId: string,
+): Promise<UpdatePlatformWorkshopStatusResponse> {
+  return apiFetch<UpdatePlatformWorkshopStatusResponse>(
+    `/platform/workshops/${workshopId}/archive`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+/**
+ * Restores an archived customer workshop back to suspended state.
+ */
+export function restorePlatformWorkshop(
+  workshopId: string,
+): Promise<UpdatePlatformWorkshopStatusResponse> {
+  return apiFetch<UpdatePlatformWorkshopStatusResponse>(
+    `/platform/workshops/${workshopId}/restore`,
+    {
+      method: "POST",
+    },
+  );
+}

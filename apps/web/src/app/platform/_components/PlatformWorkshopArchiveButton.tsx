@@ -1,40 +1,40 @@
 "use client";
 
-import { Ban, CheckCircle2 } from "lucide-react";
+import { Archive, RotateCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
-  disablePlatformWorkshop,
-  enablePlatformWorkshop,
+  archivePlatformWorkshop,
+  restorePlatformWorkshop,
 } from "@/features/platform/platform.client";
 import type { PlatformWorkshop } from "@/features/platform/types";
 import { getApiErrorMessage } from "@/lib/api";
 
-type PlatformWorkshopStatusButtonProps = {
+type PlatformWorkshopArchiveButtonProps = {
   workshop: PlatformWorkshop;
 };
 
 /**
- * Suspends or reactivates a customer workshop from the internal platform panel.
+ * Archives suspended workshops or restores archived workshops safely.
  */
-export function PlatformWorkshopStatusButton({
+export function PlatformWorkshopArchiveButton({
   workshop,
-}: PlatformWorkshopStatusButtonProps) {
+}: PlatformWorkshopArchiveButtonProps) {
   const router = useRouter();
   const [isRefreshing, startTransition] = useTransition();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const isActive = workshop.status === "ACTIVE";
-  const isSuspended = workshop.status === "DISABLED";
+  const canArchive = workshop.status === "DISABLED";
+  const canRestore = workshop.status === "ARCHIVED";
   const isDisabled = isSubmitting || isRefreshing;
 
-  if (workshop.status === "ARCHIVED") {
+  if (!canArchive && !canRestore) {
     return null;
   }
 
-  async function handleToggleStatus() {
-    const actionLabel = isActive ? "suspender" : "reactivar";
+  async function handleAction() {
+    const actionLabel = canArchive ? "archivar" : "restaurar";
 
     const confirmed = window.confirm(
       `¿Querés ${actionLabel} el taller ${workshop.name}?`,
@@ -48,12 +48,12 @@ export function PlatformWorkshopStatusButton({
     setIsSubmitting(true);
 
     try {
-      if (isActive) {
-        await disablePlatformWorkshop(workshop.id);
+      if (canArchive) {
+        await archivePlatformWorkshop(workshop.id);
       }
 
-      if (isSuspended) {
-        await enablePlatformWorkshop(workshop.id);
+      if (canRestore) {
+        await restorePlatformWorkshop(workshop.id);
       }
 
       startTransition(() => {
@@ -70,27 +70,27 @@ export function PlatformWorkshopStatusButton({
     <div className="space-y-2">
       <button
         type="button"
-        onClick={handleToggleStatus}
+        onClick={handleAction}
         disabled={isDisabled}
         className={
-          isActive
-            ? "inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-primary/35 bg-primary/10 px-4 text-sm font-bold text-primary transition hover:border-primary/60 hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+          canArchive
+            ? "inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             : "inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-success/35 bg-success/10 px-4 text-sm font-bold text-success transition hover:border-success/60 hover:bg-success/15 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         }
       >
-        {isActive ? (
-          <Ban className="size-4 shrink-0" aria-hidden="true" />
+        {canArchive ? (
+          <Archive className="size-4 shrink-0 text-primary" aria-hidden="true" />
         ) : (
-          <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
+          <RotateCcw className="size-4 shrink-0" aria-hidden="true" />
         )}
 
         {isDisabled
-          ? isActive
-            ? "Suspendiendo..."
-            : "Reactivando..."
-          : isActive
-            ? "Suspender"
-            : "Reactivar"}
+          ? canArchive
+            ? "Archivando..."
+            : "Restaurando..."
+          : canArchive
+            ? "Archivar"
+            : "Restaurar"}
       </button>
 
       {errorMessage ? (

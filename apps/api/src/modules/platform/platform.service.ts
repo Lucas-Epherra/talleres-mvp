@@ -48,6 +48,7 @@ export class PlatformService {
       totalWorkshops,
       activeWorkshops,
       disabledWorkshops,
+      archivedWorkshops,
       activeUsers,
       platformOwners,
       activeWorkshopMembers,
@@ -74,6 +75,14 @@ export class PlatformService {
             not: PLATFORM_INTERNAL_WORKSHOP_SLUG,
           },
           status: WorkshopStatus.DISABLED,
+        },
+      }),
+      this.prisma.workshop.count({
+        where: {
+          slug: {
+            not: PLATFORM_INTERNAL_WORKSHOP_SLUG,
+          },
+          status: WorkshopStatus.ARCHIVED,
         },
       }),
       this.prisma.user.count({
@@ -117,6 +126,7 @@ export class PlatformService {
         total: totalWorkshops,
         active: activeWorkshops,
         disabled: disabledWorkshops,
+        archived: archivedWorkshops,
       },
       users: {
         active: activeUsers,
@@ -603,8 +613,18 @@ export class PlatformService {
       throw new NotFoundException('No se encontró el taller.');
     }
 
+    if (workshop.status === WorkshopStatus.ARCHIVED) {
+      throw new ConflictException(
+        'No se puede suspender un taller archivado. Primero restauralo.',
+      );
+    }
+
     if (workshop.status === WorkshopStatus.DISABLED) {
       throw new ConflictException('Este taller ya está suspendido.');
+    }
+
+    if (workshop.status !== WorkshopStatus.ACTIVE) {
+      throw new ConflictException('Solo se pueden suspender talleres activos.');
     }
 
     const updatedWorkshop = await this.prisma.workshop.update({
@@ -660,8 +680,20 @@ export class PlatformService {
       throw new NotFoundException('No se encontró el taller.');
     }
 
+    if (workshop.status === WorkshopStatus.ARCHIVED) {
+      throw new ConflictException(
+        'No se puede reactivar un taller archivado. Primero restauralo.',
+      );
+    }
+
     if (workshop.status === WorkshopStatus.ACTIVE) {
       throw new ConflictException('Este taller ya está activo.');
+    }
+
+    if (workshop.status !== WorkshopStatus.DISABLED) {
+      throw new ConflictException(
+        'Solo se pueden reactivar talleres suspendidos.',
+      );
     }
 
     const updatedWorkshop = await this.prisma.workshop.update({
@@ -694,6 +726,129 @@ export class PlatformService {
     };
   }
 
+  /**
+   * Archives a suspended customer workshop without deleting its data.
+   */
+  async archiveWorkshop(workshopId: string, actorUserId: string) {
+    const workshop = await this.prisma.workshop.findFirst({
+      where: {
+        id: workshopId,
+        slug: {
+          not: PLATFORM_INTERNAL_WORKSHOP_SLUG,
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+        name: true,
+        slug: true,
+      },
+    });
+
+    if (!workshop) {
+      throw new NotFoundException('No se encontró el taller.');
+    }
+
+    if (workshop.status === WorkshopStatus.ARCHIVED) {
+      throw new ConflictException('Este taller ya está archivado.');
+    }
+
+    if (workshop.status !== WorkshopStatus.DISABLED) {
+      throw new ConflictException(
+        'Solo se pueden archivar talleres suspendidos.',
+      );
+    }
+
+    const updatedWorkshop = await this.prisma.workshop.update({
+      where: {
+        id: workshop.id,
+      },
+      data: {
+        status: WorkshopStatus.ARCHIVED,
+        archivedAt: new Date(),
+      },
+      select: getWorkshopListSelect(),
+    });
+
+    await this.createAuditLog({
+      actorUserId,
+      action: PlatformAuditAction.WORKSHOP_ARCHIVED,
+      entityType: PlatformAuditEntityType.WORKSHOP,
+      entityId: workshop.id,
+      workshopId: workshop.id,
+      summary: `Se archivó el taller ${workshop.name}.`,
+      metadata: {
+        name: workshop.name,
+        slug: workshop.slug,
+        previousStatus: WorkshopStatus.DISABLED,
+        newStatus: WorkshopStatus.ARCHIVED,
+      },
+    });
+
+    return {
+      data: serializePlatformWorkshop(updatedWorkshop),
+    };
+  }
+
+  /**
+   * Restores an archived workshop back to suspended state.
+   */
+  async restoreWorkshop(workshopId: string, actorUserId: string) {
+    const workshop = await this.prisma.workshop.findFirst({
+      where: {
+        id: workshopId,
+        slug: {
+          not: PLATFORM_INTERNAL_WORKSHOP_SLUG,
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+        name: true,
+        slug: true,
+      },
+    });
+
+    if (!workshop) {
+      throw new NotFoundException('No se encontró el taller.');
+    }
+
+    if (workshop.status !== WorkshopStatus.ARCHIVED) {
+      throw new ConflictException(
+        'Solo se pueden restaurar talleres archivados.',
+      );
+    }
+
+    const updatedWorkshop = await this.prisma.workshop.update({
+      where: {
+        id: workshop.id,
+      },
+      data: {
+        status: WorkshopStatus.DISABLED,
+        archivedAt: null,
+      },
+      select: getWorkshopListSelect(),
+    });
+
+    await this.createAuditLog({
+      actorUserId,
+      action: PlatformAuditAction.WORKSHOP_RESTORED,
+      entityType: PlatformAuditEntityType.WORKSHOP,
+      entityId: workshop.id,
+      workshopId: workshop.id,
+      summary: `Se restauró el taller ${workshop.name}.`,
+      metadata: {
+        name: workshop.name,
+        slug: workshop.slug,
+        previousStatus: WorkshopStatus.ARCHIVED,
+        newStatus: WorkshopStatus.DISABLED,
+      },
+    });
+
+    return {
+      data: serializePlatformWorkshop(updatedWorkshop),
+    };
+  }
   /**
    * Creates a pending invitation for a workshop user.
    *
@@ -1405,6 +1560,7 @@ function getWorkshopListSelect() {
     status: true,
     createdAt: true,
     updatedAt: true,
+    archivedAt: true,
     _count: {
       select: {
         members: true,
@@ -1561,6 +1717,7 @@ function serializePlatformWorkshop(workshop: PlatformWorkshopRecord) {
     status: workshop.status,
     createdAt: workshop.createdAt.toISOString(),
     updatedAt: workshop.updatedAt.toISOString(),
+    archivedAt: workshop.archivedAt?.toISOString() ?? null,
     counts: {
       members: workshop._count.members,
       customers: workshop._count.customers,

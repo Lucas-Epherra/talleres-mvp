@@ -1,6 +1,6 @@
 import type { AuthRole } from "@/features/auth/types";
 
-export type PlatformWorkshopStatus = "ACTIVE" | "DISABLED";
+export type PlatformWorkshopStatus = "ACTIVE" | "DISABLED" | "ARCHIVED";
 
 export type PlatformInvitationStatus =
   | "PENDING"
@@ -15,6 +15,7 @@ export type PlatformWorkshop = {
   status: PlatformWorkshopStatus;
   createdAt: string;
   updatedAt: string;
+  archivedAt: string | null;
   counts: {
     members: number;
     customers: number;
@@ -77,6 +78,8 @@ export type PlatformAuditAction =
   | "WORKSHOP_CREATED"
   | "WORKSHOP_DISABLED"
   | "WORKSHOP_ENABLED"
+  | "WORKSHOP_ARCHIVED"
+  | "WORKSHOP_RESTORED"
   | "INVITATION_CREATED"
   | "INVITATION_REVOKED"
   | "INVITATION_RESENT"
@@ -85,10 +88,7 @@ export type PlatformAuditAction =
   | "USER_ACCESS_ENABLED"
   | "USER_ROLE_UPDATED";
 
-export type PlatformAuditEntityType =
-  | "WORKSHOP"
-  | "INVITATION"
-  | "USER_ACCESS";
+export type PlatformAuditEntityType = "WORKSHOP" | "INVITATION" | "USER_ACCESS";
 
 export type PlatformAuditLog = {
   id: string;
@@ -154,6 +154,7 @@ export type PlatformSummaryResponse = {
     total: number;
     active: number;
     disabled: number;
+    archived: number;
   };
   users: {
     active: number;

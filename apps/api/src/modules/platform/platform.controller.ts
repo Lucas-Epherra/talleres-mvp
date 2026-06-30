@@ -132,6 +132,30 @@ export class PlatformController {
   }
 
   /**
+   * Archives a suspended customer workshop.
+   */
+  @Post('workshops/:workshopId/archive')
+  @HttpCode(HttpStatus.OK)
+  archiveWorkshop(
+    @Param('workshopId', new ParseUUIDPipe()) workshopId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.platformService.archiveWorkshop(workshopId, user.id);
+  }
+
+  /**
+   * Restores an archived customer workshop back to suspended state.
+   */
+  @Post('workshops/:workshopId/restore')
+  @HttpCode(HttpStatus.OK)
+  restoreWorkshop(
+    @Param('workshopId', new ParseUUIDPipe()) workshopId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.platformService.restoreWorkshop(workshopId, user.id);
+  }
+
+  /**
    * Creates an invitation for a workshop user.
    */
   @Post('workshops/:workshopId/invitations')
@@ -229,6 +253,8 @@ function getPlatformCapabilities(): string[] {
     'WORKSHOPS_CREATE',
     'WORKSHOPS_DISABLE',
     'WORKSHOPS_ENABLE',
+    'WORKSHOPS_ARCHIVE',
+    'WORKSHOPS_RESTORE',
     'USERS_READ',
     'USERS_DISABLE',
     'USERS_ENABLE',

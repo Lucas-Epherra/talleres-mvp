@@ -27,6 +27,7 @@ import { CreatePlatformInvitationForm } from "../../_components/CreatePlatformIn
 import { PlatformUserAccessButton } from "../../_components/PlatformUserAccessButton";
 import { PlatformUserRoleForm } from "../../_components/PlatformUserRoleForm";
 import { PlatformWorkshopStatusButton } from "../../_components/PlatformWorkshopStatusButton";
+import { PlatformWorkshopArchiveButton } from "../../_components/PlatformWorkshopArchiveButton";
 import { ResendPlatformInvitationButton } from "../../_components/ResendPlatformInvitationButton";
 import { RevokePlatformInvitationButton } from "../../_components/RevokePlatformInvitationButton";
 
@@ -150,7 +151,10 @@ export default async function PlatformWorkshopDetailPage({
               </p>
             </div>
 
-            <PlatformWorkshopStatusButton workshop={workshop} />
+            <div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
+              <PlatformWorkshopStatusButton workshop={workshop} />
+              <PlatformWorkshopArchiveButton workshop={workshop} />
+            </div>
           </div>
         </section>
 
@@ -244,7 +248,14 @@ export default async function PlatformWorkshopDetailPage({
 
           <aside className="space-y-5">
             <section className="rounded-[1.35rem] border border-border bg-surface p-5 sm:p-6">
-              <CreatePlatformInvitationForm workshops={[workshop]} />
+              {workshop.status === "ACTIVE" ? (
+                <CreatePlatformInvitationForm workshops={[workshop]} />
+              ) : (
+                <p className="rounded-2xl border border-dashed border-border-strong bg-surface-muted/65 p-5 text-sm leading-6 text-muted-foreground">
+                  Este taller no está activo. Restauralo o reactivalo antes de enviar nuevos
+                  accesos.
+                </p>
+              )}
             </section>
 
             <section className="rounded-[1.35rem] border border-border bg-surface p-5 sm:p-6">
@@ -261,8 +272,9 @@ export default async function PlatformWorkshopDetailPage({
                 clientes, vehículos, órdenes ni usuarios.
               </p>
 
-              <div className="mt-5">
+              <div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
                 <PlatformWorkshopStatusButton workshop={workshop} />
+                <PlatformWorkshopArchiveButton workshop={workshop} />
               </div>
             </section>
 
@@ -275,8 +287,7 @@ export default async function PlatformWorkshopDetailPage({
                 <SideInfo label="Código interno" value={workshop.slug} />
                 <SideInfo
                   label="Estado"
-                  value={workshop.status === "ACTIVE" ? "Activo" : "Suspendido"}
-                />
+                  value={formatWorkshopStatus(workshop.status)} />
                 <SideInfo
                   label="Usuarios visibles"
                   value={users.length.toString()}
@@ -589,17 +600,23 @@ type WorkshopStatusBadgeProps = {
  * Renders a workshop status badge.
  */
 function WorkshopStatusBadge({ status }: WorkshopStatusBadgeProps) {
-  const isActive = status === "ACTIVE";
+  const statusLabelMap: Record<PlatformWorkshop["status"], string> = {
+    ACTIVE: "Activo",
+    DISABLED: "Suspendido",
+    ARCHIVED: "Archivado",
+  };
+
+  const classNameMap: Record<PlatformWorkshop["status"], string> = {
+    ACTIVE: "border-success/30 bg-success/10 text-success",
+    DISABLED: "border-primary/30 bg-primary/10 text-primary",
+    ARCHIVED: "border-border-strong bg-surface text-muted-foreground",
+  };
 
   return (
     <span
-      className={
-        isActive
-          ? "rounded-full border border-success/30 bg-success/10 px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-[0.12em] text-success"
-          : "rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-[0.12em] text-primary"
-      }
+      className={`${classNameMap[status]} rounded-full border px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-[0.12em]`}
     >
-      {isActive ? "Activo" : "Suspendido"}
+      {statusLabelMap[status]}
     </span>
   );
 }
@@ -706,4 +723,14 @@ function formatPlatformDate(value: string): string {
     dateStyle: "short",
     timeZone: "America/Argentina/Buenos_Aires",
   }).format(new Date(value));
+}
+
+function formatWorkshopStatus(status: PlatformWorkshop["status"]): string {
+  const statusLabelMap: Record<PlatformWorkshop["status"], string> = {
+    ACTIVE: "Activo",
+    DISABLED: "Suspendido",
+    ARCHIVED: "Archivado",
+  };
+
+  return statusLabelMap[status];
 }

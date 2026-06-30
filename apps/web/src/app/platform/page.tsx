@@ -29,6 +29,7 @@ import { ApiError, isApiErrorWithStatus } from "@/lib/api";
 import { apiServerFetch } from "@/lib/api.server";
 import { CreatePlatformInvitationForm } from "./_components/CreatePlatformInvitationForm";
 import { CreatePlatformWorkshopForm } from "./_components/CreatePlatformWorkshopForm";
+import { PlatformWorkshopArchiveButton } from "./_components/PlatformWorkshopArchiveButton";
 import { PlatformWorkshopStatusButton } from "./_components/PlatformWorkshopStatusButton";
 import { RevokePlatformInvitationButton } from "./_components/RevokePlatformInvitationButton";
 import { ResendPlatformInvitationButton } from "./_components/ResendPlatformInvitationButton";
@@ -118,7 +119,12 @@ export default async function PlatformPage({ searchParams }: PlatformPageProps) 
     invitationsPage.data,
     filters,
   );
+
   const hasActiveFilters = hasPlatformActiveFilters(filters);
+  const activeWorkshopsForInvitations = workshopsPage.data.filter(
+    (workshop) => workshop.status === "ACTIVE",
+  );
+
 
   return (
     <main className="theme-light min-h-screen overflow-x-hidden bg-background text-foreground">
@@ -215,8 +221,7 @@ export default async function PlatformPage({ searchParams }: PlatformPageProps) 
           <PlatformSummaryCard
             title="Talleres"
             value={summary.workshops.total.toString()}
-            description={`${summary.workshops.active} activos · ${summary.workshops.disabled} suspendidos`}
-            icon={
+            description={`${summary.workshops.active} activos · ${summary.workshops.disabled} suspendidos · ${summary.workshops.archived} archivados`} icon={
               <Building2 className="size-4 text-primary" aria-hidden="true" />
             }
             highlighted
@@ -255,6 +260,7 @@ export default async function PlatformPage({ searchParams }: PlatformPageProps) 
           filters={filters}
           hasActiveFilters={hasActiveFilters}
         />
+
 
         <section className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
           <div className="space-y-5">
@@ -378,7 +384,7 @@ export default async function PlatformPage({ searchParams }: PlatformPageProps) 
             </section>
 
             <section className="rounded-[1.35rem] border border-border bg-surface p-5 sm:p-6">
-              <CreatePlatformInvitationForm workshops={workshopsPage.data} />
+              <CreatePlatformInvitationForm workshops={activeWorkshopsForInvitations} />
             </section>
 
             <section className="rounded-[1.35rem] border border-border bg-surface p-5 sm:p-6">
@@ -539,6 +545,7 @@ function PlatformFilters({
             <option value="ALL">Todos</option>
             <option value="ACTIVE">Activos</option>
             <option value="DISABLED">Suspendidos</option>
+            <option value="ARCHIVED">Archivados</option>
           </select>
         </label>
 
@@ -668,7 +675,9 @@ function WorkshopCard({ workshop }: WorkshopCardProps) {
             </Link>
 
             <PlatformWorkshopStatusButton workshop={workshop} />
-          </div>        </div>
+            <PlatformWorkshopArchiveButton workshop={workshop} />
+          </div>
+        </div>
       </div>
     </article>
   );
@@ -824,17 +833,23 @@ type WorkshopStatusBadgeProps = {
  * Renders a workshop status badge.
  */
 function WorkshopStatusBadge({ status }: WorkshopStatusBadgeProps) {
-  const isActive = status === "ACTIVE";
+  const statusLabelMap: Record<PlatformWorkshop["status"], string> = {
+    ACTIVE: "Activo",
+    DISABLED: "Suspendido",
+    ARCHIVED: "Archivado",
+  };
+
+  const classNameMap: Record<PlatformWorkshop["status"], string> = {
+    ACTIVE: "border-success/30 bg-success/10 text-success",
+    DISABLED: "border-primary/30 bg-primary/10 text-primary",
+    ARCHIVED: "border-border-strong bg-surface text-muted-foreground",
+  };
 
   return (
     <span
-      className={
-        isActive
-          ? "rounded-full border border-success/30 bg-success/10 px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-[0.12em] text-success"
-          : "rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-[0.12em] text-primary"
-      }
+      className={`${classNameMap[status]} rounded-full border px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-[0.12em]`}
     >
-      {isActive ? "Activo" : "Suspendido"}
+      {statusLabelMap[status]}
     </span>
   );
 }
@@ -969,7 +984,7 @@ function parsePlatformFilters(
     query: getSearchParamValue(searchParams.q).trim(),
     workshopStatus: getValidatedSearchOption(
       getSearchParamValue(searchParams.workshopStatus),
-      ["ALL", "ACTIVE", "DISABLED"] as const,
+      ["ALL", "ACTIVE", "DISABLED", "ARCHIVED"] as const,
       "ALL",
     ),
     userStatus: getValidatedSearchOption(

@@ -20,6 +20,7 @@ enum UserStatus {
 enum WorkshopStatus {
   ACTIVE
   DISABLED
+  ARCHIVED
 }
 
 enum MembershipStatus {
@@ -37,6 +38,8 @@ enum InvitationStatus {
 enum PlatformAuditAction {
   WORKSHOP_CREATED
   WORKSHOP_DISABLED
+  WORKSHOP_ARCHIVED
+  WORKSHOP_RESTORED
   WORKSHOP_ENABLED
   INVITATION_CREATED
   INVITATION_REVOKED
@@ -100,6 +103,7 @@ model Workshop {
   status    WorkshopStatus @default(ACTIVE)
   createdAt DateTime       @default(now()) @map("created_at")
   updatedAt DateTime       @updatedAt @map("updated_at")
+  archivedAt DateTime?     @map("archived_at")
 
   members         WorkshopMember[]
   customers       Customer[]
@@ -113,6 +117,7 @@ model Workshop {
   invitations     Invitation[]
 
   @@index([status])
+  @@index([archivedAt])
   @@map("workshops")
 }
 
