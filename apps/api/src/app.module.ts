@@ -7,6 +7,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { VehiclesModule } from './modules/vehicles/vehicles.module';
 import { WorkOrdersModule } from './modules/work-orders/work-orders.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
+import { ReceiptsModule } from './modules/receipts/receipts.module';
 import { PlatformModule } from './modules/platform/platform.module';
 import { PrismaModule } from './prisma/prisma.module';
 
@@ -25,6 +26,7 @@ import { PrismaModule } from './prisma/prisma.module';
     AppointmentsModule,
     DashboardModule,
     PlatformModule,
+    ReceiptsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

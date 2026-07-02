@@ -11,6 +11,7 @@ import {
   Pencil,
   RefreshCw,
   UserRound,
+  ReceiptText,
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -24,6 +25,8 @@ import {
 } from "../../../../lib/format";
 import { UpdateWorkOrderStatusForm } from "../../../../features/work-orders/components/UpdateWorkOrderStatusForm";
 import { getPaginatedAppointments } from "../../../../features/appointments/appointments.server";
+import { IssueReceiptButton } from "../../../../features/receipts/components/IssueReceiptButton";
+import { getReceipts } from "../../../../features/receipts/receipts.server";
 import { WorkOrderAppointmentsPanel } from "../../../../features/work-orders/components/WorkOrderAppointmentsPanel";
 import { ReopenWorkOrderForm } from "../../../../features/work-orders/components/ReopenWorkOrderForm";
 import { CancelWorkOrderForm } from "../../../../features/work-orders/components/CancelWorkOrderForm";
@@ -59,18 +62,23 @@ export default async function WorkOrderDetailPage({
   params,
 }: WorkOrderDetailPageProps) {
   const resolvedParams = await params;
-  const [workOrder, linkedAppointmentsPage] = await Promise.all([
+  const [workOrder, linkedAppointmentsPage, receipts] = await Promise.all([
     getWorkOrderOrNotFound(resolvedParams.id),
     getPaginatedAppointments({
       workOrderId: resolvedParams.id,
       limit: 50,
     }),
+    getReceipts({
+      workOrderId: resolvedParams.id,
+    }),
   ]);
+
   const { vehicle } = workOrder;
   const customer = vehicle.customer;
   const isDelivered = workOrder.status === "DELIVERED";
   const isCancelled = workOrder.status === "CANCELLED";
   const isClosed = isDelivered || isCancelled;
+  const issuedReceipt = receipts[0] ?? null;
 
   return (
     <section className="space-y-6">
@@ -113,6 +121,18 @@ export default async function WorkOrderDetailPage({
               <Pencil className="size-4 shrink-0" aria-hidden="true" />
               Editar orden
             </Link>
+          ) : null}
+
+          {issuedReceipt ? (
+            <Link
+              href={`/receipts/${issuedReceipt.id}`}
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
+            >
+              <ReceiptText className="size-4 shrink-0" aria-hidden="true" />
+              Ver recibo
+            </Link>
+          ) : !isCancelled ? (
+            <IssueReceiptButton workOrderId={workOrder.id} />
           ) : null}
 
           <Link
@@ -212,6 +232,62 @@ export default async function WorkOrderDetailPage({
               value={formatMoney(workOrder.finalTotal)}
             />
           </DetailSheet>
+
+          <section
+            aria-labelledby="work-order-receipt-heading"
+            className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
+          >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-primary">
+                  <ReceiptText className="size-5" aria-hidden="true" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+                    Cobro
+                  </p>
+
+                  <h2
+                    id="work-order-receipt-heading"
+                    className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
+                  >
+                    Recibo interno
+                  </h2>
+
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                    Generá un comprobante interno tipo talonario con los datos actuales de
+                    la orden. No reemplaza factura ni documentación fiscal.
+                  </p>
+                </div>
+              </div>
+
+              <div className="shrink-0">
+                {issuedReceipt ? (
+                  <Link
+                    href={`/receipts/${issuedReceipt.id}`}
+                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
+                  >
+                    <ReceiptText className="size-4 shrink-0" aria-hidden="true" />
+                    Ver recibo
+                  </Link>
+                ) : !isCancelled ? (
+                  <IssueReceiptButton workOrderId={workOrder.id} />
+                ) : (
+                  <p className="rounded-2xl border border-border-strong bg-surface-muted px-4 py-3 text-sm font-semibold text-muted-foreground">
+                    Las órdenes anuladas no pueden emitir recibo.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {issuedReceipt ? (
+              <p className="mt-5 rounded-2xl border border-border-strong bg-surface-muted px-4 py-3 text-sm font-semibold leading-6 text-foreground">
+                Esta orden ya tiene un recibo interno emitido. Para conservar trazabilidad,
+                el recibo queda como snapshot y no se modifica aunque la orden cambie.
+              </p>
+            ) : null}
+          </section>
 
           <WorkOrderAppointmentsPanel
             workOrder={workOrder}
