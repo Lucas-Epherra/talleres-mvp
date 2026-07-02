@@ -6,6 +6,7 @@ import {
   ClipboardList,
   LayoutGrid,
   Menu,
+  ReceiptText,
   Users,
   X,
   type LucideIcon,
@@ -44,6 +45,11 @@ const PRIVATE_NAVIGATION_ITEMS: PrivateNavigationItem[] = [
     href: "/work-orders",
     label: "Órdenes",
     icon: ClipboardList,
+  },
+  {
+    href: "/receipts",
+    label: "Recibos",
+    icon: ReceiptText,
   },
 ];
 

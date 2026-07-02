@@ -89,6 +89,28 @@ export function normalizeSearchParam(
   return value?.trim() ?? "";
 }
 
+/**
+ * Formats ISO date strings with date and time for operational traceability.
+ */
+export function formatDateTime(value: string | null): string {
+  if (!value) {
+    return "Sin fecha";
+  }
+
+  return new Intl.DateTimeFormat("es-AR", {
+    dateStyle: "short",
+    timeStyle: "short",
+    timeZone: "America/Argentina/Buenos_Aires",
+  }).format(new Date(value));
+}
+
+/**
+ * Formats internal receipt numbers with leading zeroes.
+ */
+export function formatReceiptNumber(receiptNumber: number): string {
+  return receiptNumber.toString().padStart(6, "0");
+}
+
 function isWorkOrderStatus(value: string): value is WorkOrderStatus {
   return value in workOrderStatusLabels;
 }

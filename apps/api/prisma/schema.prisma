@@ -97,24 +97,25 @@ enum AppointmentStatus {
 }
 
 model Workshop {
-  id        String         @id @default(uuid())
-  name      String
-  slug      String         @unique
-  status    WorkshopStatus @default(ACTIVE)
-  createdAt DateTime       @default(now()) @map("created_at")
-  updatedAt DateTime       @updatedAt @map("updated_at")
-  archivedAt DateTime?     @map("archived_at")
+  id         String         @id @default(uuid())
+  name       String
+  slug       String         @unique
+  status     WorkshopStatus @default(ACTIVE)
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @updatedAt @map("updated_at")
+  archivedAt DateTime?      @map("archived_at")
 
-  members         WorkshopMember[]
-  customers       Customer[]
-  vehicles        Vehicle[]
-  workOrders      WorkOrder[]
-  workOrderEvents WorkOrderEvent[]
+  members           WorkshopMember[]
+  customers         Customer[]
+  vehicles          Vehicle[]
+  workOrders        WorkOrder[]
+  receipts          Receipt[]
+  workOrderEvents   WorkOrderEvent[]
   platformAuditLogs PlatformAuditLog[]
-  appointments    Appointment[]
-  vehicleEvents   VehicleEvent[]
-  customerEvents  CustomerEvent[]
-  invitations     Invitation[]
+  appointments      Appointment[]
+  vehicleEvents     VehicleEvent[]
+  customerEvents    CustomerEvent[]
+  invitations       Invitation[]
 
   @@index([status])
   @@index([archivedAt])
@@ -131,15 +132,16 @@ model User {
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
 
-  memberships       WorkshopMember[]
-  workOrderEvents   WorkOrderEvent[]
-  vehicleEvents     VehicleEvent[]
-  archivedVehicles  Vehicle[]        @relation("VehicleArchivedByUser")
-  customerEvents    CustomerEvent[]
-  archivedCustomers Customer[]       @relation("CustomerArchivedByUser")
-  createdInvitations  Invitation[] @relation("InvitationCreatedByUser")
-  acceptedInvitations Invitation[] @relation("InvitationAcceptedByUser")
-  platformAuditLogs PlatformAuditLog[] @relation("PlatformAuditActor")
+  memberships         WorkshopMember[]
+  workOrderEvents     WorkOrderEvent[]
+  vehicleEvents       VehicleEvent[]
+  archivedVehicles    Vehicle[]          @relation("VehicleArchivedByUser")
+  customerEvents      CustomerEvent[]
+  archivedCustomers   Customer[]         @relation("CustomerArchivedByUser")
+  createdInvitations  Invitation[]       @relation("InvitationCreatedByUser")
+  acceptedInvitations Invitation[]       @relation("InvitationAcceptedByUser")
+  platformAuditLogs   PlatformAuditLog[] @relation("PlatformAuditActor")
+  issuedReceipts      Receipt[]          @relation("ReceiptIssuedByUser")
 
   @@index([platformRole])
   @@index([status])
@@ -249,6 +251,7 @@ model WorkOrder {
   vehicle      Vehicle          @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   events       WorkOrderEvent[]
   appointments Appointment[]
+  receipts     Receipt[]
 
   @@unique([workshopId, orderNumber])
   @@index([workshopId])
@@ -356,24 +359,24 @@ model Appointment {
 }
 
 model Invitation {
-  id              String           @id @default(uuid())
-  workshopId      String           @map("workshop_id")
-  email           String
-  role            WorkshopRole     @default(ADMIN)
-  status          InvitationStatus @default(PENDING)
-  tokenHash       String           @unique @map("token_hash")
-  expiresAt       DateTime         @map("expires_at")
-  acceptedAt      DateTime?        @map("accepted_at")
-  revokedAt       DateTime?        @map("revoked_at")
-  archivedAt      DateTime?        @map("archived_at")
-  createdByUserId String?          @map("created_by_user_id")
-  acceptedByUserId String?         @map("accepted_by_user_id")
-  createdAt       DateTime         @default(now()) @map("created_at")
-  updatedAt       DateTime         @updatedAt @map("updated_at")
+  id               String           @id @default(uuid())
+  workshopId       String           @map("workshop_id")
+  email            String
+  role             WorkshopRole     @default(ADMIN)
+  status           InvitationStatus @default(PENDING)
+  tokenHash        String           @unique @map("token_hash")
+  expiresAt        DateTime         @map("expires_at")
+  acceptedAt       DateTime?        @map("accepted_at")
+  revokedAt        DateTime?        @map("revoked_at")
+  archivedAt       DateTime?        @map("archived_at")
+  createdByUserId  String?          @map("created_by_user_id")
+  acceptedByUserId String?          @map("accepted_by_user_id")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
 
-  workshop      Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
-  createdByUser User?    @relation("InvitationCreatedByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  acceptedByUser User?   @relation("InvitationAcceptedByUser", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
+  workshop       Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  createdByUser  User?    @relation("InvitationCreatedByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  acceptedByUser User?    @relation("InvitationAcceptedByUser", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
 
   @@index([workshopId])
   @@index([email])
@@ -383,12 +386,11 @@ model Invitation {
   @@index([acceptedByUserId])
   @@index([archivedAt])
   @@map("invitations")
-
 }
 
 model PlatformAuditLog {
   id          String                  @id @default(uuid())
-  actorUserId String                 @map("actor_user_id")
+  actorUserId String                  @map("actor_user_id")
   action      PlatformAuditAction
   entityType  PlatformAuditEntityType @map("entity_type")
   entityId    String                  @map("entity_id")
@@ -406,4 +408,41 @@ model PlatformAuditLog {
   @@index([entityType, entityId])
   @@index([createdAt])
   @@map("platform_audit_logs")
+}
+
+model Receipt {
+  id             String   @id @default(uuid())
+  workshopId     String   @map("workshop_id")
+  workOrderId    String   @map("work_order_id")
+  receiptNumber  Int      @map("receipt_number")
+  issuedByUserId String?  @map("issued_by_user_id")
+  issuedAt       DateTime @default(now()) @map("issued_at")
+
+  customerSnapshot Json @map("customer_snapshot")
+  vehicleSnapshot  Json @map("vehicle_snapshot")
+  workSnapshot     Json @map("work_snapshot")
+
+  laborCost Decimal? @map("labor_cost") @db.Decimal(12, 2)
+  partsCost Decimal? @map("parts_cost") @db.Decimal(12, 2)
+  total     Decimal  @db.Decimal(12, 2)
+  notes     String?
+
+  emailTo   String?   @map("email_to")
+  emailedAt DateTime? @map("emailed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  workshop     Workshop  @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  workOrder    WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  issuedByUser User?     @relation("ReceiptIssuedByUser", fields: [issuedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([workshopId, receiptNumber])
+  @@unique([workshopId, workOrderId])
+  @@index([workshopId])
+  @@index([workOrderId])
+  @@index([issuedByUserId])
+  @@index([issuedAt])
+  @@index([emailedAt])
+  @@map("receipts")
 }
