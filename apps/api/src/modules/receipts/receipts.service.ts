@@ -433,7 +433,7 @@ export class ReceiptsService {
   }
 
   /**
-   * Draws the PDF content using a structured talonario-style layout.
+   * Draws the PDF content.
    */
   private drawReceiptPdf(
     doc: PDFKit.PDFDocument,
@@ -443,207 +443,114 @@ export class ReceiptsService {
     const vehicle = this.getVehicleSnapshot(receipt);
     const work = this.getWorkSnapshot(receipt);
     const receiptNumber = this.formatReceiptNumber(receipt.receiptNumber);
-    const contentX = 56;
-    const contentWidth = 464;
 
-    doc.roundedRect(36, 36, 523, 770, 10).stroke('#cbd5e1');
+    doc.rect(36, 36, 523, 770).stroke('#d1d5db');
 
     doc
       .font('Helvetica-Bold')
-      .fontSize(8)
-      .fillColor('#991b1b')
-      .text('COMPROBANTE INTERNO', contentX, 58, {
-        characterSpacing: 1.2,
-      });
-
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(23)
+      .fontSize(18)
       .fillColor('#111827')
-      .text(receipt.workshop.name.toUpperCase(), contentX, 76, {
-        width: 270,
-        lineGap: 2,
+      .text(receipt.workshop.name, 56, 58);
+
+    doc
+      .font('Helvetica')
+      .fontSize(9)
+      .fillColor('#6b7280')
+      .text('Comprobante interno de servicio', 56, 82)
+      .text('No válido como factura fiscal', 56, 96);
+
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(14)
+      .fillColor('#991b1b')
+      .text(`RECIBO ${receiptNumber}`, 340, 58, {
+        width: 180,
+        align: 'right',
       });
 
     doc
       .font('Helvetica')
       .fontSize(9)
-      .fillColor('#64748b')
-      .text(
-        'Recibo interno emitido a partir de la orden de trabajo.',
-        contentX,
-        108,
-        {
-          width: 270,
-        },
-      );
-
-    this.drawReceiptNumberBox(
-      doc,
-      receiptNumber,
-      work.orderNumber,
-      this.formatDateTime(receipt.issuedAt),
-      360,
-      56,
-    );
-
-    doc
-      .moveTo(contentX, 145)
-      .lineTo(contentX + contentWidth, 145)
-      .stroke('#e2e8f0');
-
-    this.drawPdfInfoPanel(doc, {
-      title: 'Cliente',
-      x: contentX,
-      y: 164,
-      width: 224,
-      height: 92,
-      items: [
-        ['Cliente', customer.fullName],
-        ['Teléfono', customer.phone ?? 'Sin teléfono'],
-        ['Email', customer.email ?? 'Sin email'],
-      ],
-    });
-
-    this.drawPdfInfoPanel(doc, {
-      title: 'Orden',
-      x: contentX + 240,
-      y: 164,
-      width: 224,
-      height: 92,
-      items: [
-        ['Orden', `#${work.orderNumber}`],
-        ['Fecha de ingreso', this.formatDate(work.entryDate)],
-        ['Estado', this.formatWorkOrderStatus(work.status)],
-      ],
-    });
-
-    this.drawPdfInfoPanel(doc, {
-      title: 'Datos del vehículo',
-      x: contentX,
-      y: 274,
-      width: contentWidth,
-      height: 92,
-      columns: 3,
-      items: [
-        ['Patente', vehicle.licensePlate],
-        ['Marca', vehicle.brand],
-        ['Modelo', vehicle.model],
-        ['Año', vehicle.year ? String(vehicle.year) : 'Sin cargar'],
-        ['Kilometraje', this.formatMileage(vehicle.mileage)],
-        ['Km ingreso', this.formatMileage(work.entryMileage)],
-      ],
-    });
-
-    this.drawPdfSectionLabel(doc, 'Detalle del trabajo', contentX, 392);
-
-    const tableX = contentX;
-    const tableY = 412;
-    const amountX = 420;
-    const tableWidth = contentWidth;
-
-    doc.roundedRect(tableX, tableY, tableWidth, 218, 8).stroke('#cbd5e1');
-
-    doc.rect(tableX, tableY, tableWidth, 24).fill('#f8fafc').stroke('#cbd5e1');
-
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(7)
-      .fillColor('#475569')
-      .text('CONCEPTO', tableX + 14, tableY + 8, {
-        characterSpacing: 0.7,
+      .fillColor('#374151')
+      .text(`Orden #${work.orderNumber}`, 340, 82, {
+        width: 180,
+        align: 'right',
       })
-      .text('IMPORTE', amountX, tableY + 8, {
-        width: 86,
-        align: 'right',
-        characterSpacing: 0.7,
-      });
-
-    let rowY = tableY + 24;
-
-    rowY = this.drawPdfDescriptionRow(
-      doc,
-      'Problema reportado',
-      work.reportedIssue,
-      tableX,
-      rowY,
-      tableWidth,
-      amountX,
-    );
-
-    rowY = this.drawPdfDescriptionRow(
-      doc,
-      'Diagnóstico',
-      work.diagnosis ?? 'Diagnóstico pendiente',
-      tableX,
-      rowY,
-      tableWidth,
-      amountX,
-    );
-
-    rowY = this.drawPdfDescriptionRow(
-      doc,
-      'Trabajo realizado',
-      work.workDone ?? 'Trabajo pendiente',
-      tableX,
-      rowY,
-      tableWidth,
-      amountX,
-    );
-
-    rowY = this.drawPdfDescriptionRow(
-      doc,
-      'Repuestos usados',
-      work.partsUsed ?? 'Sin repuestos cargados',
-      tableX,
-      rowY,
-      tableWidth,
-      amountX,
-    );
-
-    rowY = this.drawPdfAmountRow(
-      doc,
-      'Mano de obra',
-      this.formatMoney(receipt.laborCost),
-      tableX,
-      rowY,
-      tableWidth,
-      amountX,
-    );
-
-    rowY = this.drawPdfAmountRow(
-      doc,
-      'Repuestos',
-      this.formatMoney(receipt.partsCost),
-      tableX,
-      rowY,
-      tableWidth,
-      amountX,
-    );
-
-    doc.rect(tableX, rowY, tableWidth, 34).fill('#f8fafc').stroke('#cbd5e1');
-
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(11)
-      .fillColor('#111827')
-      .text('TOTAL', tableX + 14, rowY + 11)
-      .fontSize(13)
-      .fillColor('#dc2626')
-      .text(this.formatMoney(receipt.total), amountX, rowY + 10, {
-        width: 86,
+      .text(`Emitido: ${this.formatDateTime(receipt.issuedAt)}`, 340, 96, {
+        width: 180,
         align: 'right',
       });
 
-    const notesY = 646;
+    this.drawSectionTitle(doc, 'Cliente', 56, 138);
+    this.drawKeyValue(doc, 'Nombre', customer.fullName, 56, 162, 230);
+    this.drawKeyValue(
+      doc,
+      'Teléfono',
+      customer.phone ?? 'Sin teléfono',
+      300,
+      162,
+      220,
+    );
+    this.drawKeyValue(doc, 'Email', customer.email ?? 'Sin email', 56, 196, 464);
 
-    doc.roundedRect(contentX, notesY, contentWidth, 42, 8).stroke('#e2e8f0');
+    this.drawSectionTitle(doc, 'Vehículo', 56, 246);
+    this.drawKeyValue(doc, 'Patente', vehicle.licensePlate, 56, 270, 140);
+    this.drawKeyValue(doc, 'Marca', vehicle.brand, 210, 270, 140);
+    this.drawKeyValue(doc, 'Modelo', vehicle.model, 364, 270, 156);
+    this.drawKeyValue(
+      doc,
+      'Año',
+      vehicle.year ? String(vehicle.year) : 'Sin cargar',
+      56,
+      304,
+      140,
+    );
+    this.drawKeyValue(
+      doc,
+      'Kilometraje',
+      this.formatMileage(vehicle.mileage),
+      210,
+      304,
+      180,
+    );
+
+    this.drawSectionTitle(doc, 'Trabajo realizado', 56, 354);
+
+    this.drawWorkDetailTable(
+      doc,
+      [
+        {
+          label: 'Problema reportado',
+          value: work.reportedIssue,
+        },
+        {
+          label: 'Diagnóstico',
+          value: work.diagnosis ?? 'Diagnóstico pendiente',
+        },
+        {
+          label: 'Trabajo realizado',
+          value: work.workDone ?? 'Trabajo pendiente',
+        },
+        {
+          label: 'Repuestos usados',
+          value: work.partsUsed ?? 'Sin repuestos cargados',
+        },
+      ],
+      56,
+      376,
+      464,
+    );
+
+    const summaryY = 574;
+    const summaryHeight = 86;
+
+    doc.roundedRect(56, summaryY, 210, summaryHeight, 8).stroke('#e5e7eb');
 
     doc
       .font('Helvetica-Bold')
       .fontSize(7)
-      .fillColor('#64748b')
-      .text('OBSERVACIONES', contentX + 12, notesY + 9, {
+      .fillColor('#6b7280')
+      .text('OBSERVACIONES', 68, summaryY + 12, {
         characterSpacing: 0.8,
       });
 
@@ -651,316 +558,246 @@ export class ReceiptsService {
       .font('Helvetica')
       .fontSize(8.5)
       .fillColor('#111827')
-      .text(receipt.notes ?? 'Sin observaciones', contentX + 12, notesY + 22, {
-        width: contentWidth - 24,
-        height: 13,
+      .text(receipt.notes ?? 'Sin observaciones', 68, summaryY + 28, {
+        width: 186,
+        height: 42,
         ellipsis: true,
+        lineGap: 2,
       });
 
-    this.drawPdfSignature(
+    this.drawCostsBox(
+      doc,
+      [
+        ['Mano de obra', this.formatMoney(receipt.laborCost)],
+        ['Repuestos', this.formatMoney(receipt.partsCost)],
+      ],
+      this.formatMoney(receipt.total),
+      300,
+      summaryY,
+      220,
+      summaryHeight,
+    );
+
+    this.drawSignatureLine(
       doc,
       'Firma / conformidad del cliente',
-      contentX,
-      728,
+      56,
+      724,
       210,
     );
-    this.drawPdfSignature(doc, 'Aclaración', 310, 728, 210);
-
-    doc
-      .moveTo(contentX, 758)
-      .lineTo(contentX + contentWidth, 758)
-      .dash(3, { space: 3 })
-      .stroke('#cbd5e1');
-    doc.undash();
+    this.drawSignatureLine(doc, 'Aclaración', 310, 724, 210);
 
     doc
       .font('Helvetica')
-      .fontSize(7.2)
-      .fillColor('#64748b')
+      .fontSize(8)
+      .fillColor('#6b7280')
       .text(
-        'Este comprobante es de uso interno del taller y no reemplaza factura, comprobante fiscal ni documentación emitida por un organismo tributario.',
-        contentX,
+        'Este comprobante es de uso interno del taller y no reemplaza documentación fiscal.',
+        56,
         768,
         {
-          width: contentWidth,
+          width: 464,
           align: 'center',
-          lineGap: 1,
         },
       );
   }
 
   /**
-   * Draws the minimal receipt number box.
+   * Draws a section title in the PDF.
    */
-  private drawReceiptNumberBox(
-    doc: PDFKit.PDFDocument,
-    receiptNumber: string,
-    orderNumber: number,
-    issuedAt: string,
-    x: number,
-    y: number,
-  ): void {
-    doc.roundedRect(x, y, 160, 86, 8).stroke('#111827');
-
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(7)
-      .fillColor('#334155')
-      .text('RECIBO INTERNO', x, y + 13, {
-        width: 160,
-        align: 'center',
-        characterSpacing: 1.4,
-      });
-
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(20)
-      .fillColor('#dc2626')
-      .text(`Nº ${receiptNumber}`, x, y + 32, {
-        width: 160,
-        align: 'center',
-      });
-
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(8)
-      .fillColor('#111827')
-      .text(`Orden #${orderNumber}`, x, y + 58, {
-        width: 160,
-        align: 'center',
-      });
-
-    doc
-      .font('Helvetica')
-      .fontSize(7)
-      .fillColor('#64748b')
-      .text(`Emitido: ${issuedAt}`, x + 8, y + 70, {
-        width: 144,
-        align: 'center',
-      });
-  }
-
-  /**
-   * Draws a grouped information panel so receipt metadata does not float.
-   */
-  private drawPdfInfoPanel(
-    doc: PDFKit.PDFDocument,
-    options: {
-      title: string;
-      x: number;
-      y: number;
-      width: number;
-      height: number;
-      columns?: number;
-      items: Array<[string, string]>;
-    },
-  ): void {
-    const columns = options.columns ?? 1;
-    const paddingX = 12;
-    const titleY = options.y + 11;
-    const gridY = options.y + 31;
-    const columnWidth = (options.width - paddingX * 2) / columns;
-    const rowHeight = 28;
-
-    doc
-      .roundedRect(options.x, options.y, options.width, options.height, 8)
-      .fillAndStroke('#ffffff', '#e2e8f0');
-
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(7)
-      .fillColor('#dc2626')
-      .text(options.title.toUpperCase(), options.x + paddingX, titleY, {
-        width: options.width - paddingX * 2,
-        characterSpacing: 1,
-      });
-
-    options.items.forEach(([label, value], index) => {
-      const columnIndex = index % columns;
-      const rowIndex = Math.floor(index / columns);
-      const itemX = options.x + paddingX + columnIndex * columnWidth;
-      const itemY = gridY + rowIndex * rowHeight;
-
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(6.5)
-        .fillColor('#64748b')
-        .text(label.toUpperCase(), itemX, itemY, {
-          width: columnWidth - 10,
-          characterSpacing: 0.7,
-        });
-
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(8.5)
-        .fillColor('#111827')
-        .text(value, itemX, itemY + 12, {
-          width: columnWidth - 10,
-          height: 14,
-          ellipsis: true,
-        });
-    });
-  }
-
-  /**
-   * Draws a compact section label.
-   */
-  private drawPdfSectionLabel(
-    doc: PDFKit.PDFDocument,
-    label: string,
-    x: number,
-    y: number,
-  ): void {
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(7)
-      .fillColor('#dc2626')
-      .text(label.toUpperCase(), x, y, {
-        characterSpacing: 1.4,
-      });
-  }
-
-  /**
-   * Draws one description row inside the receipt table.
-   */
-  private drawPdfDescriptionRow(
+  private drawSectionTitle(
     doc: PDFKit.PDFDocument,
     title: string,
-    description: string,
     x: number,
     y: number,
-    width: number,
-    amountX: number,
-  ): number {
-    const rowHeight = 32;
-
-    doc
-      .moveTo(x, y)
-      .lineTo(x + width, y)
-      .stroke('#e2e8f0');
-
+  ): void {
     doc
       .font('Helvetica-Bold')
-      .fontSize(8.3)
-      .fillColor('#111827')
-      .text(title, x + 14, y + 6, {
-        width: amountX - x - 24,
-      });
+      .fontSize(10)
+      .fillColor('#991b1b')
+      .text(title.toUpperCase(), x, y);
 
-    doc
-      .font('Helvetica')
-      .fontSize(7.7)
-      .fillColor('#475569')
-      .text(description, x + 14, y + 18, {
-        width: amountX - x - 24,
-        height: 11,
-        ellipsis: true,
-      });
-
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(9)
-      .fillColor('#94a3b8')
-      .text('-', amountX, y + 11, {
-        width: 86,
-        align: 'right',
-      });
-
-    return y + rowHeight;
+    doc.moveTo(x, y + 16).lineTo(520, y + 16).stroke('#e5e7eb');
   }
 
   /**
-   * Draws one amount row inside the receipt table.
+   * Draws a compact label/value pair.
    */
-  private drawPdfAmountRow(
+  private drawKeyValue(
     doc: PDFKit.PDFDocument,
     label: string,
     value: string,
     x: number,
     y: number,
     width: number,
-    amountX: number,
-  ): number {
-    const rowHeight = 24;
-
+  ): void {
+    doc.font('Helvetica-Bold').fontSize(8).fillColor('#6b7280').text(label, x, y);
     doc
-      .moveTo(x, y)
-      .lineTo(x + width, y)
-      .stroke('#e2e8f0');
-
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(8.3)
-      .fillColor('#334155')
-      .text(label, x + 14, y + 8);
-
-    doc
-      .font('Helvetica-Bold')
-      .fontSize(8.3)
+      .font('Helvetica')
+      .fontSize(10)
       .fillColor('#111827')
-      .text(value, amountX, y + 8, {
-        width: 86,
-        align: 'right',
+      .text(value, x, y + 13, {
+        width,
+        lineGap: 2,
       });
-
-    return y + rowHeight;
   }
 
   /**
-   * Draws a signature line.
+   * Draws a lightly structured work-detail table.
    */
-  private drawPdfSignature(
+  private drawWorkDetailTable(
+    doc: PDFKit.PDFDocument,
+    rows: Array<{
+      label: string;
+      value: string;
+    }>,
+    x: number,
+    y: number,
+    width: number,
+  ): void {
+    const headerHeight = 24;
+    const rowHeight = 38;
+    const tableHeight = headerHeight + rows.length * rowHeight;
+
+    doc.roundedRect(x, y, width, tableHeight, 8).stroke('#d1d5db');
+
+    doc
+      .rect(x, y, width, headerHeight)
+      .fill('#f9fafb')
+      .stroke('#d1d5db');
+
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(7)
+      .fillColor('#6b7280')
+      .text('CONCEPTO', x + 12, y + 9, {
+        characterSpacing: 0.8,
+      });
+
+    rows.forEach((row, index) => {
+      const rowY = y + headerHeight + index * rowHeight;
+
+      doc.moveTo(x, rowY).lineTo(x + width, rowY).stroke('#e5e7eb');
+
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(8.7)
+        .fillColor('#111827')
+        .text(row.label, x + 12, rowY + 7, {
+          width: width - 24,
+        });
+
+      doc
+        .font('Helvetica')
+        .fontSize(8)
+        .fillColor('#4b5563')
+        .text(row.value, x + 12, rowY + 20, {
+          width: width - 24,
+          height: 13,
+          ellipsis: true,
+        });
+    });
+  }
+
+  /**
+   * Draws a compact cost summary box.
+   */
+  private drawCostsBox(
+    doc: PDFKit.PDFDocument,
+    rows: Array<[string, string]>,
+    total: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ): void {
+    doc.roundedRect(x, y, width, height, 8).stroke('#d1d5db');
+
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(7)
+      .fillColor('#6b7280')
+      .text('COSTOS', x + 14, y + 12, {
+        characterSpacing: 0.8,
+      });
+
+    rows.forEach(([label, value], index) => {
+      this.drawCostLine(
+        doc,
+        label,
+        value,
+        x + 14,
+        y + 30 + index * 18,
+        width - 28,
+      );
+    });
+
+    doc
+      .moveTo(x + 14, y + 66)
+      .lineTo(x + width - 14, y + 66)
+      .stroke('#d1d5db');
+
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(11)
+      .fillColor('#111827')
+      .text('Total', x + 14, y + 72)
+      .fontSize(12)
+      .fillColor('#dc2626')
+      .text(total, x + 86, y + 72, {
+        width: width - 100,
+        align: 'right',
+      });
+  }
+
+  /**
+   * Draws one cost line.
+   */
+  private drawCostLine(
+    doc: PDFKit.PDFDocument,
+    label: string,
+    value: string,
+    x: number,
+    y: number,
+    width: number,
+  ): void {
+    doc
+      .font('Helvetica')
+      .fontSize(8.5)
+      .fillColor('#374151')
+      .text(label, x, y);
+
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(8.5)
+      .fillColor('#111827')
+      .text(value, x + 74, y, {
+        width: width - 74,
+        align: 'right',
+      });
+  }
+
+  /**
+   * Draws a signature line at the bottom of the receipt.
+   */
+  private drawSignatureLine(
     doc: PDFKit.PDFDocument,
     label: string,
     x: number,
     y: number,
     width: number,
   ): void {
-    doc
-      .moveTo(x, y)
-      .lineTo(x + width, y)
-      .stroke('#64748b');
+    doc.moveTo(x, y).lineTo(x + width, y).stroke('#6b7280');
 
     doc
       .font('Helvetica-Bold')
-      .fontSize(6.7)
-      .fillColor('#64748b')
+      .fontSize(6.8)
+      .fillColor('#6b7280')
       .text(label.toUpperCase(), x, y + 8, {
         width,
         align: 'center',
-        characterSpacing: 0.7,
+        characterSpacing: 0.6,
       });
-  }
-
-  /**
-   * Formats ISO date strings for PDF content.
-   */
-  private formatDate(value: string | null): string {
-    if (!value) {
-      return 'Sin fecha';
-    }
-
-    return new Intl.DateTimeFormat('es-AR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      timeZone: 'America/Argentina/Buenos_Aires',
-    }).format(new Date(value));
-  }
-
-  /**
-   * Converts work order statuses into readable Spanish labels for receipts.
-   */
-  private formatWorkOrderStatus(status: WorkOrderStatus): string {
-    const statusLabels: Record<WorkOrderStatus, string> = {
-      PENDING: 'Pendiente',
-      IN_PROGRESS: 'En progreso',
-      READY: 'Listo',
-      DELIVERED: 'Entregado',
-      CANCELLED: 'Anulada',
-    };
-
-    return statusLabels[status];
   }
 
   /**

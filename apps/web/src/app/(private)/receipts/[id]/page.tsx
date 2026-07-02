@@ -250,13 +250,8 @@ export default async function ReceiptDetailPage({
             </div>
           </section>
 
-          <section className="px-5 py-6 sm:px-8">
-            <div className="grid gap-6 md:grid-cols-2">
-              <SignatureBox label="Firma / conformidad del cliente" />
-              <SignatureBox label="Aclaración" />
-            </div>
-
-            <div className="mt-6 border-t border-dashed border-slate-300 pt-4">
+          <section className="px-3 py-3 sm:px-8">        
+            <div className="mt-2 border-slate-300 pt-2">
               <p className="text-center text-xs font-semibold leading-5 text-slate-500">
                 Este comprobante es de uso interno del taller y no reemplaza
                 factura, comprobante fiscal ni documentación emitida por un
@@ -461,17 +456,6 @@ function ReceiptAmountRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function SignatureBox({ label }: { label: string }) {
-  return (
-    <div className="pt-8">
-      <div className="border-t border-slate-500" />
-
-      <p className="mt-2 text-center text-[0.65rem] font-black uppercase tracking-[0.18em] text-slate-500">
-        {label}
-      </p>
-    </div>
-  );
-}
 
 function ReceiptContextCard({
   icon,
