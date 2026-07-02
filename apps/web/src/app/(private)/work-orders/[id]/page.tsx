@@ -62,7 +62,7 @@ export default async function WorkOrderDetailPage({
   params,
 }: WorkOrderDetailPageProps) {
   const resolvedParams = await params;
-  const [workOrder, linkedAppointmentsPage, receipts] = await Promise.all([
+  const [workOrder, linkedAppointmentsPage, receiptsPage] = await Promise.all([
     getWorkOrderOrNotFound(resolvedParams.id),
     getPaginatedAppointments({
       workOrderId: resolvedParams.id,
@@ -70,6 +70,7 @@ export default async function WorkOrderDetailPage({
     }),
     getReceipts({
       workOrderId: resolvedParams.id,
+      limit: 1,
     }),
   ]);
 
@@ -78,7 +79,7 @@ export default async function WorkOrderDetailPage({
   const isDelivered = workOrder.status === "DELIVERED";
   const isCancelled = workOrder.status === "CANCELLED";
   const isClosed = isDelivered || isCancelled;
-  const issuedReceipt = receipts[0] ?? null;
+  const issuedReceipt = receiptsPage.data[0] ?? null;
 
   return (
     <section className="space-y-6">

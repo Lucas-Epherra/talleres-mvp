@@ -17,7 +17,7 @@ export type ReceiptVehicleSnapshot = {
 };
 
 export type ReceiptWorkSnapshot = {
-  statusLabel: string;
+  statusLabel?: string;
   id: string;
   orderNumber: number;
   reportedIssue: string;
@@ -69,6 +69,20 @@ export type Receipt = {
   issuedByUser: ReceiptIssuedByUser | null;
 };
 
+export type ReceiptsPaginationMeta = {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+};
+
+export type ReceiptsPage = {
+  data: Receipt[];
+  meta: ReceiptsPaginationMeta;
+};
+
 export type IssueReceiptInput = {
   notes?: string;
 };
@@ -78,6 +92,14 @@ export type SendReceiptEmailInput = {
   message?: string;
 };
 
+export type ReceiptEmailStatus = "sent" | "not_sent";
+
 export type ReceiptsQuery = {
   workOrderId?: string;
+  search?: string;
+  emailStatus?: ReceiptEmailStatus;
+  issuedFrom?: string;
+  issuedTo?: string;
+  page?: number;
+  limit?: number;
 };

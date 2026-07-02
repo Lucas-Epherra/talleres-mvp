@@ -14,6 +14,10 @@ import { SendReceiptEmailDto } from './dto/send-receipt-email.dto';
 
 const INITIAL_RECEIPT_NUMBER = 1;
 const CREATE_RECEIPT_MAX_ATTEMPTS = 3;
+const DEFAULT_RECEIPTS_PAGE = 1;
+const DEFAULT_RECEIPTS_LIMIT = 10;
+const MAX_RECEIPTS_LIMIT = 50;
+const ARGENTINA_UTC_OFFSET_HOURS = 3;
 
 const receiptInclude = {
   workshop: {
@@ -74,6 +78,27 @@ type WorkOrderForReceipt = Prisma.WorkOrderGetPayload<{
 
 type ReceiptsPrismaClient = PrismaService | Prisma.TransactionClient;
 
+type ReceiptEmailStatus = 'sent' | 'not_sent';
+
+type NormalizedFindReceiptsQuery = {
+  page: number;
+  limit: number;
+  offset: number;
+  search: string | null;
+  workOrderId?: string;
+  emailStatus?: ReceiptEmailStatus;
+  issuedFrom: Date | null;
+  issuedTo: Date | null;
+};
+
+type ReceiptIdRow = {
+  id: string;
+};
+
+type ReceiptCountRow = {
+  count: bigint | number | string;
+};
+
 type CustomerSnapshot = {
   id: string;
   fullName: string;
@@ -111,19 +136,61 @@ export class ReceiptsService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Lists receipts for the authenticated workshop.
+   * Lists receipts for the authenticated workshop using pagination and filters.
    */
   async findAll(workshopId: string, query: FindReceiptsQueryDto = {}) {
-    return this.prisma.receipt.findMany({
+    const normalizedQuery = this.normalizeFindReceiptsQuery(query);
+    const whereSql = this.buildReceiptsWhereSql(workshopId, normalizedQuery);
+
+    const countRows = await this.prisma.$queryRaw<ReceiptCountRow[]>(
+      Prisma.sql`
+        SELECT COUNT(*)::int AS count
+        FROM receipts r
+        WHERE ${whereSql}
+      `,
+    );
+    const total = Number(countRows[0]?.count ?? 0);
+
+    const idRows = await this.prisma.$queryRaw<ReceiptIdRow[]>(
+      Prisma.sql`
+        SELECT r.id
+        FROM receipts r
+        WHERE ${whereSql}
+        ORDER BY r.issued_at DESC, r.receipt_number DESC
+        LIMIT ${normalizedQuery.limit}
+        OFFSET ${normalizedQuery.offset}
+      `,
+    );
+
+    const receiptIds = idRows.map((row) => row.id);
+
+    if (receiptIds.length === 0) {
+      return {
+        data: [],
+        meta: this.buildReceiptsPagination(normalizedQuery, total),
+      };
+    }
+
+    const receipts = await this.prisma.receipt.findMany({
       where: {
+        id: {
+          in: receiptIds,
+        },
         workshopId,
-        ...(query.workOrderId ? { workOrderId: query.workOrderId } : {}),
-      },
-      orderBy: {
-        issuedAt: 'desc',
       },
       include: receiptInclude,
     });
+    const receiptsById = new Map(
+      receipts.map((receipt) => [receipt.id, receipt]),
+    );
+    const orderedReceipts = receiptIds
+      .map((id) => receiptsById.get(id))
+      .filter((receipt): receipt is ReceiptWithRelations => Boolean(receipt));
+
+    return {
+      data: orderedReceipts,
+      meta: this.buildReceiptsPagination(normalizedQuery, total),
+    };
   }
 
   /**
@@ -311,6 +378,192 @@ export class ReceiptsService {
       },
       include: receiptInclude,
     });
+  }
+
+  /**
+   * Normalizes list query params into safe backend defaults.
+   */
+  private normalizeFindReceiptsQuery(
+    query: FindReceiptsQueryDto,
+  ): NormalizedFindReceiptsQuery {
+    const page = this.parsePositiveInteger(
+      query.page,
+      DEFAULT_RECEIPTS_PAGE,
+      Number.MAX_SAFE_INTEGER,
+    );
+    const limit = this.parsePositiveInteger(
+      query.limit,
+      DEFAULT_RECEIPTS_LIMIT,
+      MAX_RECEIPTS_LIMIT,
+    );
+
+    return {
+      page,
+      limit,
+      offset: (page - 1) * limit,
+      search: this.normalizeReceiptSearchTerm(query.search),
+      workOrderId: query.workOrderId,
+      emailStatus: query.emailStatus,
+      issuedFrom: this.parseArgentinaDateBoundary(query.issuedFrom, 'start'),
+      issuedTo: this.parseArgentinaDateBoundary(query.issuedTo, 'end'),
+    };
+  }
+
+  /**
+   * Builds the SQL filter used by the paginated receipts list.
+   *
+   * JSON snapshot search is intentionally done in SQL because receipt customer,
+   * vehicle and work data are frozen in JSON columns.
+   */
+  private buildReceiptsWhereSql(
+    workshopId: string,
+    query: NormalizedFindReceiptsQuery,
+  ): Prisma.Sql {
+    const conditions: Prisma.Sql[] = [
+      Prisma.sql`r.workshop_id = ${workshopId}`,
+    ];
+
+    if (query.workOrderId) {
+      conditions.push(Prisma.sql`r.work_order_id = ${query.workOrderId}`);
+    }
+
+    if (query.emailStatus === 'sent') {
+      conditions.push(Prisma.sql`r.emailed_at IS NOT NULL`);
+    }
+
+    if (query.emailStatus === 'not_sent') {
+      conditions.push(Prisma.sql`r.emailed_at IS NULL`);
+    }
+
+    if (query.issuedFrom) {
+      conditions.push(Prisma.sql`r.issued_at >= ${query.issuedFrom}`);
+    }
+
+    if (query.issuedTo) {
+      conditions.push(Prisma.sql`r.issued_at <= ${query.issuedTo}`);
+    }
+
+    if (query.search) {
+      const searchPattern = `%${query.search}%`;
+      const compactSearchPattern = `%${query.search.replace(/[#\s-]/g, '')}%`;
+
+      conditions.push(Prisma.sql`
+        (
+          r.receipt_number::text ILIKE ${searchPattern}
+          OR (r.work_snapshot->>'orderNumber') ILIKE ${searchPattern}
+          OR (r.work_snapshot->>'orderNumber') ILIKE ${compactSearchPattern}
+          OR COALESCE(r.email_to, '') ILIKE ${searchPattern}
+          OR COALESCE(r.notes, '') ILIKE ${searchPattern}
+          OR COALESCE(r.customer_snapshot->>'fullName', '') ILIKE ${searchPattern}
+          OR COALESCE(r.customer_snapshot->>'phone', '') ILIKE ${searchPattern}
+          OR COALESCE(r.customer_snapshot->>'email', '') ILIKE ${searchPattern}
+          OR COALESCE(r.vehicle_snapshot->>'licensePlate', '') ILIKE ${searchPattern}
+          OR COALESCE(r.vehicle_snapshot->>'brand', '') ILIKE ${searchPattern}
+          OR COALESCE(r.vehicle_snapshot->>'model', '') ILIKE ${searchPattern}
+        )
+      `);
+    }
+
+    return Prisma.join(conditions, ' AND ');
+  }
+
+  /**
+   * Builds pagination metadata for the list endpoint.
+   */
+  private buildReceiptsPagination(
+    query: NormalizedFindReceiptsQuery,
+    total: number,
+  ) {
+    const totalPages = Math.max(Math.ceil(total / query.limit), 1);
+
+    return {
+      page: query.page,
+      limit: query.limit,
+      totalItems: total,
+      totalPages,
+      hasPreviousPage: query.page > 1,
+      hasNextPage: query.page < totalPages,
+    };
+  }
+
+  /**
+   * Parses numeric pagination params without trusting query-string input.
+   */
+  private parsePositiveInteger(
+    value: string | undefined,
+    fallback: number,
+    max: number,
+  ): number {
+    if (!value) {
+      return fallback;
+    }
+
+    const numericValue = Number(value);
+
+    if (!Number.isInteger(numericValue) || numericValue < 1) {
+      return fallback;
+    }
+
+    return Math.min(numericValue, max);
+  }
+
+  /**
+   * Normalizes a free-text search query for receipt search.
+   */
+  private normalizeReceiptSearchTerm(value: string | undefined): string | null {
+    const normalizedValue = value?.trim().replace(/\s+/g, ' ');
+
+    if (!normalizedValue) {
+      return null;
+    }
+
+    return normalizedValue.slice(0, 120);
+  }
+
+  /**
+   * Converts a date filter into UTC bounds for Argentina local calendar days.
+   */
+  private parseArgentinaDateBoundary(
+    value: string | undefined,
+    boundary: 'start' | 'end',
+  ): Date | null {
+    if (!value) {
+      return null;
+    }
+
+    const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+
+    if (dateOnlyMatch) {
+      const year = Number(dateOnlyMatch[1]);
+      const month = Number(dateOnlyMatch[2]);
+      const day = Number(dateOnlyMatch[3]);
+
+      if (boundary === 'start') {
+        return new Date(
+          Date.UTC(year, month - 1, day, ARGENTINA_UTC_OFFSET_HOURS),
+        );
+      }
+
+      return new Date(
+        Date.UTC(
+          year,
+          month - 1,
+          day + 1,
+          ARGENTINA_UTC_OFFSET_HOURS - 1,
+          59,
+          59,
+          999,
+        ),
+      );
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      throw new BadRequestException('El rango de fechas no es válido.');
+    }
+
+    return date;
   }
 
   /**
