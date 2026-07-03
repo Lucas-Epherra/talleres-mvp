@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { AttentionWorkOrdersPanel } from "../../../features/dashboard/components/AttentionWorkOrdersPanel";
+import { DashboardAlertsPanel } from "../../../features/dashboard/components/DashboardAlertsPanel";
 import { DashboardHeader } from "../../../features/dashboard/components/DashboardHeader";
 import { DashboardQuickActions } from "../../../features/dashboard/components/DashboardQuickActions";
-import { DashboardTotalsGrid } from "../../../features/dashboard/components/DashboardTotalsGrid";
-import { DashboardWorkOrderStatusGrid } from "../../../features/dashboard/components/DashboardWorkOrderStatusGrid";
+import { DashboardTodayAgendaPanel } from "../../../features/dashboard/components/DashboardTodayAgendaPanel";
+import { DashboardWorkflowPanel } from "../../../features/dashboard/components/DashboardWorkflowPanel";
 import { LatestWorkOrdersPanel } from "../../../features/dashboard/components/LatestWorkOrdersPanel";
 import { getDashboardSummary } from "../../../features/dashboard/dashboard.server";
 
@@ -14,31 +14,30 @@ export const metadata: Metadata = {
 /**
  * Private dashboard page.
  *
- * Shows the authenticated workshop operational cockpit using server-side data
- * fetching and httpOnly cookie forwarding.
+ * Keeps the dashboard focused on the daily workshop routine: what needs
+ * attention, what can be done quickly, what is scheduled and how orders move.
  */
 export default async function DashboardPage() {
   const summary = await getDashboardSummary();
 
   return (
-    <section className="space-y-4 sm:space-y-5">
-      <DashboardHeader />
+    <section className="space-y-5 sm:space-y-6">
+      <DashboardHeader summary={summary} />
 
-      <DashboardTotalsGrid summary={summary} />
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_400px] xl:items-start">
+        <DashboardAlertsPanel alerts={summary.alerts} />
 
-      <AttentionWorkOrdersPanel workOrders={summary.attentionWorkOrders} />
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start 2xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="min-w-0">
-          <DashboardWorkOrderStatusGrid summary={summary} />
-        </div>
-
-        <aside className="min-w-0">
-          <DashboardQuickActions />
-        </aside>
+        <DashboardQuickActions />
       </div>
 
-      <LatestWorkOrdersPanel workOrders={summary.latestWorkOrders} />
+      <DashboardWorkflowPanel summary={summary} />
+
+      <DashboardTodayAgendaPanel
+        todayAppointments={summary.appointments.today}
+        upcomingAppointments={summary.appointments.upcoming}
+      />
+
+      <LatestWorkOrdersPanel workOrders={summary.recentWorkOrders} />
     </section>
   );
 }

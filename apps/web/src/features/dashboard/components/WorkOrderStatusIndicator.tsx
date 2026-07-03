@@ -10,9 +10,6 @@ type WorkOrderStatusIndicatorProps = {
 
 /**
  * Renders a non-interactive work order status indicator.
- *
- * It avoids pill borders, filled backgrounds and glow shadows so users do not
- * confuse the status with an actionable button.
  */
 export function WorkOrderStatusIndicator({
   status,
@@ -37,9 +34,6 @@ export function WorkOrderStatusIndicator({
   );
 }
 
-/**
- * Maps work order statuses to non-clickable status indicator classes.
- */
 function getStatusIndicatorClasses(status: WorkOrderStatus): {
   text: string;
   dot: string;
