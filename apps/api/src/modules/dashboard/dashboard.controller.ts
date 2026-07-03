@@ -15,7 +15,17 @@ export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   /**
+   * Returns the complete operational dashboard for the authenticated workshop.
+   */
+  @Get()
+  getDashboard(@CurrentUser() user: AuthUser) {
+    return this.dashboardService.getSummary(user.workshopId);
+  }
+
+  /**
    * Returns the operational dashboard summary for the authenticated user's workshop.
+   *
+   * Kept for backwards compatibility with the current frontend endpoint.
    */
   @Get('summary')
   getSummary(@CurrentUser() user: AuthUser) {

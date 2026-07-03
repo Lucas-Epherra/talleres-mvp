@@ -8,5 +8,5 @@ import type { DashboardSummary } from "./types";
  * incoming httpOnly cookie to the backend API.
  */
 export function getDashboardSummary(): Promise<DashboardSummary> {
-  return apiServerFetch<DashboardSummary>("/dashboard/summary");
+  return apiServerFetch<DashboardSummary>("/dashboard");
 }

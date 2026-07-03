@@ -16,7 +16,7 @@ export function DashboardSectionHeading({
 }: DashboardSectionHeadingProps) {
   return (
     <div>
-      <p className="text-[0.66rem] font-bold uppercase tracking-[0.22em] text-primary">
+      <p className="text-[0.66rem] font-black uppercase tracking-[0.22em] text-primary">
         {eyebrow}
       </p>
 
