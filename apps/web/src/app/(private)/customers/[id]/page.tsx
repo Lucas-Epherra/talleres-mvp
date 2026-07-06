@@ -290,12 +290,6 @@ export default async function CustomerDetailPage({
             />
           </DetailSheet>
 
-          <CustomerArchiveActions
-            customerId={customer.id}
-            isArchived={isArchived}
-            activeWorkOrdersCount={activeWorkOrders.length}
-            archivedReason={customer.archivedReason}
-          />
 
           <section
             aria-labelledby="customer-vehicles-heading"
@@ -396,6 +390,26 @@ export default async function CustomerDetailPage({
                 ]}
               />
             )}
+          </section>
+
+          <section
+            aria-labelledby="customer-critical-zone-heading"
+            className="space-y-4"
+          >
+            <SectionHeading
+              headingId="customer-critical-zone-heading"
+              eyebrow="Ficha"
+              title="Zona crítica"
+              description="Acciones sensibles sobre la ficha del cliente. Usalas solo cuando corresponda sacarlo o devolverlo al flujo operativo."
+              count={isArchived ? "Restauración" : "Archivado"}
+            />
+
+            <CustomerArchiveActions
+              customerId={customer.id}
+              isArchived={isArchived}
+              activeWorkOrdersCount={activeWorkOrders.length}
+              archivedReason={customer.archivedReason}
+            />
           </section>
         </div>
 
