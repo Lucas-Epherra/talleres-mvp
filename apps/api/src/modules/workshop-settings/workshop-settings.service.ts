@@ -7,6 +7,8 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateWorkshopSettingsDto } from './dto/update-workshop-settings.dto';
+import type { UploadedLogoFile } from './types/uploaded-logo-file.type';
+import { WorkshopLogoStorageService } from './workshop-logo-storage.service';
 
 type WorkshopSettingsRecord = {
   id: string;
@@ -16,6 +18,7 @@ type WorkshopSettingsRecord = {
   email: string | null;
   address: string | null;
   logoUrl: string | null;
+  logoObjectKey: string | null;
   businessHours: string | null;
   description: string | null;
   updatedAt: Date;
@@ -26,7 +29,6 @@ type NormalizedWorkshopSettingsUpdateData = {
   phone?: string | null;
   email?: string | null;
   address?: string | null;
-  logoUrl?: string | null;
   businessHours?: string | null;
   description?: string | null;
 };
@@ -39,6 +41,7 @@ const workshopSettingsSelect = {
   email: true,
   address: true,
   logoUrl: true,
+  logoObjectKey: true,
   businessHours: true,
   description: true,
   updatedAt: true,
@@ -52,7 +55,10 @@ const workshopSettingsSelect = {
  */
 @Injectable()
 export class WorkshopSettingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly logoStorage: WorkshopLogoStorageService,
+  ) {}
 
   /**
    * Returns the settings for the authenticated workshop.
@@ -66,7 +72,7 @@ export class WorkshopSettingsService {
   }
 
   /**
-   * Updates the settings for the authenticated workshop.
+   * Updates the text-based settings for the authenticated workshop.
    */
   async updateSettings(workshopId: string, dto: UpdateWorkshopSettingsDto) {
     await this.ensureWorkshopExists(workshopId);
@@ -91,6 +97,76 @@ export class WorkshopSettingsService {
 
     return {
       data: serializeWorkshopSettings(workshop),
+    };
+  }
+
+  /**
+   * Uploads a new logo for the authenticated workshop.
+   *
+   * The logo is processed and stored in R2. The previous object is deleted after
+   * the database points to the new logo, so the UI never references a missing
+   * asset.
+   */
+  async uploadLogo(workshopId: string, file: UploadedLogoFile) {
+    const workshop = await this.findWorkshopSettings(workshopId);
+    const uploadedLogo = await this.logoStorage.uploadWorkshopLogo(
+      workshopId,
+      file,
+    );
+
+    let updatedWorkshop: WorkshopSettingsRecord;
+
+    try {
+      updatedWorkshop = await this.prisma.workshop.update({
+        where: {
+          id: workshopId,
+        },
+        data: {
+          logoUrl: uploadedLogo.publicUrl,
+          logoObjectKey: uploadedLogo.objectKey,
+        },
+        select: workshopSettingsSelect,
+      });
+    } catch (error) {
+      await this.logoStorage.deleteObject(uploadedLogo.objectKey);
+      throw error;
+    }
+
+    if (
+      workshop.logoObjectKey &&
+      workshop.logoObjectKey !== uploadedLogo.objectKey
+    ) {
+      await this.logoStorage.deleteObject(workshop.logoObjectKey).catch(() => undefined);
+    }
+
+    return {
+      data: serializeWorkshopSettings(updatedWorkshop),
+    };
+  }
+
+  /**
+   * Deletes the current logo for the authenticated workshop.
+   */
+  async deleteLogo(workshopId: string) {
+    const workshop = await this.findWorkshopSettings(workshopId);
+
+    if (workshop.logoObjectKey) {
+      await this.logoStorage.deleteObject(workshop.logoObjectKey);
+    }
+
+    const updatedWorkshop = await this.prisma.workshop.update({
+      where: {
+        id: workshopId,
+      },
+      data: {
+        logoUrl: null,
+        logoObjectKey: null,
+      },
+      select: workshopSettingsSelect,
+    });
+
+    return {
+      data: serializeWorkshopSettings(updatedWorkshop),
     };
   }
 
@@ -171,7 +247,6 @@ function normalizeWorkshopSettingsUpdateData(
     phone: normalizeOptionalText(dto.phone, 'El teléfono', 40),
     email: normalizeOptionalEmail(dto.email),
     address: normalizeOptionalText(dto.address, 'La dirección', 180),
-    logoUrl: normalizeOptionalText(dto.logoUrl, 'La URL del logo', 500),
     businessHours: normalizeOptionalMultilineText(
       dto.businessHours,
       'Los horarios',
@@ -190,7 +265,15 @@ function normalizeWorkshopSettingsUpdateData(
  */
 function serializeWorkshopSettings(workshop: WorkshopSettingsRecord) {
   return {
-    ...workshop,
+    id: workshop.id,
+    name: workshop.name,
+    slug: workshop.slug,
+    phone: workshop.phone,
+    email: workshop.email,
+    address: workshop.address,
+    logoUrl: workshop.logoUrl,
+    businessHours: workshop.businessHours,
+    description: workshop.description,
     updatedAt: workshop.updatedAt.toISOString(),
   };
 }

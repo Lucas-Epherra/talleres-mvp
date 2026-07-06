@@ -20,7 +20,6 @@ export type UpdateWorkshopSettingsInput = {
   phone: string | null;
   email: string | null;
   address: string | null;
-  logoUrl: string | null;
   businessHours: string | null;
   description: string | null;
 };

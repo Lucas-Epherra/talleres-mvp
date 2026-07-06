@@ -5,11 +5,17 @@ import {
   type FormEvent,
   type InputHTMLAttributes,
   useId,
+  useRef,
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
+import { Trash2, UploadCloud } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/api";
-import { updateWorkshopSettings } from "../workshop-settings.client";
+import {
+  deleteWorkshopLogo,
+  updateWorkshopSettings,
+  uploadWorkshopLogo,
+} from "../workshop-settings.client";
 import type {
   UpdateWorkshopSettingsInput,
   WorkshopSettings,
@@ -24,7 +30,6 @@ type FormDraft = {
   phone: string;
   email: string;
   address: string;
-  logoUrl: string;
   businessHours: string;
   description: string;
 };
@@ -32,6 +37,11 @@ type FormDraft = {
 type FormStatus = "idle" | "loading" | "success" | "error";
 
 type FormState = {
+  status: FormStatus;
+  message: string | null;
+};
+
+type LogoState = {
   status: FormStatus;
   message: string | null;
 };
@@ -65,31 +75,46 @@ const FIELD_LIMITS = {
   phone: 40,
   email: 160,
   address: 180,
-  logoUrl: 500,
   businessHours: 700,
   description: 500,
 } as const;
 
+const MAX_LOGO_UPLOAD_BYTES = 1024 * 1024;
+const ALLOWED_LOGO_MIME_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+]);
+
 /**
  * Editable workshop settings form.
  *
- * This is a leaf Client Component because it owns submit state, client-side
- * validation, accessible feedback and the live preview.
+ * This is a leaf Client Component because it owns submit state, logo upload
+ * state, client-side validation, accessible feedback and the live preview.
  */
 export function WorkshopSettingsForm({ settings }: WorkshopSettingsFormProps) {
   const router = useRouter();
   const formId = useId();
   const feedbackId = useId();
+  const logoFeedbackId = useId();
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
 
   const [draft, setDraft] = useState<FormDraft>(() =>
     buildInitialDraft(settings),
   );
+  const [logoUrl, setLogoUrl] = useState(settings.logoUrl);
+  const [selectedLogo, setSelectedLogo] = useState<File | null>(null);
   const [state, setState] = useState<FormState>({
+    status: "idle",
+    message: null,
+  });
+  const [logoState, setLogoState] = useState<LogoState>({
     status: "idle",
     message: null,
   });
 
   const isLoading = state.status === "loading";
+  const isLogoLoading = logoState.status === "loading";
 
   function handleFieldChange(field: keyof FormDraft, value: string): void {
     setDraft((currentDraft) => ({
@@ -101,6 +126,103 @@ export function WorkshopSettingsForm({ settings }: WorkshopSettingsFormProps) {
       setState({
         status: "idle",
         message: null,
+      });
+    }
+  }
+
+  function handleLogoChange(event: ChangeEvent<HTMLInputElement>): void {
+    const file = event.target.files?.[0] ?? null;
+
+    setSelectedLogo(file);
+
+    if (logoState.status !== "idle") {
+      setLogoState({
+        status: "idle",
+        message: null,
+      });
+    }
+  }
+
+  async function handleUploadLogo() {
+    if (isLogoLoading) {
+      return;
+    }
+
+    const file = selectedLogo;
+    const validationMessage = validateLogoFile(file);
+
+    if (validationMessage) {
+      setLogoState({
+        status: "error",
+        message: validationMessage,
+      });
+
+      return;
+    }
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      setLogoState({
+        status: "loading",
+        message: null,
+      });
+
+      const response = await uploadWorkshopLogo(file);
+
+      setLogoUrl(response.data.logoUrl);
+      setSelectedLogo(null);
+
+      if (logoInputRef.current) {
+        logoInputRef.current.value = "";
+      }
+
+      setLogoState({
+        status: "success",
+        message: "Logo actualizado correctamente.",
+      });
+
+      router.refresh();
+    } catch (error) {
+      setLogoState({
+        status: "error",
+        message: getApiErrorMessage(error),
+      });
+    }
+  }
+
+  async function handleDeleteLogo() {
+    if (isLogoLoading || !logoUrl) {
+      return;
+    }
+
+    try {
+      setLogoState({
+        status: "loading",
+        message: null,
+      });
+
+      const response = await deleteWorkshopLogo();
+
+      setLogoUrl(response.data.logoUrl);
+      setSelectedLogo(null);
+
+      if (logoInputRef.current) {
+        logoInputRef.current.value = "";
+      }
+
+      setLogoState({
+        status: "success",
+        message: "Logo eliminado correctamente.",
+      });
+
+      router.refresh();
+    } catch (error) {
+      setLogoState({
+        status: "error",
+        message: getApiErrorMessage(error),
       });
     }
   }
@@ -134,6 +256,7 @@ export function WorkshopSettingsForm({ settings }: WorkshopSettingsFormProps) {
       const response = await updateWorkshopSettings(input);
 
       setDraft(buildInitialDraft(response.data));
+      setLogoUrl(response.data.logoUrl);
       setState({
         status: "success",
         message: "Los datos del taller se guardaron correctamente.",
@@ -249,16 +372,83 @@ export function WorkshopSettingsForm({ settings }: WorkshopSettingsFormProps) {
             </p>
           </div>
 
-          <div className="mt-5 space-y-4">
-            <TextField
-              id={`${formId}-logo-url`}
-              name="logoUrl"
-              label="Logo del taller"
-              value={draft.logoUrl}
-              maxLength={FIELD_LIMITS.logoUrl}
-              helper="Por ahora guardamos una URL. El upload real puede agregarse después con Storage."
-              onChange={handleFieldChange}
-            />
+          <div className="mt-5 space-y-5">
+            <div
+              aria-describedby={logoState.message ? logoFeedbackId : undefined}
+              className="rounded-3xl border border-border bg-surface-muted/55 p-4"
+            >
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-sm font-black uppercase tracking-[0.08em] text-foreground">
+                    Logo del taller
+                  </p>
+
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    Subí un PNG, JPG o WEBP de hasta 1 MB. El sistema lo
+                    optimiza automáticamente para usarlo en la app y recibos.
+                  </p>
+                </div>
+
+                <LogoPreview
+                  logoUrl={logoUrl}
+                  workshopName={draft.name}
+                  className="sm:ml-auto"
+                />
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
+                <input
+                  id={`${formId}-logo`}
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={handleLogoChange}
+                  className="block w-full text-sm font-semibold text-muted-foreground file:mr-4 file:h-10 file:rounded-xl file:border-0 file:bg-white file:px-4 file:text-sm file:font-black file:text-foreground hover:file:bg-surface-elevated"
+                />
+
+                <button
+                  type="button"
+                  onClick={handleUploadLogo}
+                  disabled={isLogoLoading}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-black text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-65"
+                >
+                  <UploadCloud className="size-4" aria-hidden="true" />
+                  {isLogoLoading ? "Procesando..." : "Subir logo"}
+                </button>
+
+                {logoUrl ? (
+                  <button
+                    type="button"
+                    onClick={handleDeleteLogo}
+                    disabled={isLogoLoading}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-border-strong bg-white px-4 text-sm font-black text-foreground transition hover:border-primary/45 hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-65"
+                  >
+                    <Trash2 className="size-4 text-primary" aria-hidden="true" />
+                    Eliminar
+                  </button>
+                ) : null}
+              </div>
+
+              {selectedLogo ? (
+                <p className="mt-2 text-xs font-semibold text-muted-foreground">
+                  Archivo seleccionado: {selectedLogo.name}
+                </p>
+              ) : null}
+
+              {logoState.message ? (
+                <p
+                  id={logoFeedbackId}
+                  role={logoState.status === "error" ? "alert" : "status"}
+                  className={
+                    logoState.status === "error"
+                      ? "mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700"
+                      : "mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700"
+                  }
+                >
+                  {logoState.message}
+                </p>
+              ) : null}
+            </div>
 
             <TextAreaField
               id={`${formId}-business-hours`}
@@ -326,11 +516,7 @@ export function WorkshopSettingsForm({ settings }: WorkshopSettingsFormProps) {
 
         <div className="mt-5 rounded-3xl border border-border bg-white p-5">
           <div className="flex items-start gap-4">
-            <div className="grid size-14 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted">
-              <span className="font-display text-lg font-black uppercase text-primary">
-                {getWorkshopInitial(draft.name)}
-              </span>
-            </div>
+            <LogoPreview logoUrl={logoUrl} workshopName={draft.name} />
 
             <div className="min-w-0">
               <p className="wrap-break-word font-display text-xl font-black uppercase tracking-[0.035em] text-foreground">
@@ -351,9 +537,9 @@ export function WorkshopSettingsForm({ settings }: WorkshopSettingsFormProps) {
             <PreviewRow label="Descripción" value={draft.description} />
           </div>
 
-          {draft.logoUrl.trim() ? (
+          {logoUrl ? (
             <p className="mt-5 rounded-2xl border border-border bg-surface-muted/70 px-4 py-3 text-xs font-bold text-muted-foreground">
-              Logo cargado como URL. El upload real queda para un bloque futuro.
+              Logo cargado y optimizado para usar en la app, recibos y emails.
             </p>
           ) : null}
         </div>
@@ -459,6 +645,52 @@ function TextAreaField({
   );
 }
 
+function LogoPreview({
+  logoUrl,
+  workshopName,
+  className,
+}: {
+  logoUrl: string | null;
+  workshopName: string;
+  className?: string;
+}) {
+  const normalizedName = workshopName.trim();
+
+  if (logoUrl) {
+    return (
+      <div
+        className={[
+          "grid size-14 shrink-0 place-items-center overflow-hidden rounded-2xl border border-border-strong bg-white",
+          className,
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
+        <img
+          src={logoUrl}
+          alt={`Logo de ${normalizedName || "taller"}`}
+          className="h-full w-full object-contain p-1.5"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={[
+        "grid size-14 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <span className="font-display text-lg font-black uppercase text-primary">
+        {getWorkshopInitial(workshopName)}
+      </span>
+    </div>
+  );
+}
+
 function PreviewRow({ label, value }: { label: string; value: string }) {
   const normalizedValue = value.trim();
 
@@ -481,7 +713,6 @@ function buildInitialDraft(settings: WorkshopSettings): FormDraft {
     phone: settings.phone ?? "",
     email: settings.email ?? "",
     address: settings.address ?? "",
-    logoUrl: settings.logoUrl ?? "",
     businessHours: settings.businessHours ?? "",
     description: settings.description ?? "",
   };
@@ -495,7 +726,6 @@ function buildUpdateWorkshopSettingsInput(
     phone: normalizeNullableText(draft.phone),
     email: normalizeNullableText(draft.email),
     address: normalizeNullableText(draft.address),
-    logoUrl: normalizeNullableText(draft.logoUrl),
     businessHours: normalizeNullableMultilineText(draft.businessHours),
     description: normalizeNullableMultilineText(draft.description),
   };
@@ -528,16 +758,28 @@ function validateWorkshopSettingsDraft(draft: FormDraft): string | null {
     return `La dirección no puede superar ${FIELD_LIMITS.address} caracteres.`;
   }
 
-  if (draft.logoUrl.trim().length > FIELD_LIMITS.logoUrl) {
-    return `La URL del logo no puede superar ${FIELD_LIMITS.logoUrl} caracteres.`;
-  }
-
   if (draft.businessHours.trim().length > FIELD_LIMITS.businessHours) {
     return `Los horarios no pueden superar ${FIELD_LIMITS.businessHours} caracteres.`;
   }
 
   if (draft.description.trim().length > FIELD_LIMITS.description) {
     return `La descripción no puede superar ${FIELD_LIMITS.description} caracteres.`;
+  }
+
+  return null;
+}
+
+function validateLogoFile(file: File | null): string | null {
+  if (!file) {
+    return "Seleccioná una imagen para subir.";
+  }
+
+  if (file.size > MAX_LOGO_UPLOAD_BYTES) {
+    return "El logo no puede superar 1 MB.";
+  }
+
+  if (!ALLOWED_LOGO_MIME_TYPES.has(file.type)) {
+    return "El logo debe ser PNG, JPG, JPEG o WEBP.";
   }
 
   return null;

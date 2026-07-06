@@ -15,3 +15,26 @@ export function updateWorkshopSettings(
     body: JSON.stringify(input),
   });
 }
+
+/**
+ * Uploads and replaces the authenticated workshop logo.
+ */
+export function uploadWorkshopLogo(file: File): Promise<WorkshopSettingsResponse> {
+  const formData = new FormData();
+
+  formData.set("logo", file);
+
+  return apiFetch<WorkshopSettingsResponse>("/workshop/settings/logo", {
+    method: "POST",
+    body: formData,
+  });
+}
+
+/**
+ * Deletes the authenticated workshop logo.
+ */
+export function deleteWorkshopLogo(): Promise<WorkshopSettingsResponse> {
+  return apiFetch<WorkshopSettingsResponse>("/workshop/settings/logo", {
+    method: "DELETE",
+  });
+}

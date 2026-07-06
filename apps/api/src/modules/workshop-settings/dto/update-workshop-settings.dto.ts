@@ -4,7 +4,8 @@ import { IsEmail, IsOptional, IsString, MaxLength } from 'class-validator';
  * Payload used to update the authenticated workshop settings.
  *
  * All fields are optional because the endpoint supports partial updates.
- * Empty nullable values should be sent as null from the frontend.
+ * Logo fields are intentionally excluded: logos are handled through the
+ * dedicated upload/delete endpoints.
  */
 export class UpdateWorkshopSettingsDto {
   @IsOptional()
@@ -26,11 +27,6 @@ export class UpdateWorkshopSettingsDto {
   @IsString()
   @MaxLength(180)
   address?: string | null;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(500)
-  logoUrl?: string | null;
 
   @IsOptional()
   @IsString()

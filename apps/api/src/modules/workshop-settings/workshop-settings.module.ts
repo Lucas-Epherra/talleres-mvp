@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { WorkshopLogoStorageService } from './workshop-logo-storage.service';
 import { WorkshopSettingsController } from './workshop-settings.controller';
 import { WorkshopSettingsService } from './workshop-settings.service';
 
@@ -12,6 +13,6 @@ import { WorkshopSettingsService } from './workshop-settings.service';
 @Module({
   imports: [AuthModule],
   controllers: [WorkshopSettingsController],
-  providers: [WorkshopSettingsService],
+  providers: [WorkshopSettingsService, WorkshopLogoStorageService],
 })
 export class WorkshopSettingsModule {}
