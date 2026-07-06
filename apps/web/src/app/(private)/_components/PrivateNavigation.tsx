@@ -7,6 +7,7 @@ import {
   LayoutGrid,
   Menu,
   ReceiptText,
+  Settings,
   Users,
   X,
   type LucideIcon,
@@ -23,7 +24,7 @@ type PrivateNavigationItem = {
 const PRIVATE_NAVIGATION_ITEMS: PrivateNavigationItem[] = [
   {
     href: "/dashboard",
-    label: "Panel de control",
+    label: "Panel",
     icon: LayoutGrid,
   },
   {
@@ -51,13 +52,18 @@ const PRIVATE_NAVIGATION_ITEMS: PrivateNavigationItem[] = [
     label: "Recibos",
     icon: ReceiptText,
   },
+  {
+    href: "/settings",
+    label: "Ajustes",
+    icon: Settings,
+  },
 ];
 
 /**
  * Responsive private navigation.
  *
- * Desktop renders a horizontal navigation bar below the dark shell header.
- * Mobile uses a compact hamburger trigger that expands a vertical list.
+ * Desktop renders a single-line horizontal navigation bar below the dark shell
+ * header. Mobile uses a compact hamburger trigger that expands a vertical list.
  */
 export function PrivateNavigation() {
   const [isOpen, setIsOpen] = useState(false);
@@ -113,9 +119,9 @@ export function PrivateNavigation() {
         ))}
       </ul>
 
-      <ul className="hidden flex-wrap items-center gap-4 lg:flex">
+      <ul className="hidden min-w-0 flex-nowrap items-center gap-2 overflow-x-auto pb-1 lg:flex xl:gap-3">
         {PRIVATE_NAVIGATION_ITEMS.map((item) => (
-          <li key={item.href}>
+          <li key={item.href} className="shrink-0">
             <PrivateNavLink href={item.href} icon={item.icon}>
               {item.label}
             </PrivateNavLink>

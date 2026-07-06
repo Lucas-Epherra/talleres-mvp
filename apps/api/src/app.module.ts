@@ -9,6 +9,7 @@ import { WorkOrdersModule } from './modules/work-orders/work-orders.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { ReceiptsModule } from './modules/receipts/receipts.module';
 import { PlatformModule } from './modules/platform/platform.module';
+import { WorkshopSettingsModule } from './modules/workshop-settings/workshop-settings.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 /**
@@ -27,6 +28,7 @@ import { PrismaModule } from './prisma/prisma.module';
     DashboardModule,
     PlatformModule,
     ReceiptsModule,
+    WorkshopSettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

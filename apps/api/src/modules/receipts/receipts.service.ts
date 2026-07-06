@@ -24,6 +24,12 @@ const receiptInclude = {
     select: {
       id: true,
       name: true,
+      phone: true,
+      email: true,
+      address: true,
+      logoUrl: true,
+      businessHours: true,
+      description: true,
     },
   },
   workOrder: {
@@ -46,6 +52,12 @@ const workOrderReceiptInclude = {
     select: {
       id: true,
       name: true,
+      phone: true,
+      email: true,
+      address: true,
+      logoUrl: true,
+      businessHours: true,
+      description: true,
     },
   },
   vehicle: {
@@ -696,6 +708,16 @@ export class ReceiptsService {
     const vehicle = this.getVehicleSnapshot(receipt);
     const work = this.getWorkSnapshot(receipt);
     const receiptNumber = this.formatReceiptNumber(receipt.receiptNumber);
+    const workshopContactLines = this.buildWorkshopContactLines(
+      receipt.workshop,
+    );
+
+    const clientSectionY = workshopContactLines.length > 0 ? 154 : 138;
+    const vehicleSectionY = clientSectionY + 108;
+    const workSectionY = vehicleSectionY + 108;
+    const workTableY = workSectionY + 22;
+    const summaryY = workTableY + 198;
+    const summaryHeight = 86;
 
     doc.rect(36, 36, 523, 770).stroke('#d1d5db');
 
@@ -703,14 +725,46 @@ export class ReceiptsService {
       .font('Helvetica-Bold')
       .fontSize(18)
       .fillColor('#111827')
-      .text(receipt.workshop.name, 56, 58);
+      .text(receipt.workshop.name, 56, 58, {
+        width: 260,
+        lineBreak: false,
+        ellipsis: true,
+      });
 
     doc
       .font('Helvetica')
       .fontSize(9)
       .fillColor('#6b7280')
-      .text('Comprobante interno de servicio', 56, 82)
-      .text('No válido como factura fiscal', 56, 96);
+      .text('Comprobante interno de servicio', 56, 82, {
+        width: 260,
+      });
+
+    workshopContactLines.forEach((line, index) => {
+      doc
+        .font('Helvetica')
+        .fontSize(8)
+        .fillColor('#374151')
+        .text(line, 56, 98 + index * 11, {
+          width: 260,
+          lineBreak: false,
+          ellipsis: true,
+        });
+    });
+
+    doc
+      .font('Helvetica')
+      .fontSize(8.5)
+      .fillColor('#6b7280')
+      .text(
+        'No válido como factura fiscal',
+        56,
+        workshopContactLines.length > 0
+          ? 102 + workshopContactLines.length * 11
+          : 96,
+        {
+          width: 260,
+        },
+      );
 
     doc
       .font('Helvetica-Bold')
@@ -734,28 +788,63 @@ export class ReceiptsService {
         align: 'right',
       });
 
-    this.drawSectionTitle(doc, 'Cliente', 56, 138);
-    this.drawKeyValue(doc, 'Nombre', customer.fullName, 56, 162, 230);
+    this.drawSectionTitle(doc, 'Cliente', 56, clientSectionY);
+    this.drawKeyValue(
+      doc,
+      'Nombre',
+      customer.fullName,
+      56,
+      clientSectionY + 24,
+      230,
+    );
     this.drawKeyValue(
       doc,
       'Teléfono',
       customer.phone ?? 'Sin teléfono',
       300,
-      162,
+      clientSectionY + 24,
       220,
     );
-    this.drawKeyValue(doc, 'Email', customer.email ?? 'Sin email', 56, 196, 464);
+    this.drawKeyValue(
+      doc,
+      'Email',
+      customer.email ?? 'Sin email',
+      56,
+      clientSectionY + 58,
+      464,
+    );
 
-    this.drawSectionTitle(doc, 'Vehículo', 56, 246);
-    this.drawKeyValue(doc, 'Patente', vehicle.licensePlate, 56, 270, 140);
-    this.drawKeyValue(doc, 'Marca', vehicle.brand, 210, 270, 140);
-    this.drawKeyValue(doc, 'Modelo', vehicle.model, 364, 270, 156);
+    this.drawSectionTitle(doc, 'Vehículo', 56, vehicleSectionY);
+    this.drawKeyValue(
+      doc,
+      'Patente',
+      vehicle.licensePlate,
+      56,
+      vehicleSectionY + 24,
+      140,
+    );
+    this.drawKeyValue(
+      doc,
+      'Marca',
+      vehicle.brand,
+      210,
+      vehicleSectionY + 24,
+      140,
+    );
+    this.drawKeyValue(
+      doc,
+      'Modelo',
+      vehicle.model,
+      364,
+      vehicleSectionY + 24,
+      156,
+    );
     this.drawKeyValue(
       doc,
       'Año',
       vehicle.year ? String(vehicle.year) : 'Sin cargar',
       56,
-      304,
+      vehicleSectionY + 58,
       140,
     );
     this.drawKeyValue(
@@ -763,11 +852,11 @@ export class ReceiptsService {
       'Kilometraje',
       this.formatMileage(vehicle.mileage),
       210,
-      304,
+      vehicleSectionY + 58,
       180,
     );
 
-    this.drawSectionTitle(doc, 'Trabajo realizado', 56, 354);
+    this.drawSectionTitle(doc, 'Trabajo realizado', 56, workSectionY);
 
     this.drawWorkDetailTable(
       doc,
@@ -790,12 +879,9 @@ export class ReceiptsService {
         },
       ],
       56,
-      376,
+      workTableY,
       464,
     );
-
-    const summaryY = 574;
-    const summaryHeight = 86;
 
     doc.roundedRect(56, summaryY, 210, summaryHeight, 8).stroke('#e5e7eb');
 
@@ -1076,6 +1162,9 @@ export class ReceiptsService {
   }): string {
     const receiptNumber = this.formatReceiptNumber(receipt.receiptNumber);
     const safeMessage = message ? this.escapeHtml(message) : null;
+    const workshopContactHtml = this.buildReceiptEmailWorkshopContactHtml(
+      receipt.workshop,
+    );
 
     return `
       <div style="font-family: Arial, sans-serif; color: #111827; line-height: 1.5;">
@@ -1086,12 +1175,62 @@ export class ReceiptsService {
             ? `<p style="padding: 12px; border-left: 4px solid #991b1b; background: #f9fafb;">${safeMessage}</p>`
             : ''
         }
-        <p>Saludos,<br />${this.escapeHtml(receipt.workshop.name)}</p>
+        <p>Saludos,<br /><strong>${this.escapeHtml(receipt.workshop.name)}</strong></p>
+        ${workshopContactHtml}
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
         <p style="font-size: 12px; color: #6b7280;">
           Este comprobante es de uso interno y no reemplaza documentación fiscal.
         </p>
       </div>
+    `;
+  }
+
+  /**
+   * Builds compact contact lines for the PDF header.
+   */
+  private buildWorkshopContactLines(
+    workshop: ReceiptWithRelations['workshop'],
+  ): string[] {
+    const firstLine = [
+      workshop.address,
+      workshop.phone ? `Tel. ${workshop.phone}` : null,
+    ]
+      .filter((value): value is string => Boolean(value))
+      .join(' · ');
+
+    const secondLine = workshop.email ? `Email: ${workshop.email}` : '';
+
+    return [firstLine, secondLine].filter(Boolean).slice(0, 2);
+  }
+
+  /**
+   * Builds optional workshop contact information for receipt emails.
+   */
+  private buildReceiptEmailWorkshopContactHtml(
+    workshop: ReceiptWithRelations['workshop'],
+  ): string {
+    const rows: string[] = [];
+
+    if (workshop.address) {
+      rows.push(`Dirección: ${this.escapeHtml(workshop.address)}`);
+    }
+
+    if (workshop.phone) {
+      rows.push(`Teléfono: ${this.escapeHtml(workshop.phone)}`);
+    }
+
+    if (workshop.email) {
+      rows.push(`Email: ${this.escapeHtml(workshop.email)}`);
+    }
+
+    if (rows.length === 0) {
+      return '';
+    }
+
+    return `
+      <p style="font-size: 13px; color: #4b5563;">
+        ${rows.join('<br />')}
+      </p>
     `;
   }
 

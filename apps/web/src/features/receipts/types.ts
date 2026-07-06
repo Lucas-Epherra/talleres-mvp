@@ -33,6 +33,12 @@ export type ReceiptWorkSnapshot = {
 export type ReceiptWorkshop = {
   id: string;
   name: string;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  logoUrl: string | null;
+  businessHours: string | null;
+  description: string | null;
 };
 
 export type ReceiptWorkOrderRef = {
