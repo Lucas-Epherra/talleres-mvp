@@ -97,13 +97,19 @@ enum AppointmentStatus {
 }
 
 model Workshop {
-  id         String         @id @default(uuid())
-  name       String
-  slug       String         @unique
-  status     WorkshopStatus @default(ACTIVE)
-  createdAt  DateTime       @default(now()) @map("created_at")
-  updatedAt  DateTime       @updatedAt @map("updated_at")
-  archivedAt DateTime?      @map("archived_at")
+  id            String         @id @default(uuid())
+  name          String
+  slug          String         @unique
+  status        WorkshopStatus @default(ACTIVE)
+  phone         String?
+  email         String?
+  address       String?
+  logoUrl       String?        @map("logo_url")
+  businessHours String?        @map("business_hours")
+  description   String?
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  archivedAt    DateTime?      @map("archived_at")
 
   members           WorkshopMember[]
   customers         Customer[]
