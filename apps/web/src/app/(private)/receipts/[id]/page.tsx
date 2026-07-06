@@ -49,6 +49,7 @@ export default async function ReceiptDetailPage({
   const work = receipt.workSnapshot;
   const receiptNumber = formatReceiptNumber(receipt.receiptNumber);
   const pdfUrl = `${env.apiBaseUrl}/receipts/${receipt.id}/pdf`;
+  const workshopContactItems = buildWorkshopContactItems(receipt.workshop);
 
   return (
     <section className="space-y-6">
@@ -92,6 +93,8 @@ export default async function ReceiptDetailPage({
                 <p className="mt-2 text-sm font-medium leading-6 text-slate-600">
                   Recibo interno emitido a partir de la orden de trabajo.
                 </p>
+
+                <WorkshopContactList items={workshopContactItems} />
               </div>
 
               <div className="rounded-xl border border-slate-900/80 bg-white">
@@ -417,6 +420,55 @@ function ReceiptBlock({
         ))}
       </div>
     </div>
+  );
+}
+
+function WorkshopContactList({
+  items,
+}: {
+  items: Array<{
+    label: string;
+    value: string;
+  }>;
+}) {
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <dl className="mt-4 grid gap-1.5 text-sm font-semibold leading-6 text-slate-600">
+      {items.map((item) => (
+        <div key={item.label} className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
+          <dt className="text-[0.65rem] font-black uppercase tracking-[0.16em] text-slate-500">
+            {item.label}
+          </dt>
+
+          <dd className="wrap-anywhere">{item.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/**
+ * Builds visible workshop contact rows for the receipt HTML view.
+ */
+function buildWorkshopContactItems(workshop: Receipt["workshop"]) {
+  return [
+    {
+      label: "Dirección",
+      value: workshop.address,
+    },
+    {
+      label: "Teléfono",
+      value: workshop.phone,
+    },
+    {
+      label: "Email",
+      value: workshop.email,
+    },
+  ].filter((item): item is { label: string; value: string } =>
+    Boolean(item.value),
   );
 }
 
