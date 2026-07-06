@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Prisma, WorkOrderStatus } from '@prisma/client';
 import PDFDocument = require('pdfkit');
+import sharp = require('sharp');
 import { Resend } from 'resend';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FindReceiptsQueryDto } from './dto/find-receipts-query.dto';
@@ -18,6 +19,7 @@ const DEFAULT_RECEIPTS_PAGE = 1;
 const DEFAULT_RECEIPTS_LIMIT = 10;
 const MAX_RECEIPTS_LIMIT = 50;
 const ARGENTINA_UTC_OFFSET_HOURS = 3;
+const PDF_LOGO_FETCH_TIMEOUT_MS = 3000;
 
 const receiptInclude = {
   workshop: {
@@ -672,7 +674,11 @@ export class ReceiptsService {
   /**
    * Renders the receipt PDF.
    */
-  private renderReceiptPdf(receipt: ReceiptWithRelations): Promise<Buffer> {
+  private async renderReceiptPdf(
+    receipt: ReceiptWithRelations,
+  ): Promise<Buffer> {
+    const logoBuffer = await this.fetchReceiptLogoPng(receipt.workshop.logoUrl);
+
     return new Promise((resolve, reject) => {
       const chunks: Buffer[] = [];
       const doc = new PDFDocument({
@@ -691,7 +697,7 @@ export class ReceiptsService {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      this.drawReceiptPdf(doc, receipt);
+      this.drawReceiptPdf(doc, receipt, logoBuffer);
 
       doc.end();
     });
@@ -703,6 +709,7 @@ export class ReceiptsService {
   private drawReceiptPdf(
     doc: PDFKit.PDFDocument,
     receipt: ReceiptWithRelations,
+    logoBuffer: Buffer | null,
   ): void {
     const customer = this.getCustomerSnapshot(receipt);
     const vehicle = this.getVehicleSnapshot(receipt);
@@ -712,7 +719,14 @@ export class ReceiptsService {
       receipt.workshop,
     );
 
-    const clientSectionY = workshopContactLines.length > 0 ? 154 : 138;
+    const headerTextX = logoBuffer ? 124 : 56;
+    const headerTextWidth = logoBuffer ? 192 : 260;
+    const clientSectionY =
+      logoBuffer || workshopContactLines.length > 1
+        ? 166
+        : workshopContactLines.length > 0
+          ? 154
+          : 138;
     const vehicleSectionY = clientSectionY + 108;
     const workSectionY = vehicleSectionY + 108;
     const workTableY = workSectionY + 22;
@@ -721,12 +735,21 @@ export class ReceiptsService {
 
     doc.rect(36, 36, 523, 770).stroke('#d1d5db');
 
+    if (logoBuffer) {
+      doc.roundedRect(56, 58, 52, 52, 8).stroke('#d1d5db');
+      doc.image(logoBuffer, 62, 64, {
+        fit: [40, 40],
+        align: 'center',
+        valign: 'center',
+      });
+    }
+
     doc
       .font('Helvetica-Bold')
       .fontSize(18)
       .fillColor('#111827')
-      .text(receipt.workshop.name, 56, 58, {
-        width: 260,
+      .text(receipt.workshop.name, headerTextX, 58, {
+        width: headerTextWidth,
         lineBreak: false,
         ellipsis: true,
       });
@@ -735,8 +758,8 @@ export class ReceiptsService {
       .font('Helvetica')
       .fontSize(9)
       .fillColor('#6b7280')
-      .text('Comprobante interno de servicio', 56, 82, {
-        width: 260,
+      .text('Comprobante interno de servicio', headerTextX, 82, {
+        width: headerTextWidth,
       });
 
     workshopContactLines.forEach((line, index) => {
@@ -744,8 +767,8 @@ export class ReceiptsService {
         .font('Helvetica')
         .fontSize(8)
         .fillColor('#374151')
-        .text(line, 56, 98 + index * 11, {
-          width: 260,
+        .text(line, headerTextX, 98 + index * 11, {
+          width: headerTextWidth,
           lineBreak: false,
           ellipsis: true,
         });
@@ -757,12 +780,12 @@ export class ReceiptsService {
       .fillColor('#6b7280')
       .text(
         'No válido como factura fiscal',
-        56,
+        headerTextX,
         workshopContactLines.length > 0
           ? 102 + workshopContactLines.length * 11
           : 96,
         {
-          width: 260,
+          width: headerTextWidth,
         },
       );
 
@@ -1165,9 +1188,13 @@ export class ReceiptsService {
     const workshopContactHtml = this.buildReceiptEmailWorkshopContactHtml(
       receipt.workshop,
     );
+    const workshopLogoHtml = this.buildReceiptEmailWorkshopLogoHtml(
+      receipt.workshop,
+    );
 
     return `
       <div style="font-family: Arial, sans-serif; color: #111827; line-height: 1.5;">
+        ${workshopLogoHtml}
         <p>Hola ${this.escapeHtml(customerName)},</p>
         <p>Te enviamos adjunto el recibo interno ${receiptNumber} correspondiente al trabajo realizado.</p>
         ${
@@ -1181,6 +1208,83 @@ export class ReceiptsService {
         <p style="font-size: 12px; color: #6b7280;">
           Este comprobante es de uso interno y no reemplaza documentación fiscal.
         </p>
+      </div>
+    `;
+  }
+
+  /**
+   * Fetches the workshop logo and converts it into a PDFKit-compatible PNG.
+   *
+   * Receipt generation must never fail just because the public asset is
+   * temporarily unavailable, so logo loading is treated as best-effort.
+   */
+  private async fetchReceiptLogoPng(logoUrl: string | null): Promise<Buffer | null> {
+    if (!logoUrl) {
+      return null;
+    }
+
+    let parsedUrl: URL;
+
+    try {
+      parsedUrl = new URL(logoUrl);
+    } catch {
+      return null;
+    }
+
+    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+      return null;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(
+      () => controller.abort(),
+      PDF_LOGO_FETCH_TIMEOUT_MS,
+    );
+
+    try {
+      const response = await fetch(parsedUrl.toString(), {
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const imageBuffer = Buffer.from(await response.arrayBuffer());
+
+      return sharp(imageBuffer)
+        .resize(128, 128, {
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .png()
+        .toBuffer();
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  /**
+   * Builds an optional workshop logo block for receipt emails.
+   */
+  private buildReceiptEmailWorkshopLogoHtml(
+    workshop: ReceiptWithRelations['workshop'],
+  ): string {
+    if (!workshop.logoUrl) {
+      return '';
+    }
+
+    return `
+      <div style="margin-bottom: 16px;">
+        <img
+          src="${this.escapeHtml(workshop.logoUrl)}"
+          alt="Logo de ${this.escapeHtml(workshop.name)}"
+          width="72"
+          height="72"
+          style="display: block; width: 72px; height: 72px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 12px; padding: 8px;"
+        />
       </div>
     `;
   }

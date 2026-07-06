@@ -79,22 +79,28 @@ export default async function ReceiptDetailPage({
           <header className="border-b border-slate-200 px-5 py-6 sm:px-8">
             <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_240px] md:items-start">
               <div className="min-w-0">
-                <p className="text-[0.68rem] font-black uppercase tracking-[0.24em] text-primary">
-                  Comprobante interno
-                </p>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                  <WorkshopLogoMark workshop={receipt.workshop} />
 
-                <h1
-                  id="receipt-paper-heading"
-                  className="mt-3 font-display text-4xl font-black uppercase tracking-[0.02em] text-slate-950 sm:text-[2.65rem]"
-                >
-                  {receipt.workshop.name}
-                </h1>
+                  <div className="min-w-0">
+                    <p className="text-[0.68rem] font-black uppercase tracking-[0.24em] text-primary">
+                      Comprobante interno
+                    </p>
 
-                <p className="mt-2 text-sm font-medium leading-6 text-slate-600">
-                  Recibo interno emitido a partir de la orden de trabajo.
-                </p>
+                    <h1
+                      id="receipt-paper-heading"
+                      className="mt-3 font-display text-4xl font-black uppercase tracking-[0.02em] text-slate-950 sm:text-[2.65rem]"
+                    >
+                      {receipt.workshop.name}
+                    </h1>
 
-                <WorkshopContactList items={workshopContactItems} />
+                    <p className="mt-2 text-sm font-medium leading-6 text-slate-600">
+                      Recibo interno emitido a partir de la orden de trabajo.
+                    </p>
+
+                    <WorkshopContactList items={workshopContactItems} />
+                  </div>
+                </div>
               </div>
 
               <div className="rounded-xl border border-slate-900/80 bg-white">
@@ -423,6 +429,31 @@ function ReceiptBlock({
   );
 }
 
+function WorkshopLogoMark({ workshop }: { workshop: Receipt["workshop"] }) {
+  if (workshop.logoUrl) {
+    return (
+      <div className="grid size-20 shrink-0 place-items-center rounded-2xl border border-slate-300 bg-white p-2">
+        <img
+          src={workshop.logoUrl}
+          alt={`Logo de ${workshop.name}`}
+          className="max-h-full max-w-full object-contain"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="grid size-20 shrink-0 place-items-center rounded-2xl border border-slate-300 bg-slate-50"
+      aria-label={`Inicial de ${workshop.name}`}
+    >
+      <span className="font-display text-2xl font-black uppercase text-primary">
+        {getWorkshopInitial(workshop.name)}
+      </span>
+    </div>
+  );
+}
+
 function WorkshopContactList({
   items,
 }: {
@@ -556,6 +587,16 @@ function ReceiptContextCard({
       </div>
     </section>
   );
+}
+
+function getWorkshopInitial(name: string): string {
+  const trimmedName = name.trim();
+
+  if (!trimmedName) {
+    return "T";
+  }
+
+  return trimmedName[0]?.toUpperCase() ?? "T";
 }
 
 function formatMultilineText(value: string | null, fallback: string) {
