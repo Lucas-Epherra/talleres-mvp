@@ -524,19 +524,24 @@ function CustomerVehicleCard({
   vehicle: CustomerVehicle;
 }) {
   const isArchived = Boolean(vehicle.archivedAt);
+  const vehicleWorkOrders = vehicle.workOrders ?? [];
+  const vehicleAppointments = vehicle.appointments ?? [];
+
   const activeOrders = getActiveWorkOrders(
-    vehicle.workOrders.map((workOrder) => ({
+    vehicleWorkOrders.map((workOrder) => ({
       ...workOrder,
       vehicle,
     })),
   );
+
   const latestWorkOrder = getLatestWorkOrder(
-    vehicle.workOrders.map((workOrder) => ({
+    vehicleWorkOrders.map((workOrder) => ({
       ...workOrder,
       vehicle,
     })),
   );
-  const nextAppointment = vehicle.appointments[0] ?? null;
+
+  const nextAppointment = vehicleAppointments[0] ?? null;
 
   return (
     <article className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-5 shadow-(--shadow-industrial) ring-1 ring-white/3 transition hover:border-primary/35 hover:bg-white">
@@ -873,7 +878,7 @@ function getCustomerWorkOrders(
 ): CustomerWorkOrderWithVehicle[] {
   return vehicles
     .flatMap((vehicle) =>
-      vehicle.workOrders.map((workOrder) => ({
+      (vehicle.workOrders ?? []).map((workOrder) => ({
         ...workOrder,
         vehicle,
       })),
@@ -904,7 +909,7 @@ function getCustomerReceipts(
 ): CustomerReceiptWithContext[] {
   return workOrders
     .flatMap((workOrder) =>
-      workOrder.receipts.map((receipt) => ({
+      (workOrder.receipts ?? []).map((receipt) => ({
         ...receipt,
         workOrder,
         vehicle: workOrder.vehicle,
@@ -918,7 +923,9 @@ function getCustomerReceipts(
 function getNextAppointment(customer: Customer): CustomerAppointmentRef | null {
   const appointments = [
     ...(customer.appointments ?? []),
-    ...((customer.vehicles ?? []).flatMap((vehicle) => vehicle.appointments)),
+    ...((customer.vehicles ?? []).flatMap(
+      (vehicle) => vehicle.appointments ?? [],
+    )),
   ];
 
   const uniqueAppointments = new Map(
@@ -927,7 +934,9 @@ function getNextAppointment(customer: Customer): CustomerAppointmentRef | null {
 
   return (
     [...uniqueAppointments.values()].sort((firstAppointment, secondAppointment) =>
-      firstAppointment.scheduledStart.localeCompare(secondAppointment.scheduledStart),
+      firstAppointment.scheduledStart.localeCompare(
+        secondAppointment.scheduledStart,
+      ),
     )[0] ?? null
   );
 }

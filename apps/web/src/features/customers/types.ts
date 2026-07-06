@@ -65,7 +65,7 @@ export type CustomerVehicleWorkOrder = {
   notes: string | null;
   createdAt: string;
   updatedAt: string;
-  receipts: CustomerReceiptRef[];
+  receipts?: CustomerReceiptRef[];
 };
 
 export type CustomerVehicle = {
@@ -83,8 +83,8 @@ export type CustomerVehicle = {
   archivedByUserId: string | null;
   createdAt: string;
   updatedAt: string;
-  workOrders: CustomerVehicleWorkOrder[];
-  appointments: CustomerAppointmentRef[];
+  workOrders?: CustomerVehicleWorkOrder[];
+  appointments?: CustomerAppointmentRef[];
 };
 
 export type CustomerEvent = {
