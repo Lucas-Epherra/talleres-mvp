@@ -4,7 +4,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CustomerEventType, Prisma, WorkOrderStatus } from '@prisma/client';
+import {
+  AppointmentStatus,
+  CustomerEventType,
+  Prisma,
+  WorkOrderStatus,
+} from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { ArchiveCustomerDto } from './dto/archive-customer.dto';
@@ -126,15 +131,180 @@ export class CustomersService {
    * Returns one customer if it belongs to the provided workshop.
    */
   async findOne(workshopId: string, id: string) {
+    const now = new Date();
+
     const customer = await this.prisma.customer.findFirst({
       where: {
         id,
         workshopId,
       },
-      include: {
+      select: {
+        id: true,
+        workshopId: true,
+        fullName: true,
+        phone: true,
+        email: true,
+        address: true,
+        notes: true,
+        archivedAt: true,
+        archivedReason: true,
+        archivedByUserId: true,
+        createdAt: true,
+        updatedAt: true,
         vehicles: {
+          orderBy: [
+            {
+              archivedAt: 'asc',
+            },
+            {
+              createdAt: 'desc',
+            },
+          ],
+          select: {
+            id: true,
+            workshopId: true,
+            customerId: true,
+            licensePlate: true,
+            brand: true,
+            model: true,
+            year: true,
+            mileage: true,
+            notes: true,
+            archivedAt: true,
+            archivedReason: true,
+            archivedByUserId: true,
+            createdAt: true,
+            updatedAt: true,
+            appointments: {
+              where: {
+                scheduledEnd: {
+                  gte: now,
+                },
+                status: {
+                  in: [
+                    AppointmentStatus.SCHEDULED,
+                    AppointmentStatus.CONFIRMED,
+                  ],
+                },
+              },
+              orderBy: {
+                scheduledStart: 'asc',
+              },
+              take: 3,
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                scheduledStart: true,
+                scheduledEnd: true,
+                status: true,
+                vehicleId: true,
+                workOrderId: true,
+              },
+            },
+            workOrders: {
+              orderBy: [
+                {
+                  entryDate: 'desc',
+                },
+                {
+                  orderNumber: 'desc',
+                },
+              ],
+              take: 20,
+              select: {
+                id: true,
+                workshopId: true,
+                vehicleId: true,
+                orderNumber: true,
+                reportedIssue: true,
+                diagnosis: true,
+                workDone: true,
+                partsUsed: true,
+                entryMileage: true,
+                laborCost: true,
+                partsCost: true,
+                estimatedTotal: true,
+                finalTotal: true,
+                status: true,
+                entryDate: true,
+                deliveryDate: true,
+                notes: true,
+                createdAt: true,
+                updatedAt: true,
+                receipts: {
+                  orderBy: {
+                    issuedAt: 'desc',
+                  },
+                  select: {
+                    id: true,
+                    receiptNumber: true,
+                    issuedAt: true,
+                    total: true,
+                    emailTo: true,
+                    emailedAt: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        appointments: {
+          where: {
+            scheduledEnd: {
+              gte: now,
+            },
+            status: {
+              in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED],
+            },
+          },
+          orderBy: {
+            scheduledStart: 'asc',
+          },
+          take: 5,
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            scheduledStart: true,
+            scheduledEnd: true,
+            status: true,
+            vehicleId: true,
+            workOrderId: true,
+            vehicle: {
+              select: {
+                id: true,
+                licensePlate: true,
+                brand: true,
+                model: true,
+              },
+            },
+            workOrder: {
+              select: {
+                id: true,
+                orderNumber: true,
+                status: true,
+              },
+            },
+          },
+        },
+        events: {
           orderBy: {
             createdAt: 'desc',
+          },
+          take: 5,
+          select: {
+            id: true,
+            type: true,
+            description: true,
+            createdAt: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         },
       },
