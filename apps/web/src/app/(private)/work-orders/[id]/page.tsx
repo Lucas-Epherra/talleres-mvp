@@ -331,108 +331,14 @@ export default async function WorkOrderDetailPage({
             </section>
           ) : null}
 
-          {!isClosed ? (
-            <section
-              aria-labelledby="work-order-cancel-heading"
-              className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
-            >
-              <div className="flex items-start gap-3">
-                <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-primary">
-                  <Ban className="size-5" aria-hidden="true" />
-                </div>
-
-                <div className="min-w-0">
-                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
-                    Cierre administrativo
-                  </p>
-
-                  <h2
-                    id="work-order-cancel-heading"
-                    className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
-                  >
-                    Anular orden
-                  </h2>
-
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                    Usá esta acción cuando la orden fue cargada por error, el
-                    cliente no autorizó el trabajo o el servicio no continuará.
-                    La anulación exige motivo y queda registrada en el
-                    historial.
-                  </p>
-                </div>
-              </div>
-
-              <CancelWorkOrderForm workOrderId={workOrder.id} />
-            </section>
-          ) : null}
-
-          {isDelivered ? (
-            <section
-              aria-labelledby="work-order-reopen-heading"
-              className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
-            >
-              <div className="flex items-start gap-3">
-                <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-success">
-                  <CheckCircle2 className="size-5" aria-hidden="true" />
-                </div>
-
-                <div className="min-w-0">
-                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-success">
-                    Orden entregada
-                  </p>
-
-                  <h2
-                    id="work-order-reopen-heading"
-                    className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
-                  >
-                    Corrección controlada
-                  </h2>
-
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                    Esta orden está cerrada como entregada. Si fue marcada por
-                    error, podés reabrirla dejando un motivo obligatorio en el
-                    historial operativo.
-                  </p>
-                </div>
-              </div>
-
-              <ReopenWorkOrderForm workOrderId={workOrder.id} />
-            </section>
-          ) : null}
-
-          {isCancelled ? (
-            <section
-              aria-labelledby="work-order-cancelled-heading"
-              className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
-            >
-              <div className="flex items-start gap-3">
-                <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-muted-foreground">
-                  <Ban className="size-5" aria-hidden="true" />
-                </div>
-
-                <div className="min-w-0">
-                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-                    Orden anulada
-                  </p>
-
-                  <h2
-                    id="work-order-cancelled-heading"
-                    className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
-                  >
-                    Flujo cerrado
-                  </h2>
-
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                    Esta orden fue anulada y quedó fuera del flujo operativo. No
-                    puede editarse, entregarse ni volver a estados anteriores.
-                    Revisá el historial para consultar el motivo registrado.
-                  </p>
-                </div>
-              </div>
-            </section>
-          ) : null}
-
           <WorkOrderTimeline events={workOrder.events ?? []} />
+
+          <WorkOrderCriticalZone
+            workOrderId={workOrder.id}
+            isClosed={isClosed}
+            isDelivered={isDelivered}
+            isCancelled={isCancelled}
+          />
         </div>
 
         <aside className="min-w-0 space-y-6 xl:h-fit xl:self-start">
@@ -493,6 +399,221 @@ export default async function WorkOrderDetailPage({
       </div>
     </section>
   );
+}
+
+type WorkOrderCriticalZoneProps = {
+  workOrderId: string;
+  isClosed: boolean;
+  isDelivered: boolean;
+  isCancelled: boolean;
+};
+
+/**
+ * Groups destructive or exceptional work order actions at the end of the page.
+ *
+ * Keeping cancellation and reopening away from the primary operational content
+ * makes the detail page easier to scan and avoids exposing critical actions as
+ * if they were part of the daily flow.
+ */
+function WorkOrderCriticalZone({
+  workOrderId,
+  isClosed,
+  isDelivered,
+  isCancelled,
+}: WorkOrderCriticalZoneProps) {
+  const badgeLabel = getCriticalZoneBadgeLabel({
+    isClosed,
+    isDelivered,
+    isCancelled,
+  });
+
+  return (
+    <section
+      aria-labelledby="work-order-critical-zone-heading"
+      className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
+    >
+      <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-warning/40 bg-warning/10 text-warning">
+            <Ban className="size-5" aria-hidden="true" />
+          </div>
+
+          <div className="min-w-0">
+            <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-warning">
+              Zona crítica
+            </p>
+
+            <h2
+              id="work-order-critical-zone-heading"
+              className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
+            >
+              Acciones sensibles
+            </h2>
+
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+              Usá esta zona solo para anular una orden, corregir un cierre o
+              revisar por qué quedó fuera del flujo operativo.
+            </p>
+          </div>
+        </div>
+
+        <p className="inline-flex w-fit shrink-0 items-center gap-2 rounded-full border border-border-strong bg-surface-muted px-4 py-2 text-sm font-bold text-foreground">
+          {badgeLabel}
+        </p>
+      </div>
+
+      {!isClosed ? (
+        <div className="mt-5">
+          <CriticalZoneIntro
+            icon="cancel"
+            eyebrow="Cierre administrativo"
+            title="Anular orden"
+            description="Usá esta acción cuando la orden fue cargada por error, el cliente no autorizó el trabajo o el servicio no continuará. La anulación exige motivo y queda registrada en el historial."
+          />
+
+          <CancelWorkOrderForm workOrderId={workOrderId} />
+        </div>
+      ) : null}
+
+      {isDelivered ? (
+        <div className="mt-5">
+          <CriticalZoneIntro
+            icon="reopen"
+            eyebrow="Orden entregada"
+            title="Corrección controlada"
+            description="Esta orden está cerrada como entregada. Si fue marcada por error, podés reabrirla dejando un motivo obligatorio en el historial operativo."
+          />
+
+          <ReopenWorkOrderForm workOrderId={workOrderId} />
+        </div>
+      ) : null}
+
+      {isCancelled ? (
+        <div className="mt-5">
+          <CriticalZoneIntro
+            icon="closed"
+            eyebrow="Orden anulada"
+            title="Flujo cerrado"
+            description="Esta orden fue anulada y quedó fuera del flujo operativo. No puede editarse, entregarse ni volver a estados anteriores. Revisá el historial para consultar el motivo registrado."
+          />
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+type CriticalZoneIntroProps = {
+  icon: "cancel" | "reopen" | "closed";
+  eyebrow: string;
+  title: string;
+  description: string;
+};
+
+/**
+ * Intro block for one critical work order action.
+ */
+function CriticalZoneIntro({
+  icon,
+  eyebrow,
+  title,
+  description,
+}: CriticalZoneIntroProps) {
+  return (
+    <div className="rounded-2xl border border-border bg-surface-muted/75 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+      <div className="flex items-start gap-3">
+        <div className={getCriticalZoneIconClassName(icon)}>
+          {renderCriticalZoneIcon(icon)}
+        </div>
+
+        <div className="min-w-0">
+          <p className={getCriticalZoneEyebrowClassName(icon)}>{eyebrow}</p>
+
+          <h3 className="mt-2 font-display text-lg font-black uppercase tracking-[0.04em] text-foreground">
+            {title}
+          </h3>
+
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            {description}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Returns the compact badge displayed in the critical zone header.
+ */
+function getCriticalZoneBadgeLabel({
+  isClosed,
+  isDelivered,
+  isCancelled,
+}: Pick<WorkOrderCriticalZoneProps, "isClosed" | "isDelivered" | "isCancelled">): string {
+  if (isCancelled) {
+    return "Orden anulada";
+  }
+
+  if (isDelivered) {
+    return "Corrección disponible";
+  }
+
+  if (isClosed) {
+    return "Flujo cerrado";
+  }
+
+  return "Anulación";
+}
+
+/**
+ * Renders the critical zone icon without dynamic component references.
+ */
+function renderCriticalZoneIcon(icon: CriticalZoneIntroProps["icon"]) {
+  const iconClassName = "size-5";
+
+  if (icon === "reopen") {
+    return <CheckCircle2 className={iconClassName} aria-hidden="true" />;
+  }
+
+  return <Ban className={iconClassName} aria-hidden="true" />;
+}
+
+/**
+ * Maps critical action type to icon container classes.
+ */
+function getCriticalZoneIconClassName(
+  icon: CriticalZoneIntroProps["icon"],
+): string {
+  const baseClassName =
+    "grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface";
+
+  if (icon === "reopen") {
+    return `${baseClassName} text-success`;
+  }
+
+  if (icon === "closed") {
+    return `${baseClassName} text-muted-foreground`;
+  }
+
+  return `${baseClassName} text-warning`;
+}
+
+/**
+ * Maps critical action type to eyebrow classes.
+ */
+function getCriticalZoneEyebrowClassName(
+  icon: CriticalZoneIntroProps["icon"],
+): string {
+  const baseClassName = "text-[0.68rem] font-bold uppercase tracking-[0.22em]";
+
+  if (icon === "reopen") {
+    return `${baseClassName} text-success`;
+  }
+
+  if (icon === "closed") {
+    return `${baseClassName} text-muted-foreground`;
+  }
+
+  return `${baseClassName} text-warning`;
 }
 
 type WorkOrderTimelineProps = {
