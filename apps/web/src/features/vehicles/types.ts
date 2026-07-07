@@ -104,6 +104,20 @@ export type VehicleProfileVehicle = {
   updatedAt: string;
 };
 
+export type VehicleProfileReceipt = {
+  id: string;
+  receiptNumber: number;
+  issuedAt: string;
+  total: number | string;
+  emailTo: string | null;
+  emailedAt: string | null;
+};
+
+export type VehicleProfileReceiptWithContext = VehicleProfileReceipt & {
+  workOrderId: string;
+  orderNumber: number;
+};
+
 export type VehicleProfileWorkOrder = {
   id: string;
   orderNumber: number;
@@ -122,6 +136,35 @@ export type VehicleProfileWorkOrder = {
   notes: string | null;
   createdAt: string;
   updatedAt: string;
+  receipts?: VehicleProfileReceipt[];
+};
+
+export type VehicleAppointmentStatus =
+  | "SCHEDULED"
+  | "CONFIRMED"
+  | "COMPLETED"
+  | "CANCELLED";
+
+export type VehicleProfileAppointment = {
+  id: string;
+  title: string;
+  description: string | null;
+  scheduledStart: string;
+  scheduledEnd: string;
+  status: VehicleAppointmentStatus;
+  workOrderId: string | null;
+};
+
+export type VehicleProfileEvent = {
+  id: string;
+  type: "ARCHIVED" | "RESTORED";
+  description: string | null;
+  createdAt: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
 };
 
 export type VehicleProfile = {
@@ -129,6 +172,10 @@ export type VehicleProfile = {
   customer: VehicleProfileCustomer;
   activeWorkOrders: VehicleProfileWorkOrder[];
   history: VehicleProfileWorkOrder[];
+  appointments?: VehicleProfileAppointment[];
+  nextAppointment?: VehicleProfileAppointment | null;
+  recentReceipts?: VehicleProfileReceiptWithContext[];
+  events?: VehicleProfileEvent[];
   currentStatus: WorkOrderStatus | "NO_ACTIVE_WORK_ORDER";
   summary: {
     totalWorkOrders: number;
@@ -136,6 +183,7 @@ export type VehicleProfile = {
     closedWorkOrders: number;
     deliveredWorkOrders: number;
     cancelledWorkOrders: number;
+    totalReceipts?: number;
     latestWorkOrder: VehicleProfileWorkOrder | null;
     latestActiveWorkOrder: VehicleProfileWorkOrder | null;
     latestClosedWorkOrder: VehicleProfileWorkOrder | null;

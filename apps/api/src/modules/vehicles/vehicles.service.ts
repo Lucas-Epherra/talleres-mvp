@@ -4,7 +4,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, VehicleEventType, WorkOrderStatus } from '@prisma/client';
+import {
+  AppointmentStatus,
+  Prisma,
+  VehicleEventType,
+  WorkOrderStatus,
+} from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ArchiveVehicleDto } from './dto/archive-vehicle.dto';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
@@ -187,9 +192,12 @@ export class VehiclesService {
    * Returns the complete operational vehicle profile.
    *
    * This endpoint feeds the vehicle profile page, including customer data,
-   * active work orders, historical work orders and a compact summary.
+   * appointments, receipts, active work orders, historical work orders and a
+   * compact operational summary.
    */
   async findProfile(workshopId: string, id: string) {
+    const now = new Date();
+
     const vehicle = await this.prisma.vehicle.findFirst({
       where: {
         id,
@@ -230,6 +238,61 @@ export class VehiclesService {
             notes: true,
             createdAt: true,
             updatedAt: true,
+            receipts: {
+              orderBy: {
+                issuedAt: 'desc',
+              },
+              select: {
+                id: true,
+                receiptNumber: true,
+                issuedAt: true,
+                total: true,
+                emailTo: true,
+                emailedAt: true,
+              },
+            },
+          },
+        },
+        appointments: {
+          where: {
+            scheduledEnd: {
+              gte: now,
+            },
+            status: {
+              in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED],
+            },
+          },
+          orderBy: {
+            scheduledStart: 'asc',
+          },
+          take: 5,
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            scheduledStart: true,
+            scheduledEnd: true,
+            status: true,
+            workOrderId: true,
+          },
+        },
+        events: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 6,
+          select: {
+            id: true,
+            type: true,
+            description: true,
+            createdAt: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         },
       },
@@ -258,6 +321,19 @@ export class VehiclesService {
     const latestWorkOrder = vehicle.workOrders[0] ?? null;
     const latestActiveWorkOrder = activeWorkOrders[0] ?? null;
     const latestClosedWorkOrder = history[0] ?? null;
+    const allReceipts = vehicle.workOrders
+      .flatMap((workOrder) =>
+        workOrder.receipts.map((receipt) => ({
+          ...receipt,
+          workOrderId: workOrder.id,
+          orderNumber: workOrder.orderNumber,
+        })),
+      )
+      .sort(
+        (firstReceipt, secondReceipt) =>
+          secondReceipt.issuedAt.getTime() - firstReceipt.issuedAt.getTime(),
+      );
+    const recentReceipts = allReceipts.slice(0, 5);
 
     return {
       vehicle: {
@@ -279,6 +355,10 @@ export class VehiclesService {
       customer: vehicle.customer,
       activeWorkOrders,
       history,
+      appointments: vehicle.appointments,
+      nextAppointment: vehicle.appointments[0] ?? null,
+      recentReceipts,
+      events: vehicle.events,
       currentStatus: latestActiveWorkOrder?.status ?? 'NO_ACTIVE_WORK_ORDER',
       summary: {
         totalWorkOrders: vehicle.workOrders.length,
@@ -286,6 +366,7 @@ export class VehiclesService {
         closedWorkOrders: history.length,
         deliveredWorkOrders: deliveredWorkOrders.length,
         cancelledWorkOrders: cancelledWorkOrders.length,
+        totalReceipts: allReceipts.length,
         latestWorkOrder,
         latestActiveWorkOrder,
         latestClosedWorkOrder,

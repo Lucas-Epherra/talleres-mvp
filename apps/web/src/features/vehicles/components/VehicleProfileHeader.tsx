@@ -18,7 +18,6 @@ import {
   type WorkOrderStatus,
 } from "../../../lib/format";
 import type { VehicleProfile } from "../types";
-import { VehicleArchiveActions } from "./VehicleArchiveActions";
 
 type VehicleProfileHeaderProps = {
   profile: VehicleProfile;
@@ -69,7 +68,7 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
         </div>
 
         <div className="flex flex-col gap-4 lg:min-w-md">
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Metric
               label="Estado actual"
               value={
@@ -81,6 +80,7 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
             />
             <Metric label="Órdenes activas" value={summary.activeWorkOrders} />
             <Metric label="Historial" value={summary.closedWorkOrders} />
+            <Metric label="Recibos" value={summary.totalReceipts ?? 0} />
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -199,14 +199,6 @@ export function VehicleProfileHeader({ profile }: VehicleProfileHeaderProps) {
         </DetailSheet>
       </div>
 
-      <div className="relative mt-5">
-        <VehicleArchiveActions
-          vehicleId={vehicle.id}
-          isArchived={isArchived}
-          activeWorkOrdersCount={summary.activeWorkOrders}
-          archivedReason={vehicle.archivedReason}
-        />
-      </div>
     </header>
   );
 }
