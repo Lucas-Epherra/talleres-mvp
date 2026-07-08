@@ -10,7 +10,7 @@ import Link from "next/link";
 import { Pagination } from "../../../components/ui/Pagination";
 import { SearchForm } from "../../../components/ui/SearchForm";
 import { AgendaView } from "../../../features/appointments/components/AgendaView";
-import { CalendarWeekView } from "../../../features/appointments/components/CalendarWeekView";
+import { CalendarMonthView } from "../../../features/appointments/components/CalendarMonthView";
 import {
   getAppointmentCalendar,
   getPaginatedAppointments,
@@ -40,6 +40,7 @@ type AppointmentsPageProps = {
     range?: string | string[];
     workOrderId?: string | string[];
     view?: string | string[];
+    month?: string | string[];
   }>;
 };
 
@@ -59,22 +60,23 @@ export default async function AppointmentsPage({
   const page = normalizePageParam(resolvedSearchParams.page);
   const status = normalizeStatusParam(resolvedSearchParams.status);
   const range = normalizeRangeParam(resolvedSearchParams.range);
-  const requestedViewMode = normalizeViewModeParam(resolvedSearchParams.view);
-  const dateRange = buildDateRange(range);
-  const canUseCalendarView = Boolean(dateRange.from && dateRange.to);
-  const viewMode = canUseCalendarView ? requestedViewMode : "list";
+  const viewMode = normalizeViewModeParam(resolvedSearchParams.view);
+  const calendarMonth = normalizeCalendarMonthParam(resolvedSearchParams.month);
+  const listDateRange = buildDateRange(range);
+  const calendarDateRange = buildCalendarMonthRange(calendarMonth);
+  const queryDateRange = viewMode === "calendar" ? calendarDateRange : listDateRange;
   const queryLimit =
     range === "overdue"
       ? OVERDUE_APPOINTMENTS_PAGE_LIMIT
       : APPOINTMENTS_PAGE_LIMIT;
 
   const calendarResponse =
-    viewMode === "calendar" && dateRange.from && dateRange.to
+    viewMode === "calendar"
       ? await getAppointmentCalendar({
           search: search || undefined,
           status,
-          from: dateRange.from,
-          to: dateRange.to,
+          from: calendarDateRange.from,
+          to: calendarDateRange.to,
           workOrderId: workOrderId || undefined,
         })
       : null;
@@ -84,8 +86,8 @@ export default async function AppointmentsPage({
     : await getPaginatedAppointments({
         search: search || undefined,
         status,
-        from: dateRange.from,
-        to: dateRange.to,
+        from: queryDateRange.from,
+        to: queryDateRange.to,
         page,
         limit: queryLimit,
         workOrderId: workOrderId || undefined,
@@ -99,13 +101,15 @@ export default async function AppointmentsPage({
 
   const meta = appointmentsPage?.meta ?? null;
   const hasSearch = search.length > 0;
+  const hasDataFilters = hasSearch || Boolean(status) || Boolean(workOrderId);
   const hasFilters =
-    hasSearch ||
-    Boolean(status) ||
-    range !== "week" ||
-    Boolean(workOrderId) ||
-    viewMode !== "list";
+    viewMode === "calendar"
+      ? hasDataFilters
+      : hasDataFilters || range !== "week";
   const overdueCount = appointments.filter(isOverdueOperationalAppointment).length;
+  const previousMonth = shiftCalendarMonth(calendarMonth, -1);
+  const nextMonth = shiftCalendarMonth(calendarMonth, 1);
+  const currentMonth = formatCalendarMonthParam(new Date());
 
   return (
     <section className="space-y-6 sm:space-y-8">
@@ -146,25 +150,29 @@ export default async function AppointmentsPage({
             range,
             status,
             workOrderId: workOrderId || undefined,
+            view: viewMode,
+            month: calendarMonth,
           })}
           showClearAction={hasSearch}
         />
 
-        <AppointmentRangeFilters
-          currentRange={range}
-          search={search || undefined}
-          status={status}
-          workOrderId={workOrderId || undefined}
-          viewMode={viewMode}
-        />
+        {viewMode === "list" ? (
+          <AppointmentRangeFilters
+            currentRange={range}
+            search={search || undefined}
+            status={status}
+            workOrderId={workOrderId || undefined}
+            viewMode={viewMode}
+          />
+        ) : null}
 
         <AppointmentViewModeFilters
           currentViewMode={viewMode}
-          canUseCalendarView={canUseCalendarView}
           search={search || undefined}
           status={status}
           range={range}
           workOrderId={workOrderId || undefined}
+          month={calendarMonth}
         />
 
         <AppointmentStatusFilters
@@ -173,6 +181,7 @@ export default async function AppointmentsPage({
           range={range}
           workOrderId={workOrderId || undefined}
           viewMode={viewMode}
+          month={calendarMonth}
         />
       </header>
 
@@ -194,7 +203,9 @@ export default async function AppointmentsPage({
               id="appointments-results-heading"
               className="font-display text-lg font-black uppercase tracking-[0.04em] text-foreground"
             >
-              {getResultsTitle(range, hasSearch)}
+              {viewMode === "calendar"
+                ? `Calendario de ${formatMonthTitle(calendarMonth)}`
+                : getResultsTitle(range, hasSearch)}
             </h2>
 
             {meta && meta.totalItems > 0 ? (
@@ -214,12 +225,34 @@ export default async function AppointmentsPage({
         </div>
 
         {calendarResponse ? (
-          <CalendarWeekView
+          <CalendarMonthView
             appointments={appointments}
             rangeStart={calendarResponse.range.from}
             rangeEnd={calendarResponse.range.to}
+            visibleMonth={calendarMonth}
             summary={calendarResponse.summary}
             hasFilters={hasFilters}
+            previousMonthHref={buildAppointmentsHref({
+              search: search || undefined,
+              status,
+              workOrderId: workOrderId || undefined,
+              view: "calendar",
+              month: previousMonth,
+            })}
+            nextMonthHref={buildAppointmentsHref({
+              search: search || undefined,
+              status,
+              workOrderId: workOrderId || undefined,
+              view: "calendar",
+              month: nextMonth,
+            })}
+            todayHref={buildAppointmentsHref({
+              search: search || undefined,
+              status,
+              workOrderId: workOrderId || undefined,
+              view: "calendar",
+              month: currentMonth,
+            })}
           />
         ) : (
           <>
@@ -484,6 +517,7 @@ function AppointmentRangeFilters({
           <input type="hidden" name="view" value={viewMode} />
         ) : null}
 
+
         <select
           name="range"
           defaultValue={currentRange}
@@ -540,11 +574,11 @@ function AppointmentRangeFilters({
 
 type AppointmentViewModeFiltersProps = {
   currentViewMode: AgendaViewMode;
-  canUseCalendarView: boolean;
   search?: string;
   status?: AppointmentStatus;
   range: AgendaRange;
   workOrderId?: string;
+  month: string;
 };
 
 /**
@@ -552,11 +586,11 @@ type AppointmentViewModeFiltersProps = {
  */
 function AppointmentViewModeFilters({
   currentViewMode,
-  canUseCalendarView,
   search,
   status,
   range,
   workOrderId,
+  month,
 }: AppointmentViewModeFiltersProps) {
   return (
     <section aria-labelledby="appointment-view-filter-heading" className="mt-4">
@@ -569,7 +603,7 @@ function AppointmentViewModeFilters({
         </h2>
 
         <p className="text-xs leading-5 text-muted-foreground">
-          Usá lista para resolver turnos rápido o calendario para ver carga por día.
+          Usá lista para resolver turnos rápido o mes para planificar la agenda completa.
         </p>
       </div>
 
@@ -592,29 +626,23 @@ function AppointmentViewModeFilters({
           Lista
         </Link>
 
-        {canUseCalendarView ? (
-          <Link
-            href={buildAppointmentsHref({
-              search,
-              status,
-              range,
-              workOrderId,
-              view: "calendar",
-            })}
-            aria-current={currentViewMode === "calendar" ? "page" : undefined}
-            className={
-              currentViewMode === "calendar"
-                ? "inline-flex h-10 items-center justify-center rounded-xl border border-primary bg-primary px-4 text-sm font-bold text-white"
-                : "inline-flex h-10 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated"
-            }
-          >
-            Calendario
-          </Link>
-        ) : (
-          <span className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-surface-muted px-4 text-sm font-bold text-muted-foreground">
-            Calendario no disponible para esta vista
-          </span>
-        )}
+        <Link
+          href={buildAppointmentsHref({
+            search,
+            status,
+            workOrderId,
+            view: "calendar",
+            month,
+          })}
+          aria-current={currentViewMode === "calendar" ? "page" : undefined}
+          className={
+            currentViewMode === "calendar"
+              ? "inline-flex h-10 items-center justify-center rounded-xl border border-primary bg-primary px-4 text-sm font-bold text-white"
+              : "inline-flex h-10 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated"
+          }
+        >
+          Mes
+        </Link>
       </nav>
     </section>
   );
@@ -626,6 +654,7 @@ type AppointmentStatusFiltersProps = {
   range: AgendaRange;
   workOrderId?: string;
   viewMode: AgendaViewMode;
+  month: string;
 };
 
 /**
@@ -640,6 +669,7 @@ function AppointmentStatusFilters({
   range,
   workOrderId,
   viewMode,
+  month,
 }: AppointmentStatusFiltersProps) {
   const filters: Array<{
     label: string;
@@ -685,6 +715,10 @@ function AppointmentStatusFilters({
           <input type="hidden" name="view" value={viewMode} />
         ) : null}
 
+        {viewMode === "calendar" ? (
+          <input type="hidden" name="month" value={month} />
+        ) : null}
+
         <select
           name="status"
           defaultValue={currentStatus ?? ""}
@@ -722,6 +756,7 @@ function AppointmentStatusFilters({
                 status: filter.value,
                 workOrderId,
                 view: viewMode,
+                month,
               })}
               aria-current={isActive ? "page" : undefined}
               className={
@@ -748,12 +783,14 @@ function buildAppointmentsHref({
   range,
   workOrderId,
   view,
+  month,
 }: {
   search?: string;
   status?: AppointmentStatus;
   range?: AgendaRange;
   workOrderId?: string;
   view?: AgendaViewMode;
+  month?: string;
 }): string {
   const params = new URLSearchParams();
 
@@ -765,7 +802,13 @@ function buildAppointmentsHref({
     params.set("status", status);
   }
 
-  if (range && range !== "week") {
+  if (view === "calendar") {
+    params.set("view", view);
+
+    if (month) {
+      params.set("month", month);
+    }
+  } else if (range && range !== "week") {
     params.set("range", range);
   }
 
@@ -773,13 +816,118 @@ function buildAppointmentsHref({
     params.set("workOrderId", workOrderId);
   }
 
-  if (view && view !== "list") {
-    params.set("view", view);
-  }
-
   const queryString = params.toString();
 
   return queryString ? `/appointments?${queryString}` : "/appointments";
+}
+
+
+/**
+ * Normalizes the visible month used by the calendar view.
+ */
+function normalizeCalendarMonthParam(
+  value: string | string[] | undefined,
+): string {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+
+  if (rawValue && /^\d{4}-\d{2}$/.test(rawValue)) {
+    const [yearValue, monthValue] = rawValue.split("-");
+    const year = Number(yearValue);
+    const month = Number(monthValue);
+
+    if (Number.isInteger(year) && month >= 1 && month <= 12) {
+      return rawValue;
+    }
+  }
+
+  return formatCalendarMonthParam(new Date());
+}
+
+/**
+ * Builds the full visible grid for one monthly calendar.
+ *
+ * The grid starts on Sunday and ends on the Sunday after the last visible week,
+ * which gives the backend a bounded [from, to) range under the 45-day calendar
+ * safety limit.
+ */
+function buildCalendarMonthRange(month: string): { from: string; to: string } {
+  const monthStart = parseCalendarMonth(month);
+  const monthEnd = addMonths(monthStart, 1);
+  const lastDayOfMonth = addDays(monthEnd, -1);
+  const gridStart = startOfWeek(monthStart);
+  const gridEnd = addDays(startOfWeek(lastDayOfMonth), 7);
+
+  return {
+    from: gridStart.toISOString(),
+    to: gridEnd.toISOString(),
+  };
+}
+
+/**
+ * Shifts a YYYY-MM month string by the provided amount of months.
+ */
+function shiftCalendarMonth(month: string, amount: number): string {
+  return formatCalendarMonthParam(addMonths(parseCalendarMonth(month), amount));
+}
+
+/**
+ * Formats a YYYY-MM month as a Spanish title.
+ */
+function formatMonthTitle(month: string): string {
+  const formatter = new Intl.DateTimeFormat("es-AR", {
+    month: "long",
+    year: "numeric",
+  });
+
+  return capitalizeFirstLetter(formatter.format(parseCalendarMonth(month)));
+}
+
+/**
+ * Parses a YYYY-MM month string as a local Date at the beginning of the month.
+ */
+function parseCalendarMonth(month: string): Date {
+  const [yearValue, monthValue] = month.split("-");
+  const year = Number(yearValue);
+  const monthIndex = Number(monthValue) - 1;
+
+  return new Date(year, monthIndex, 1);
+}
+
+/**
+ * Formats a date as YYYY-MM for calendar navigation links.
+ */
+function formatCalendarMonthParam(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+
+  return `${year}-${month}`;
+}
+
+/**
+ * Returns the Sunday that starts the visible calendar week.
+ */
+function startOfWeek(date: Date): Date {
+  const result = startOfDay(date);
+  result.setDate(result.getDate() - result.getDay());
+
+  return result;
+}
+
+/**
+ * Adds months to a date.
+ */
+function addMonths(date: Date, months: number): Date {
+  const result = new Date(date);
+  result.setMonth(result.getMonth() + months);
+
+  return result;
+}
+
+/**
+ * Capitalizes the first letter of a display label.
+ */
+function capitalizeFirstLetter(value: string): string {
+  return value.length > 0 ? `${value[0].toUpperCase()}${value.slice(1)}` : value;
 }
 
 /**
