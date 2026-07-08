@@ -1,14 +1,12 @@
 import { CalendarDays, CarFront, ClipboardList, Clock3, UserRound } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { EmptyState } from "../../../components/ui/EmptyState";
 import { formatWorkOrderStatus } from "../../../lib/format";
 import { AppointmentActions } from "./AppointmentActions";
 import { AppointmentStatusBadge } from "./AppointmentStatusBadge";
 import type {
   Appointment,
   AppointmentCalendarSummary,
-  AppointmentStatus,
 } from "../types";
 
 type CalendarWeekViewProps = {
@@ -34,36 +32,6 @@ export function CalendarWeekView({
 }: CalendarWeekViewProps) {
   const days = buildCalendarDays(rangeStart, rangeEnd);
 
-  if (appointments.length === 0) {
-    return (
-      <EmptyState
-        eyebrow={hasFilters ? "Sin resultados" : "Calendario libre"}
-        title={
-          hasFilters
-            ? "No se encontraron turnos"
-            : "No hay turnos en este calendario"
-        }
-        description={
-          hasFilters
-            ? "Probá limpiar filtros o revisar otra vista de agenda."
-            : "Cuando cargues turnos, entregas o seguimientos, van a aparecer organizados por día."
-        }
-        actions={[
-          {
-            label: "Nuevo turno",
-            href: "/appointments/new",
-            variant: "primary",
-          },
-          {
-            label: "Volver a lista",
-            href: "/appointments?view=list",
-            variant: "secondary",
-          },
-        ]}
-      />
-    );
-  }
-
   return (
     <section
       aria-labelledby="agenda-calendar-heading"
@@ -88,13 +56,14 @@ export function CalendarWeekView({
             </h2>
 
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Turnos organizados por jornada. Usá esta vista para ver la carga
-              diaria del taller sin depender de una lista paginada.
+              {hasFilters
+                ? "Vista filtrada por día. Aunque no haya resultados, el calendario queda visible para revisar disponibilidad."
+                : "Turnos organizados por día. La agenda se mantiene visible aunque no haya turnos, así podés revisar disponibilidad y carga diaria."}
             </p>
           </div>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-4 lg:min-w-136">
+        <div className="grid gap-2 sm:grid-cols-2 lg:min-w-[28rem] xl:grid-cols-4">
           <CalendarSummaryPill
             label="Turnos"
             value={summary.totalAppointments}
@@ -112,29 +81,16 @@ export function CalendarWeekView({
         </div>
       </header>
 
-      <div className="mt-5 grid gap-4 xl:hidden">
-        {days.map((day) => (
-          <CalendarDayColumn
-            key={day.key}
-            day={day}
-            appointments={getAppointmentsForDay(appointments, day.date)}
-          />
-        ))}
-      </div>
-
-      <div
-        className="mt-5 hidden gap-4 xl:grid"
-        style={{
-          gridTemplateColumns: `repeat(${Math.max(days.length, 1)}, minmax(0, 1fr))`,
-        }}
-      >
-        {days.map((day) => (
-          <CalendarDayColumn
-            key={day.key}
-            day={day}
-            appointments={getAppointmentsForDay(appointments, day.date)}
-          />
-        ))}
+      <div className="mt-5 overflow-x-auto pb-2">
+        <div className="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-flow-col xl:auto-cols-[minmax(16rem,1fr)] xl:grid-cols-none xl:items-start">
+          {days.map((day) => (
+            <CalendarDayColumn
+              key={day.key}
+              day={day}
+              appointments={getAppointmentsForDay(appointments, day.date)}
+            />
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -199,8 +155,8 @@ function CalendarDayColumn({ day, appointments }: CalendarDayColumnProps) {
       aria-labelledby={`agenda-day-${day.key}`}
       className={
         isToday
-          ? "min-w-0 rounded-2xl border border-primary/40 bg-primary/10 p-3 ring-1 ring-white/3"
-          : "min-w-0 rounded-2xl border border-border bg-surface-muted/70 p-3 ring-1 ring-white/3"
+          ? "h-fit min-w-0 rounded-2xl border border-primary/40 bg-primary/10 p-3 ring-1 ring-white/3 xl:min-w-64"
+          : "h-fit min-w-0 rounded-2xl border border-border bg-surface-muted/70 p-3 ring-1 ring-white/3 xl:min-w-64"
       }
     >
       <header className="border-b border-border pb-3">
@@ -236,9 +192,17 @@ function CalendarDayColumn({ day, appointments }: CalendarDayColumnProps) {
           ))}
         </div>
       ) : (
-        <p className="mt-3 rounded-xl border border-dashed border-border bg-surface px-3 py-4 text-center text-xs font-semibold text-muted-foreground">
-          Sin turnos para este día.
-        </p>
+        <div className="mt-3 rounded-xl border border-dashed border-border bg-surface/80 px-3 py-3 text-center">
+          <p className="text-xs font-semibold text-muted-foreground">
+            Día libre
+          </p>
+          <Link
+            href="/appointments/new"
+            className="mt-2 inline-flex text-[0.68rem] font-black uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
+          >
+            Nuevo turno
+          </Link>
+        </div>
       )}
     </section>
   );
@@ -259,7 +223,7 @@ function AppointmentCalendarCard({ appointment }: AppointmentCalendarCardProps) 
       className={
         isOverdue
           ? "rounded-2xl border border-warning/45 bg-warning/10 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]"
-          : "rounded-2xl border border-border bg-surface p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]"
+          : "rounded-2xl border border-border bg-surface p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.64)] transition hover:border-primary/40"
       }
     >
       <header className="space-y-2">
@@ -355,6 +319,7 @@ function AppointmentCalendarCard({ appointment }: AppointmentCalendarCardProps) 
         <AppointmentActions
           appointmentId={appointment.id}
           status={appointment.status}
+          variant="compact"
         />
       </div>
     </article>
