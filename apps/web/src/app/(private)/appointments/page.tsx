@@ -10,11 +10,17 @@ import Link from "next/link";
 import { Pagination } from "../../../components/ui/Pagination";
 import { SearchForm } from "../../../components/ui/SearchForm";
 import { AgendaView } from "../../../features/appointments/components/AgendaView";
-import { getPaginatedAppointments } from "../../../features/appointments/appointments.server";
+import { CalendarWeekView } from "../../../features/appointments/components/CalendarWeekView";
+import {
+  getAppointmentCalendar,
+  getPaginatedAppointments,
+} from "../../../features/appointments/appointments.server";
 import {
   AGENDA_RANGES,
   APPOINTMENT_STATUSES,
+  AGENDA_VIEW_MODES,
   type AgendaRange,
+  type AgendaViewMode,
   type Appointment,
   type AppointmentStatus,
 } from "../../../features/appointments/types";
@@ -33,6 +39,7 @@ type AppointmentsPageProps = {
     status?: string | string[];
     range?: string | string[];
     workOrderId?: string | string[];
+    view?: string | string[];
   }>;
 };
 
@@ -52,31 +59,52 @@ export default async function AppointmentsPage({
   const page = normalizePageParam(resolvedSearchParams.page);
   const status = normalizeStatusParam(resolvedSearchParams.status);
   const range = normalizeRangeParam(resolvedSearchParams.range);
+  const requestedViewMode = normalizeViewModeParam(resolvedSearchParams.view);
   const dateRange = buildDateRange(range);
+  const canUseCalendarView = Boolean(dateRange.from && dateRange.to);
+  const viewMode = canUseCalendarView ? requestedViewMode : "list";
   const queryLimit =
     range === "overdue"
       ? OVERDUE_APPOINTMENTS_PAGE_LIMIT
       : APPOINTMENTS_PAGE_LIMIT;
 
-  const appointmentsPage = await getPaginatedAppointments({
-    search: search || undefined,
-    status,
-    from: dateRange.from,
-    to: dateRange.to,
-    page,
-    limit: queryLimit,
-    workOrderId: workOrderId || undefined,
-  });
+  const calendarResponse =
+    viewMode === "calendar" && dateRange.from && dateRange.to
+      ? await getAppointmentCalendar({
+          search: search || undefined,
+          status,
+          from: dateRange.from,
+          to: dateRange.to,
+          workOrderId: workOrderId || undefined,
+        })
+      : null;
 
-  const appointments =
-    range === "overdue"
+  const appointmentsPage = calendarResponse
+    ? null
+    : await getPaginatedAppointments({
+        search: search || undefined,
+        status,
+        from: dateRange.from,
+        to: dateRange.to,
+        page,
+        limit: queryLimit,
+        workOrderId: workOrderId || undefined,
+      });
+
+  const appointments = calendarResponse
+    ? calendarResponse.data
+    : range === "overdue" && appointmentsPage
       ? appointmentsPage.data.filter(isOverdueOperationalAppointment)
-      : appointmentsPage.data;
+      : (appointmentsPage?.data ?? []);
 
-  const meta = appointmentsPage.meta;
+  const meta = appointmentsPage?.meta ?? null;
   const hasSearch = search.length > 0;
   const hasFilters =
-    hasSearch || Boolean(status) || range !== "week" || Boolean(workOrderId);
+    hasSearch ||
+    Boolean(status) ||
+    range !== "week" ||
+    Boolean(workOrderId) ||
+    viewMode !== "list";
   const overdueCount = appointments.filter(isOverdueOperationalAppointment).length;
 
   return (
@@ -127,6 +155,16 @@ export default async function AppointmentsPage({
           search={search || undefined}
           status={status}
           workOrderId={workOrderId || undefined}
+          viewMode={viewMode}
+        />
+
+        <AppointmentViewModeFilters
+          currentViewMode={viewMode}
+          canUseCalendarView={canUseCalendarView}
+          search={search || undefined}
+          status={status}
+          range={range}
+          workOrderId={workOrderId || undefined}
         />
 
         <AppointmentStatusFilters
@@ -134,6 +172,7 @@ export default async function AppointmentsPage({
           search={search || undefined}
           range={range}
           workOrderId={workOrderId || undefined}
+          viewMode={viewMode}
         />
       </header>
 
@@ -158,9 +197,13 @@ export default async function AppointmentsPage({
               {getResultsTitle(range, hasSearch)}
             </h2>
 
-            {meta.totalItems > 0 ? (
+            {meta && meta.totalItems > 0 ? (
               <p className="mt-1 text-sm text-muted-foreground">
                 Página {meta.page} de {meta.totalPages}
+              </p>
+            ) : calendarResponse ? (
+              <p className="mt-1 text-sm text-muted-foreground">
+                {calendarResponse.range.days} día{calendarResponse.range.days === 1 ? "" : "s"} visibles
               </p>
             ) : null}
           </div>
@@ -170,24 +213,39 @@ export default async function AppointmentsPage({
           </p>
         </div>
 
-        <AgendaView
-          appointments={appointments}
-          hasFilters={hasFilters}
-          range={range}
-        />
+        {calendarResponse ? (
+          <CalendarWeekView
+            appointments={appointments}
+            rangeStart={calendarResponse.range.from}
+            rangeEnd={calendarResponse.range.to}
+            summary={calendarResponse.summary}
+            hasFilters={hasFilters}
+          />
+        ) : (
+          <>
+            <AgendaView
+              appointments={appointments}
+              hasFilters={hasFilters}
+              range={range}
+            />
 
-        <Pagination
-          basePath="/appointments"
-          currentPage={meta.page}
-          totalPages={meta.totalPages}
-          searchParams={{
-            search: search || undefined,
-            status,
-            range: range !== "week" ? range : undefined,
-            workOrderId: workOrderId || undefined,
-          }}
-          ariaLabel="Paginación de agenda"
-        />
+            {meta ? (
+              <Pagination
+                basePath="/appointments"
+                currentPage={meta.page}
+                totalPages={meta.totalPages}
+                searchParams={{
+                  search: search || undefined,
+                  status,
+                  range: range !== "week" ? range : undefined,
+                  workOrderId: workOrderId || undefined,
+                  view: viewMode !== "list" ? viewMode : undefined,
+                }}
+                ariaLabel="Paginación de agenda"
+              />
+            ) : null}
+          </>
+        )}
       </section>
     </section>
   );
@@ -367,6 +425,7 @@ type AppointmentRangeFiltersProps = {
   search?: string;
   status?: AppointmentStatus;
   workOrderId?: string;
+  viewMode: AgendaViewMode;
 };
 
 /**
@@ -380,6 +439,7 @@ function AppointmentRangeFilters({
   search,
   status,
   workOrderId,
+  viewMode,
 }: AppointmentRangeFiltersProps) {
   const filters: Array<{
     label: string;
@@ -420,6 +480,10 @@ function AppointmentRangeFilters({
           <input type="hidden" name="workOrderId" value={workOrderId} />
         ) : null}
 
+        {viewMode !== "list" ? (
+          <input type="hidden" name="view" value={viewMode} />
+        ) : null}
+
         <select
           name="range"
           defaultValue={currentRange}
@@ -456,6 +520,7 @@ function AppointmentRangeFilters({
                 status,
                 range: filter.value,
                 workOrderId,
+                view: viewMode,
               })}
               aria-current={isActive ? "page" : undefined}
               className={
@@ -473,11 +538,94 @@ function AppointmentRangeFilters({
   );
 }
 
+type AppointmentViewModeFiltersProps = {
+  currentViewMode: AgendaViewMode;
+  canUseCalendarView: boolean;
+  search?: string;
+  status?: AppointmentStatus;
+  range: AgendaRange;
+  workOrderId?: string;
+};
+
+/**
+ * Switches between the operational list and the calendar-style view.
+ */
+function AppointmentViewModeFilters({
+  currentViewMode,
+  canUseCalendarView,
+  search,
+  status,
+  range,
+  workOrderId,
+}: AppointmentViewModeFiltersProps) {
+  return (
+    <section aria-labelledby="appointment-view-filter-heading" className="mt-4">
+      <div className="flex flex-col gap-1">
+        <h2
+          id="appointment-view-filter-heading"
+          className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary"
+        >
+          Formato
+        </h2>
+
+        <p className="text-xs leading-5 text-muted-foreground">
+          Usá lista para resolver turnos rápido o calendario para ver carga por día.
+        </p>
+      </div>
+
+      <nav aria-label="Formato de agenda" className="mt-2 flex flex-wrap gap-2">
+        <Link
+          href={buildAppointmentsHref({
+            search,
+            status,
+            range,
+            workOrderId,
+            view: "list",
+          })}
+          aria-current={currentViewMode === "list" ? "page" : undefined}
+          className={
+            currentViewMode === "list"
+              ? "inline-flex h-10 items-center justify-center rounded-xl border border-primary bg-primary px-4 text-sm font-bold text-white"
+              : "inline-flex h-10 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated"
+          }
+        >
+          Lista
+        </Link>
+
+        {canUseCalendarView ? (
+          <Link
+            href={buildAppointmentsHref({
+              search,
+              status,
+              range,
+              workOrderId,
+              view: "calendar",
+            })}
+            aria-current={currentViewMode === "calendar" ? "page" : undefined}
+            className={
+              currentViewMode === "calendar"
+                ? "inline-flex h-10 items-center justify-center rounded-xl border border-primary bg-primary px-4 text-sm font-bold text-white"
+                : "inline-flex h-10 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated"
+            }
+          >
+            Calendario
+          </Link>
+        ) : (
+          <span className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-surface-muted px-4 text-sm font-bold text-muted-foreground">
+            Calendario no disponible para esta vista
+          </span>
+        )}
+      </nav>
+    </section>
+  );
+}
+
 type AppointmentStatusFiltersProps = {
   currentStatus?: AppointmentStatus;
   search?: string;
   range: AgendaRange;
   workOrderId?: string;
+  viewMode: AgendaViewMode;
 };
 
 /**
@@ -491,6 +639,7 @@ function AppointmentStatusFilters({
   search,
   range,
   workOrderId,
+  viewMode,
 }: AppointmentStatusFiltersProps) {
   const filters: Array<{
     label: string;
@@ -532,6 +681,10 @@ function AppointmentStatusFilters({
           <input type="hidden" name="workOrderId" value={workOrderId} />
         ) : null}
 
+        {viewMode !== "list" ? (
+          <input type="hidden" name="view" value={viewMode} />
+        ) : null}
+
         <select
           name="status"
           defaultValue={currentStatus ?? ""}
@@ -568,6 +721,7 @@ function AppointmentStatusFilters({
                 range,
                 status: filter.value,
                 workOrderId,
+                view: viewMode,
               })}
               aria-current={isActive ? "page" : undefined}
               className={
@@ -593,11 +747,13 @@ function buildAppointmentsHref({
   status,
   range,
   workOrderId,
+  view,
 }: {
   search?: string;
   status?: AppointmentStatus;
   range?: AgendaRange;
   workOrderId?: string;
+  view?: AgendaViewMode;
 }): string {
   const params = new URLSearchParams();
 
@@ -615,6 +771,10 @@ function buildAppointmentsHref({
 
   if (workOrderId) {
     params.set("workOrderId", workOrderId);
+  }
+
+  if (view && view !== "list") {
+    params.set("view", view);
   }
 
   const queryString = params.toString();
@@ -710,6 +870,21 @@ function normalizeStatusParam(
   }
 
   return undefined;
+}
+
+/**
+ * Normalizes an agenda view mode search param.
+ */
+function normalizeViewModeParam(
+  value: string | string[] | undefined,
+): AgendaViewMode {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+
+  if (AGENDA_VIEW_MODES.some((viewMode) => viewMode === rawValue)) {
+    return rawValue as AgendaViewMode;
+  }
+
+  return "list";
 }
 
 /**

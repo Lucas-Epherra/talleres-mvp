@@ -9,6 +9,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CancelAppointmentDto } from './dto/cancel-appointment.dto';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { FindAppointmentsQueryDto } from './dto/find-appointments-query.dto';
+import { FindAppointmentsCalendarQueryDto } from './dto/find-appointments-calendar-query.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 
 const DEFAULT_APPOINTMENTS_PAGE = 1;
@@ -17,6 +18,8 @@ const MAX_SEARCH_LENGTH = 120;
 const MAX_TITLE_LENGTH = 120;
 const MAX_DESCRIPTION_LENGTH = 1000;
 const MAX_CANCEL_REASON_LENGTH = 800;
+const MAX_CALENDAR_RANGE_DAYS = 45;
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
 type PaginationMeta = {
   page: number;
@@ -166,6 +169,124 @@ export class AppointmentsService {
     return {
       data,
       meta,
+    };
+  }
+
+  /**
+   * Returns all appointments for a bounded calendar range.
+   *
+   * Unlike the list endpoint, this response is not paginated because the
+   * calendar needs the complete range to render days without missing events.
+   */
+  async findCalendar(
+    workshopId: string,
+    query: FindAppointmentsCalendarQueryDto,
+  ) {
+    const fromDate = this.parseRequiredDate(query.from, 'Fecha desde');
+    const toDate = this.parseRequiredDate(query.to, 'Fecha hasta');
+
+    this.assertValidCalendarRange(fromDate, toDate);
+
+    const normalizedSearch = this.normalizeSearch(query.search);
+    const searchedOrderNumber = this.parseOrderNumberSearch(normalizedSearch);
+
+    const where: Prisma.AppointmentWhereInput = {
+      workshopId,
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.workOrderId ? { workOrderId: query.workOrderId } : {}),
+      ...this.buildDateRangeFilter(query.from, query.to),
+      ...(normalizedSearch
+        ? {
+            OR: [
+              {
+                title: {
+                  contains: normalizedSearch,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+              {
+                description: {
+                  contains: normalizedSearch,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+              {
+                customer: {
+                  fullName: {
+                    contains: normalizedSearch,
+                    mode: Prisma.QueryMode.insensitive,
+                  },
+                },
+              },
+              {
+                customer: {
+                  phone: {
+                    contains: normalizedSearch,
+                    mode: Prisma.QueryMode.insensitive,
+                  },
+                },
+              },
+              {
+                vehicle: {
+                  licensePlate: {
+                    contains:
+                      this.normalizeLicensePlateSearch(normalizedSearch) ??
+                      normalizedSearch,
+                    mode: Prisma.QueryMode.insensitive,
+                  },
+                },
+              },
+              {
+                vehicle: {
+                  brand: {
+                    contains: normalizedSearch,
+                    mode: Prisma.QueryMode.insensitive,
+                  },
+                },
+              },
+              {
+                vehicle: {
+                  model: {
+                    contains: normalizedSearch,
+                    mode: Prisma.QueryMode.insensitive,
+                  },
+                },
+              },
+              ...(searchedOrderNumber
+                ? [
+                    {
+                      workOrder: {
+                        orderNumber: searchedOrderNumber,
+                      },
+                    },
+                  ]
+                : []),
+            ],
+          }
+        : {}),
+    };
+
+    const data = await this.prisma.appointment.findMany({
+      where,
+      orderBy: [
+        {
+          scheduledStart: 'asc',
+        },
+        {
+          createdAt: 'asc',
+        },
+      ],
+      include: this.getDefaultInclude(),
+    });
+
+    return {
+      data,
+      range: {
+        from: fromDate.toISOString(),
+        to: toDate.toISOString(),
+        days: this.getCalendarRangeDays(fromDate, toDate),
+      },
+      summary: this.buildCalendarSummary(data),
     };
   }
 
@@ -556,6 +677,77 @@ export class AppointmentsService {
       customerId: resolvedCustomerId,
       vehicleId: resolvedVehicleId,
       workOrderId: resolvedWorkOrderId,
+    };
+  }
+
+  /**
+   * Keeps calendar queries bounded so a full calendar render cannot request an
+   * unbounded operational history by mistake.
+   */
+  private assertValidCalendarRange(fromDate: Date, toDate: Date): void {
+    if (fromDate >= toDate) {
+      throw new BadRequestException(
+        'La fecha desde debe ser anterior a la fecha hasta.',
+      );
+    }
+
+    if (this.getCalendarRangeDays(fromDate, toDate) > MAX_CALENDAR_RANGE_DAYS) {
+      throw new BadRequestException(
+        `La vista calendario no puede superar ${MAX_CALENDAR_RANGE_DAYS} días.`,
+      );
+    }
+  }
+
+  /**
+   * Returns the amount of calendar days covered by the requested range.
+   */
+  private getCalendarRangeDays(fromDate: Date, toDate: Date): number {
+    return Math.ceil(
+      (toDate.getTime() - fromDate.getTime()) / MILLISECONDS_PER_DAY,
+    );
+  }
+
+  /**
+   * Builds aggregate counters consumed by the agenda calendar header.
+   */
+  private buildCalendarSummary(
+    appointments: Array<{
+      status: AppointmentStatus;
+      scheduledEnd: Date;
+      workOrderId: string | null;
+    }>,
+  ) {
+    const now = new Date();
+    const operationalStatuses = new Set<AppointmentStatus>([
+      AppointmentStatus.SCHEDULED,
+      AppointmentStatus.CONFIRMED,
+    ]);
+
+    return {
+      totalAppointments: appointments.length,
+      operationalAppointments: appointments.filter((appointment) =>
+        operationalStatuses.has(appointment.status),
+      ).length,
+      overdueAppointments: appointments.filter(
+        (appointment) =>
+          operationalStatuses.has(appointment.status) &&
+          appointment.scheduledEnd < now,
+      ).length,
+      scheduledAppointments: appointments.filter(
+        (appointment) => appointment.status === AppointmentStatus.SCHEDULED,
+      ).length,
+      confirmedAppointments: appointments.filter(
+        (appointment) => appointment.status === AppointmentStatus.CONFIRMED,
+      ).length,
+      completedAppointments: appointments.filter(
+        (appointment) => appointment.status === AppointmentStatus.COMPLETED,
+      ).length,
+      cancelledAppointments: appointments.filter(
+        (appointment) => appointment.status === AppointmentStatus.CANCELLED,
+      ).length,
+      linkedWorkOrders: appointments.filter(
+        (appointment) => appointment.workOrderId,
+      ).length,
     };
   }
 

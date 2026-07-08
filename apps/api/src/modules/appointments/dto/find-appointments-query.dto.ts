@@ -1,37 +1,18 @@
 import { AppointmentStatus } from '@prisma/client';
-import { Type } from 'class-transformer';
-import {
-  IsEnum,
-  IsInt,
-  IsISO8601,
-  IsOptional,
-  IsString,
-  IsUUID,
-  Max,
-  MaxLength,
-  Min,
-} from 'class-validator';
+import { IsEnum, IsISO8601, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 /**
- * Query params accepted by the appointments list endpoint.
+ * Query params accepted by the calendar agenda endpoint.
  *
- * The `from` and `to` params are range boundaries. The service returns
- * appointments that overlap that range, which is useful for future calendar
- * views.
+ * Calendar requests are intentionally bounded by a required date range so the
+ * frontend can render a full week or month without relying on paginated data.
  */
-export class FindAppointmentsQueryDto {
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number;
+export class FindAppointmentsCalendarQueryDto {
+  @IsISO8601({ strict: true })
+  from!: string;
 
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(50)
-  limit?: number;
+  @IsISO8601({ strict: true })
+  to!: string;
 
   @IsOptional()
   @IsString()
@@ -45,12 +26,4 @@ export class FindAppointmentsQueryDto {
   @IsOptional()
   @IsUUID()
   workOrderId?: string;
-
-  @IsOptional()
-  @IsISO8601({ strict: true })
-  from?: string;
-
-  @IsOptional()
-  @IsISO8601({ strict: true })
-  to?: string;
 }

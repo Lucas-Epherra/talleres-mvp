@@ -15,6 +15,7 @@ import { AppointmentsService } from './appointments.service';
 import { CancelAppointmentDto } from './dto/cancel-appointment.dto';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { FindAppointmentsQueryDto } from './dto/find-appointments-query.dto';
+import { FindAppointmentsCalendarQueryDto } from './dto/find-appointments-calendar-query.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 
 /**
@@ -36,6 +37,20 @@ export class AppointmentsController {
     @Query() query: FindAppointmentsQueryDto,
   ) {
     return this.appointmentsService.findAll(user.workshopId, query);
+  }
+
+  /**
+   * Returns all appointments inside a bounded range for calendar rendering.
+   *
+   * This avoids paginated slices in week/month views while keeping the query
+   * scoped and predictable.
+   */
+  @Get('calendar')
+  findCalendar(
+    @CurrentUser() user: AuthUser,
+    @Query() query: FindAppointmentsCalendarQueryDto,
+  ) {
+    return this.appointmentsService.findCalendar(user.workshopId, query);
   }
 
   /**

@@ -84,6 +84,35 @@ export type AppointmentsQuery = {
   workOrderId?: string;
 };
 
+export type AppointmentCalendarQuery = Omit<
+  AppointmentsQuery,
+  "page" | "limit"
+> & {
+  from: string;
+  to: string;
+};
+
+export type AppointmentCalendarSummary = {
+  totalAppointments: number;
+  operationalAppointments: number;
+  overdueAppointments: number;
+  scheduledAppointments: number;
+  confirmedAppointments: number;
+  completedAppointments: number;
+  cancelledAppointments: number;
+  linkedWorkOrders: number;
+};
+
+export type AppointmentCalendarResponse = {
+  data: Appointment[];
+  range: {
+    from: string;
+    to: string;
+    days: number;
+  };
+  summary: AppointmentCalendarSummary;
+};
+
 export type CreateAppointmentInput = {
   title: string;
   description?: string;
@@ -109,3 +138,7 @@ export const AGENDA_RANGES = [
 ] as const;
 
 export type AgendaRange = (typeof AGENDA_RANGES)[number];
+
+export const AGENDA_VIEW_MODES = ["list", "calendar"] as const;
+
+export type AgendaViewMode = (typeof AGENDA_VIEW_MODES)[number];
