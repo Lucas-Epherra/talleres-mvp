@@ -1,3 +1,5 @@
+import type { WorkOrderStatus } from "../../lib/format";
+
 export const APPOINTMENT_STATUSES = [
   "SCHEDULED",
   "CONFIRMED",
@@ -34,7 +36,7 @@ export type AppointmentVehicle = {
 export type AppointmentWorkOrder = {
   id: string;
   orderNumber: number;
-  status: string;
+  status: WorkOrderStatus;
 };
 
 export type Appointment = {

@@ -1,7 +1,12 @@
-import { CalendarDays, Plus } from "lucide-react";
+import {
+  CalendarClock,
+  CalendarDays,
+  ClipboardList,
+  Plus,
+  TriangleAlert,
+} from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { EmptyState } from "../../../components/ui/EmptyState";
 import { Pagination } from "../../../components/ui/Pagination";
 import { SearchForm } from "../../../components/ui/SearchForm";
 import { AgendaView } from "../../../features/appointments/components/AgendaView";
@@ -19,6 +24,7 @@ export const metadata: Metadata = {
 };
 
 const APPOINTMENTS_PAGE_LIMIT = 10;
+const OVERDUE_APPOINTMENTS_PAGE_LIMIT = 50;
 
 type AppointmentsPageProps = {
   searchParams: Promise<{
@@ -33,8 +39,9 @@ type AppointmentsPageProps = {
 /**
  * Main workshop agenda page.
  *
- * The first version is intentionally mobile-first and list-based. Calendar UI
- * can be added later using the same Appointment model and range filters.
+ * This view is intentionally mobile-first and list-based. It groups turns by
+ * operational meaning so the workshop can resolve overdue work first, then the
+ * day and upcoming commitments.
  */
 export default async function AppointmentsPage({
   searchParams,
@@ -46,6 +53,10 @@ export default async function AppointmentsPage({
   const status = normalizeStatusParam(resolvedSearchParams.status);
   const range = normalizeRangeParam(resolvedSearchParams.range);
   const dateRange = buildDateRange(range);
+  const queryLimit =
+    range === "overdue"
+      ? OVERDUE_APPOINTMENTS_PAGE_LIMIT
+      : APPOINTMENTS_PAGE_LIMIT;
 
   const appointmentsPage = await getPaginatedAppointments({
     search: search || undefined,
@@ -53,7 +64,7 @@ export default async function AppointmentsPage({
     from: dateRange.from,
     to: dateRange.to,
     page,
-    limit: APPOINTMENTS_PAGE_LIMIT,
+    limit: queryLimit,
     workOrderId: workOrderId || undefined,
   });
 
@@ -66,6 +77,8 @@ export default async function AppointmentsPage({
   const hasSearch = search.length > 0;
   const hasFilters =
     hasSearch || Boolean(status) || range !== "week" || Boolean(workOrderId);
+  const overdueCount = appointments.filter(isOverdueOperationalAppointment).length;
+
   return (
     <section className="space-y-6 sm:space-y-8">
       <header className="relative overflow-hidden rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
@@ -81,8 +94,9 @@ export default async function AppointmentsPage({
             </h1>
 
             <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Planificación de turnos, visitas y trabajos programados. Vista
-              mobile first, lista para sumar calendario más adelante.
+              Turnos, entregas y seguimientos vinculados a clientes, vehículos
+              y órdenes. Primero resolvé atrasados, después la jornada y los
+              próximos compromisos.
             </p>
           </div>
 
@@ -125,6 +139,12 @@ export default async function AppointmentsPage({
 
       <AppointmentSummary appointments={appointments} />
 
+      <AgendaOperationalNotice
+        overdueCount={overdueCount}
+        range={range}
+        workOrderId={workOrderId || undefined}
+      />
+
       <section
         aria-labelledby="appointments-results-heading"
         className="space-y-4"
@@ -146,46 +166,28 @@ export default async function AppointmentsPage({
           </div>
 
           <p className="shrink-0 text-sm font-semibold text-muted-foreground">
-            {appointments.length} turno{appointments.length === 1 ? "" : "s"}
+            {appointments.length} turno{appointments.length === 1 ? "" : "s"} en esta vista
           </p>
         </div>
 
-        {range === "overdue" && appointments.length === 0 ? (
-          <EmptyState
-            eyebrow="Sin atrasados"
-            title="No hay turnos atrasados"
-            description="Los turnos programados o confirmados que ya pasaron van a aparecer acá."
-            actions={[
-              {
-                label: "Ver hoy",
-                href: "/appointments",
-                variant: "primary",
-              },
-              {
-                label: "Nuevo turno",
-                href: "/appointments/new",
-                variant: "secondary",
-              },
-            ]}
-          />
-        ) : (
-          <>
-            <AgendaView appointments={appointments} hasFilters={hasFilters} />
+        <AgendaView
+          appointments={appointments}
+          hasFilters={hasFilters}
+          range={range}
+        />
 
-            <Pagination
-              basePath="/appointments"
-              currentPage={meta.page}
-              totalPages={meta.totalPages}
-              searchParams={{
-                search: search || undefined,
-                status,
-                range: range !== "week" ? range : undefined,
-                workOrderId: workOrderId || undefined,
-              }}
-              ariaLabel="Paginación de agenda"
-            />
-          </>
-        )}
+        <Pagination
+          basePath="/appointments"
+          currentPage={meta.page}
+          totalPages={meta.totalPages}
+          searchParams={{
+            search: search || undefined,
+            status,
+            range: range !== "week" ? range : undefined,
+            workOrderId: workOrderId || undefined,
+          }}
+          ariaLabel="Paginación de agenda"
+        />
       </section>
     </section>
   );
@@ -199,17 +201,14 @@ type AppointmentSummaryProps = {
  * Compact operational summary for the current agenda result set.
  */
 function AppointmentSummary({ appointments }: AppointmentSummaryProps) {
-  const scheduledCount = appointments.filter(
-    (appointment) => appointment.status === "SCHEDULED",
+  const now = new Date();
+  const activeCount = appointments.filter(isOperationalAppointment).length;
+  const todayCount = appointments.filter((appointment) =>
+    isSameCalendarDay(new Date(appointment.scheduledStart), now),
   ).length;
-  const confirmedCount = appointments.filter(
-    (appointment) => appointment.status === "CONFIRMED",
-  ).length;
-  const completedCount = appointments.filter(
-    (appointment) => appointment.status === "COMPLETED",
-  ).length;
-  const cancelledCount = appointments.filter(
-    (appointment) => appointment.status === "CANCELLED",
+  const overdueCount = appointments.filter(isOverdueOperationalAppointment).length;
+  const linkedWorkOrdersCount = appointments.filter(
+    (appointment) => appointment.workOrderId,
   ).length;
 
   return (
@@ -217,10 +216,14 @@ function AppointmentSummary({ appointments }: AppointmentSummaryProps) {
       aria-label="Resumen de agenda"
       className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
     >
-      <SummaryCard label="Programados" value={scheduledCount.toString()} />
-      <SummaryCard label="Confirmados" value={confirmedCount.toString()} />
-      <SummaryCard label="Completados" value={completedCount.toString()} />
-      <SummaryCard label="Cancelados" value={cancelledCount.toString()} />
+      <SummaryCard label="Por atender" value={activeCount.toString()} />
+      <SummaryCard label="Hoy" value={todayCount.toString()} />
+      <SummaryCard
+        label="Atrasados"
+        value={overdueCount.toString()}
+        tone={overdueCount > 0 ? "warning" : "neutral"}
+      />
+      <SummaryCard label="Con orden" value={linkedWorkOrdersCount.toString()} />
     </section>
   );
 }
@@ -228,15 +231,28 @@ function AppointmentSummary({ appointments }: AppointmentSummaryProps) {
 type SummaryCardProps = {
   label: string;
   value: string;
+  tone?: "neutral" | "warning";
 };
 
 /**
  * Small agenda metric card.
  */
-function SummaryCard({ label, value }: SummaryCardProps) {
+function SummaryCard({ label, value, tone = "neutral" }: SummaryCardProps) {
   return (
-    <div className="rounded-2xl border border-border bg-surface-muted/85 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
-      <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+    <div
+      className={
+        tone === "warning"
+          ? "rounded-2xl border border-warning/45 bg-warning/10 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
+          : "rounded-2xl border border-border bg-surface-muted/85 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
+      }
+    >
+      <p
+        className={
+          tone === "warning"
+            ? "text-[0.68rem] font-bold uppercase tracking-[0.22em] text-warning"
+            : "text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary"
+        }
+      >
         {label}
       </p>
 
@@ -244,6 +260,105 @@ function SummaryCard({ label, value }: SummaryCardProps) {
         {value}
       </p>
     </div>
+  );
+}
+
+type AgendaOperationalNoticeProps = {
+  overdueCount: number;
+  range: AgendaRange;
+  workOrderId?: string;
+};
+
+/**
+ * Gives context when the agenda needs special attention or is filtered by order.
+ */
+function AgendaOperationalNotice({
+  overdueCount,
+  range,
+  workOrderId,
+}: AgendaOperationalNoticeProps) {
+  if (overdueCount === 0 && !workOrderId && range !== "overdue") {
+    return null;
+  }
+
+  if (overdueCount > 0) {
+    return (
+      <section className="rounded-[1.1rem] border border-warning/45 bg-warning/10 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-5">
+        <div className="flex items-start gap-3">
+          <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-warning/45 bg-surface text-warning">
+            <TriangleAlert className="size-5" aria-hidden="true" />
+          </div>
+
+          <div className="min-w-0">
+            <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-warning">
+              Requiere atención
+            </p>
+
+            <h2 className="mt-2 font-display text-lg font-black uppercase tracking-[0.04em] text-foreground">
+              Hay turnos atrasados
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Tenés {overdueCount} turno{overdueCount === 1 ? "" : "s"} cuyo
+              horario ya pasó y sigue pendiente o confirmado. Resolvelos antes
+              de avanzar con nuevos trabajos para mantener limpia la agenda.
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (workOrderId) {
+    return (
+      <section className="rounded-[1.1rem] border border-border bg-surface-muted/85 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-5">
+        <div className="flex items-start gap-3">
+          <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface text-primary">
+            <ClipboardList className="size-5" aria-hidden="true" />
+          </div>
+
+          <div className="min-w-0">
+            <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+              Filtro aplicado
+            </p>
+
+            <h2 className="mt-2 font-display text-lg font-black uppercase tracking-[0.04em] text-foreground">
+              Turnos vinculados a una orden
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Estás viendo solo la agenda relacionada con una orden de trabajo.
+              Limpiá filtros para volver a la agenda completa.
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-[1.1rem] border border-border bg-surface-muted/85 p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-5">
+      <div className="flex items-start gap-3">
+        <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface text-primary">
+          <CalendarClock className="size-5" aria-hidden="true" />
+        </div>
+
+        <div className="min-w-0">
+          <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+            Atrasados
+          </p>
+
+          <h2 className="mt-2 font-display text-lg font-black uppercase tracking-[0.04em] text-foreground">
+            No hay pendientes vencidos
+          </h2>
+
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            La agenda no tiene turnos programados o confirmados vencidos en esta
+            vista.
+          </p>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -561,6 +676,13 @@ function isOverdueOperationalAppointment(appointment: Appointment): boolean {
 }
 
 /**
+ * Returns true when an appointment still needs operational resolution.
+ */
+function isOperationalAppointment(appointment: Appointment): boolean {
+  return appointment.status === "SCHEDULED" || appointment.status === "CONFIRMED";
+}
+
+/**
  * Normalizes an agenda range search param.
  */
 function normalizeRangeParam(
@@ -652,4 +774,15 @@ function addDays(date: Date, days: number): Date {
   result.setDate(result.getDate() + days);
 
   return result;
+}
+
+/**
+ * Compares two dates by calendar day.
+ */
+function isSameCalendarDay(firstDate: Date, secondDate: Date): boolean {
+  return (
+    firstDate.getFullYear() === secondDate.getFullYear() &&
+    firstDate.getMonth() === secondDate.getMonth() &&
+    firstDate.getDate() === secondDate.getDate()
+  );
 }
