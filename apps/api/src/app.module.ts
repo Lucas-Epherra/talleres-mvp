@@ -10,6 +10,7 @@ import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { ReceiptsModule } from './modules/receipts/receipts.module';
 import { PlatformModule } from './modules/platform/platform.module';
 import { WorkshopSettingsModule } from './modules/workshop-settings/workshop-settings.module';
+import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 /**
@@ -29,6 +30,7 @@ import { PrismaModule } from './prisma/prisma.module';
     PlatformModule,
     ReceiptsModule,
     WorkshopSettingsModule,
+    SuppliersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

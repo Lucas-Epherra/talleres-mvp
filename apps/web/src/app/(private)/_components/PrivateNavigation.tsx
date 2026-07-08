@@ -8,6 +8,7 @@ import {
   Menu,
   ReceiptText,
   Settings,
+  Truck,
   Users,
   X,
   type LucideIcon,
@@ -51,6 +52,11 @@ const PRIVATE_NAVIGATION_ITEMS: PrivateNavigationItem[] = [
     href: "/receipts",
     label: "Recibos",
     icon: ReceiptText,
+  },
+  {
+    href: "/suppliers",
+    label: "Proveedores",
+    icon: Truck,
   },
   {
     href: "/settings",
