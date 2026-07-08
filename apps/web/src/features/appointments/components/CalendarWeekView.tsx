@@ -63,7 +63,7 @@ export function CalendarWeekView({
           </div>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2 lg:min-w-[28rem] xl:grid-cols-4">
+        <div className="grid gap-2 sm:grid-cols-2 lg:min-w-md xl:grid-cols-4">
           <CalendarSummaryPill
             label="Turnos"
             value={summary.totalAppointments}
