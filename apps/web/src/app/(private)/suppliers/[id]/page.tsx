@@ -12,7 +12,6 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { EmptyState } from "../../../../components/ui/EmptyState";
 import { SupplierArchiveActions } from "../../../../features/suppliers/components/SupplierArchiveActions";
 import { getSupplier } from "../../../../features/suppliers/suppliers.server";
 import type {
@@ -104,7 +103,7 @@ export default async function SupplierDetailPage({ params }: SupplierDetailPageP
 
       <SupplierMetricsGrid supplier={supplier} />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
         <div className="min-w-0 space-y-6">
           <SupplierDataSection supplier={supplier} />
           <SupplierPartsSection parts={supplier.parts} />
@@ -211,7 +210,7 @@ function SupplierDataSection({ supplier }: SupplierDataSectionProps) {
   return (
     <section
       aria-labelledby="supplier-data-heading"
-      className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
+      className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-5 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-6"
     >
       <div className="flex flex-col gap-3 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -353,11 +352,10 @@ function SupplierPartsSection({ parts }: { parts: SupplierPartPreview[] }) {
           ))}
         </div>
       ) : (
-        <EmptyState
-          eyebrow="Catálogo"
+        <ModulePlaceholder
+          eyebrow="Catálogo preparado"
           title="Sin repuestos cargados"
-          description="Todavía no hay repuestos vinculados a este proveedor. Lo haremos en la siguiente fase del módulo."
-          actions={[]}
+          description="En la próxima fase este bloque va a permitir cargar repuestos, costos del proveedor y recargos sugeridos para cobrar al cliente."
         />
       )}
     </section>
@@ -415,11 +413,10 @@ function SupplierPurchasesSection({
           ))}
         </div>
       ) : (
-        <EmptyState
-          eyebrow="Compras"
+        <ModulePlaceholder
+          eyebrow="Compras preparadas"
           title="Sin compras vinculadas"
-          description="Cuando integremos repuestos estructurados en órdenes, las compras de este proveedor van a aparecer acá."
-          actions={[]}
+          description="Cuando conectemos repuestos estructurados con órdenes, este historial mostrará costo proveedor, precio cliente y margen por cada línea."
         />
       )}
     </section>
@@ -466,14 +463,45 @@ function SupplierPaymentsSection({ payments }: { payments: SupplierPaymentPrevie
           ))}
         </div>
       ) : (
-        <EmptyState
-          eyebrow="Pagos"
+        <ModulePlaceholder
+          eyebrow="Pagos preparados"
           title="Sin pagos registrados"
-          description="Cuando agreguemos pagos a proveedores, el historial y el saldo pendiente se actualizarán desde acá."
-          actions={[]}
+          description="En la siguiente fase este bloque servirá para registrar pagos, referencias y actualizar automáticamente la deuda del proveedor."
         />
       )}
     </section>
+  );
+}
+
+function ModulePlaceholder({
+  eyebrow,
+  title,
+  description,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="mt-5 rounded-2xl border border-dashed border-border bg-surface-muted/55 p-4 sm:p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-primary/20 bg-surface text-primary">
+          <PackageSearch className="size-5" aria-hidden="true" />
+        </div>
+
+        <div className="min-w-0">
+          <p className="text-[0.65rem] font-black uppercase tracking-[0.18em] text-primary">
+            {eyebrow}
+          </p>
+          <h3 className="mt-2 font-display text-base font-black uppercase tracking-[0.04em] text-foreground">
+            {title}
+          </h3>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            {description}
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -29,7 +29,7 @@ export function SupplierCard({
   return (
     <article
       className={buildClassName(
-        "relative overflow-hidden rounded-[1.1rem] border p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 transition sm:rounded-[1.35rem] sm:p-5",
+        "relative overflow-hidden rounded-[1.1rem] border p-3.5 shadow-(--shadow-industrial) ring-1 ring-white/3 transition hover:-translate-y-0.5 sm:rounded-[1.35rem] sm:p-4",
         isArchived
           ? "border-border bg-linear-to-br from-surface-muted via-surface to-surface-muted hover:border-border-strong"
           : "border-border hover:border-primary/40",
@@ -48,9 +48,9 @@ export function SupplierCard({
         )}
       />
 
-      <div className="relative grid gap-5 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-stretch">
+      <div className="relative grid gap-5 xl:grid-cols-[minmax(0,1fr)_15rem] xl:items-stretch">
         <div className="min-w-0">
-          <header className="grid gap-3 border-b border-border pb-4 md:grid-cols-[minmax(0,1fr)_minmax(12rem,auto)] md:items-start">
+          <header className="grid gap-3 border-b border-border pb-4 md:grid-cols-[minmax(0,1fr)_minmax(10rem,auto)] md:items-start">
             <SupplierPrimaryDatum
               eyebrow="Proveedor"
               value={supplier.name}
@@ -68,7 +68,7 @@ export function SupplierCard({
             />
           </header>
 
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-wrap gap-2">
             {supplier.categories.length > 0 ? (
               supplier.categories.slice(0, 4).map((category) => (
                 <span
@@ -92,7 +92,7 @@ export function SupplierCard({
             ) : null}
           </div>
 
-          <dl className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <dl className="mt-3 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
             <SupplierSummaryItem
               label="Comprado"
               value={formatMoney(supplier.metrics.purchasedTotal)}
@@ -115,7 +115,7 @@ export function SupplierCard({
         </div>
 
         <aside className="w-full shrink-0">
-          <div className="grid gap-2 rounded-2xl border border-border bg-surface-muted/80 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.62)] sm:grid-cols-3 xl:flex xl:h-full xl:flex-col xl:justify-center xl:gap-3 xl:p-3">
+          <div className="grid gap-2 rounded-2xl border border-border bg-surface-muted/70 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.62)] sm:grid-cols-3 xl:flex xl:h-full xl:flex-col xl:justify-center xl:gap-2">
             <Link
               href={`/suppliers/${supplier.id}`}
               className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white transition hover:bg-primary-hover"
@@ -169,7 +169,7 @@ function SupplierPrimaryDatum({
   return (
     <div
       className={buildClassName(
-        "min-w-0 rounded-2xl border border-border bg-surface-elevated/80 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]",
+        "min-w-0 rounded-2xl border border-border bg-surface-elevated/80 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]",
         align === "right" ? "md:text-right" : "",
       )}
     >
@@ -190,7 +190,7 @@ function SupplierPrimaryDatum({
         className={buildClassName(
           "mt-2 wrap-anywhere font-black text-foreground",
           size === "large"
-            ? "font-display text-xl uppercase tracking-[0.02em] sm:text-2xl"
+            ? "font-display text-xl uppercase tracking-[0.02em]"
             : "text-lg sm:text-xl",
         )}
       >
@@ -205,7 +205,7 @@ function SupplierPrimaryDatum({
  */
 function SupplierSummaryItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface-muted/85 p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition hover:border-border-strong">
+    <div className="rounded-2xl border border-border bg-surface-muted/75 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition hover:border-border-strong hover:bg-surface">
       <p className="text-[0.65rem] font-bold uppercase tracking-[0.18em] text-primary">
         {label}
       </p>

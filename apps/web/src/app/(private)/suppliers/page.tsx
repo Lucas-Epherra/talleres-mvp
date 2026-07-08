@@ -122,7 +122,7 @@ export default async function SuppliersPage({ searchParams }: SuppliersPageProps
 
         {suppliers.length > 0 ? (
           <>
-            <div className="grid gap-4">
+            <div className="grid gap-3.5">
               {suppliers.map((supplier, index) => (
                 <SupplierCard
                   key={supplier.id}
@@ -238,8 +238,8 @@ function SummaryCard({ label, value, tone = "neutral" }: SummaryCardProps) {
     <div
       className={
         tone === "warning"
-          ? "rounded-2xl border border-warning/45 bg-warning/10 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
-          : "rounded-2xl border border-border bg-surface-muted/85 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
+          ? "rounded-2xl border border-warning/45 bg-warning/10 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition hover:border-warning"
+          : "rounded-2xl border border-border bg-surface-muted/85 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition hover:border-border-strong hover:bg-surface"
       }
     >
       <p

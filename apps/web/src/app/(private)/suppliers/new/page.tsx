@@ -23,7 +23,7 @@ export default function NewSupplierPage() {
             Volver a proveedores
           </Link>
 
-          <p className="mt-6 inline-flex items-center gap-2 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+          <p className="mt-6 flex w-fit items-center gap-2 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
             <Handshake className="size-4 shrink-0" aria-hidden="true" />
             Nuevo proveedor
           </p>

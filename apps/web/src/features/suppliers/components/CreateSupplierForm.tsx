@@ -79,7 +79,7 @@ export function CreateSupplierForm() {
 
   return (
     <form
-      className="mt-6 space-y-5 sm:mt-8 sm:space-y-8"
+      className="mt-6 space-y-4 sm:mt-8 sm:space-y-5"
       onSubmit={handleSubmit}
       aria-describedby={errorMessage ? errorId : undefined}
       noValidate
@@ -88,7 +88,7 @@ export function CreateSupplierForm() {
         <p
           id={errorId}
           role="alert"
-          className="rounded-2xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm font-semibold text-foreground"
+          className="rounded-2xl border border-primary/35 bg-primary/10 px-4 py-3 text-sm font-semibold leading-6 text-foreground"
         >
           {errorMessage}
         </p>
@@ -193,9 +193,7 @@ export function CreateSupplierForm() {
             disabled={isSubmitting}
             placeholder="Frenos, Suspensión, Electricidad"
           />
-          <p className="text-xs leading-5 text-muted-foreground">
-            {categoryNames.length} categoría{categoryNames.length === 1 ? "" : "s"} preparada{categoryNames.length === 1 ? "" : "s"}.
-          </p>
+          <CategoryPreview categoryNames={categoryNames} />
         </Field>
       </FormSection>
 
@@ -262,40 +260,45 @@ function FormSection({
   return (
     <section
       aria-labelledby={headingId}
-      className="rounded-[1.1rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-4 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-6"
+      className="overflow-hidden rounded-[1.15rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated/80 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem]"
     >
-      <div className="border-b border-border pb-5">
-        <p className="inline-flex items-center gap-2 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
-          <Handshake className="size-4 shrink-0" aria-hidden="true" />
-          {eyebrow}
-        </p>
+      <div className="flex flex-col gap-4 border-b border-border bg-surface/45 p-4 sm:flex-row sm:items-start sm:gap-5 sm:p-5">
+        <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
+          <Handshake className="size-5" aria-hidden="true" />
+        </div>
 
-        <h2
-          id={headingId}
-          className="mt-2 font-display text-lg font-black uppercase tracking-[0.04em] text-foreground sm:text-xl"
-        >
-          {title}
-        </h2>
-
-        {description ? (
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-            {description}
+        <div className="min-w-0">
+          <p className="text-[0.65rem] font-black uppercase tracking-[0.22em] text-primary">
+            {eyebrow}
           </p>
-        ) : null}
+
+          <h2
+            id={headingId}
+            className="mt-2 font-display text-lg font-black uppercase tracking-[0.04em] text-foreground sm:text-xl"
+          >
+            {title}
+          </h2>
+
+          {description ? (
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+              {description}
+            </p>
+          ) : null}
+        </div>
       </div>
 
-      <div className="mt-5 sm:mt-6">{children}</div>
+      <div className="p-4 sm:p-5 sm:pt-6">{children}</div>
     </section>
   );
 }
 
 function Field({ children }: { children: ReactNode }) {
-  return <div className="space-y-2">{children}</div>;
+  return <div className="space-y-2.5">{children}</div>;
 }
 
 function FieldLabel({ htmlFor, children }: { htmlFor: string; children: ReactNode }) {
   return (
-    <label htmlFor={htmlFor} className="block text-sm font-bold text-foreground">
+    <label htmlFor={htmlFor} className="block text-sm font-black text-foreground">
       {children}
     </label>
   );
@@ -338,7 +341,7 @@ function Input({
       required={required}
       disabled={disabled}
       autoComplete={autoComplete}
-      className="h-11 w-full rounded-xl border border-border-strong bg-surface-muted/85 px-4 text-sm text-foreground outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-70"
+      className="h-11 w-full rounded-xl border border-border-strong bg-surface-muted/80 px-4 text-sm font-semibold text-foreground outline-none transition placeholder:text-steel hover:border-border-strong focus:border-primary focus:bg-surface focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-70"
     />
   );
 }
@@ -361,8 +364,35 @@ function TextArea({ id, name, rows, placeholder, maxLength, disabled }: TextArea
       placeholder={placeholder}
       maxLength={maxLength}
       disabled={disabled}
-      className="w-full resize-y rounded-xl border border-border-strong bg-surface-muted/85 px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-70"
+      className="w-full resize-y rounded-xl border border-border-strong bg-surface-muted/80 px-4 py-3 text-sm font-semibold leading-6 text-foreground outline-none transition placeholder:text-steel hover:border-border-strong focus:border-primary focus:bg-surface focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-70"
     />
+  );
+}
+
+function CategoryPreview({ categoryNames }: { categoryNames: string[] }) {
+  if (categoryNames.length === 0) {
+    return (
+      <p className="rounded-xl border border-dashed border-border bg-surface-muted/55 px-3 py-2 text-xs font-semibold leading-5 text-muted-foreground">
+        Todavía no hay categorías preparadas. Podés cargar varias separadas por coma.
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface-muted/55 px-3 py-2">
+      {categoryNames.map((categoryName) => (
+        <span
+          key={categoryName}
+          className="inline-flex rounded-full border border-border-strong bg-surface px-3 py-1 text-[0.66rem] font-black uppercase tracking-[0.14em] text-muted-foreground"
+        >
+          {categoryName}
+        </span>
+      ))}
+
+      <span className="text-xs font-semibold text-muted-foreground">
+        {categoryNames.length} de 8
+      </span>
+    </div>
   );
 }
 
