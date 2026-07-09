@@ -13,11 +13,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SupplierArchiveActions } from "../../../../features/suppliers/components/SupplierArchiveActions";
-import { getSupplier } from "../../../../features/suppliers/suppliers.server";
+import { SupplierPartsCatalog } from "../../../../features/suppliers/components/SupplierPartsCatalog";
+import {
+  getSupplier,
+  getSupplierCategories,
+  getSupplierParts,
+} from "../../../../features/suppliers/suppliers.server";
 import type {
   Supplier,
   SupplierEvent,
-  SupplierPartPreview,
   SupplierPaymentPreview,
   SupplierWorkOrderLinePreview,
 } from "../../../../features/suppliers/types";
@@ -47,6 +51,17 @@ export const metadata: Metadata = {
 export default async function SupplierDetailPage({ params }: SupplierDetailPageProps) {
   const { id } = await params;
   const supplier = await resolveSupplier(id);
+  const [partsResponse, categoriesResponse] = await Promise.all([
+    getSupplierParts(supplier.id, {
+      limit: 50,
+      archiveStatus: "all",
+      activeStatus: "all",
+    }),
+    getSupplierCategories({
+      limit: 50,
+      archiveStatus: "active",
+    }),
+  ]);
   const isArchived = Boolean(supplier.archivedAt);
 
   return (
@@ -106,7 +121,14 @@ export default async function SupplierDetailPage({ params }: SupplierDetailPageP
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
         <div className="min-w-0 space-y-6">
           <SupplierDataSection supplier={supplier} />
-          <SupplierPartsSection parts={supplier.parts} />
+          <SupplierPartsCatalog
+            supplierId={supplier.id}
+            supplierName={supplier.name}
+            categories={categoriesResponse.data}
+            initialParts={partsResponse.data}
+            initialMeta={partsResponse.meta}
+            isSupplierArchived={isArchived}
+          />
           <SupplierPurchasesSection lines={supplier.workOrderPartLines} />
           <SupplierPaymentsSection payments={supplier.payments} />
         </div>
@@ -308,55 +330,6 @@ function SupplierCategoriesSection({
         <p className="mt-4 rounded-2xl border border-dashed border-border bg-surface-muted/70 px-4 py-4 text-sm leading-6 text-muted-foreground">
           Este proveedor todavía no tiene categorías asignadas.
         </p>
-      )}
-    </section>
-  );
-}
-
-function SupplierPartsSection({ parts }: { parts: SupplierPartPreview[] }) {
-  return (
-    <section
-      aria-labelledby="supplier-parts-heading"
-      className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
-    >
-      <SectionHeading
-        eyebrow="Catálogo"
-        headingId="supplier-parts-heading"
-        title="Repuestos del proveedor"
-        description="Vista inicial del catálogo. En la próxima fase agregamos alta/edición de repuestos, costos y recargos sugeridos."
-      />
-
-      {parts.length > 0 ? (
-        <div className="mt-5 grid gap-3">
-          {parts.map((part) => (
-            <div
-              key={part.id}
-              className="rounded-2xl border border-border bg-surface-muted/85 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
-            >
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                  <p className="wrap-anywhere text-sm font-black text-foreground">
-                    {part.name}
-                  </p>
-                  <p className="mt-1 text-xs font-semibold text-muted-foreground">
-                    {part.category?.name ?? "Sin categoría"}
-                    {part.sku ? ` · SKU ${part.sku}` : ""}
-                  </p>
-                </div>
-
-                <p className="shrink-0 rounded-xl border border-border-strong bg-surface px-3 py-1.5 text-xs font-black text-foreground">
-                  {formatMoney(part.currentCost)}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <ModulePlaceholder
-          eyebrow="Catálogo preparado"
-          title="Sin repuestos cargados"
-          description="En la próxima fase este bloque va a permitir cargar repuestos, costos del proveedor y recargos sugeridos para cobrar al cliente."
-        />
       )}
     </section>
   );

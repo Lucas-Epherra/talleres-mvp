@@ -2,7 +2,21 @@ import type { WorkOrderStatus } from "../../lib/format";
 
 export const SUPPLIER_ARCHIVE_STATUSES = ["active", "archived", "all"] as const;
 
+export const SUPPLIER_PART_ACTIVE_STATUSES = ["active", "inactive", "all"] as const;
+
+export const SUPPLIER_MARKUP_TYPES = [
+  "NONE",
+  "PERCENTAGE",
+  "FIXED_AMOUNT",
+  "MANUAL_PRICE",
+] as const;
+
 export type SupplierArchiveStatus = (typeof SUPPLIER_ARCHIVE_STATUSES)[number];
+
+export type SupplierPartActiveStatus =
+  (typeof SUPPLIER_PART_ACTIVE_STATUSES)[number];
+
+export type SupplierMarkupType = (typeof SUPPLIER_MARKUP_TYPES)[number];
 
 export type SupplierMetrics = {
   purchasedTotal: number | string;
@@ -59,7 +73,7 @@ export type SupplierPartPreview = {
   sku: string | null;
   description: string | null;
   currentCost: number | string;
-  suggestedMarkupType: string | null;
+  suggestedMarkupType: SupplierMarkupType | null;
   suggestedMarkupValue: number | string | null;
   suggestedCustomerPrice: number | string | null;
   isActive: boolean;
@@ -67,6 +81,41 @@ export type SupplierPartPreview = {
   updatedAt: string;
   archivedAt: string | null;
   category: SupplierCategory | null;
+};
+
+
+export type SupplierPart = SupplierPartPreview;
+
+export type CreateSupplierPartInput = {
+  categoryId?: string;
+  name: string;
+  sku?: string;
+  description?: string;
+  currentCost: number;
+  suggestedMarkupType?: SupplierMarkupType;
+  suggestedMarkupValue?: number;
+  suggestedCustomerPrice?: number;
+  isActive?: boolean;
+};
+
+export type UpdateSupplierPartInput = {
+  categoryId?: string | null;
+  name?: string;
+  sku?: string | null;
+  description?: string | null;
+  currentCost?: number | null;
+  suggestedMarkupType?: SupplierMarkupType;
+  suggestedMarkupValue?: number | null;
+  suggestedCustomerPrice?: number | null;
+  isActive?: boolean;
+};
+
+export type ArchiveSupplierPartInput = {
+  reason: string;
+};
+
+export type RestoreSupplierPartInput = {
+  reason: string;
 };
 
 export type SupplierPaymentPreview = {
@@ -195,6 +244,16 @@ export type SupplierCategoriesQuery = {
   page?: number;
   limit?: number;
   archiveStatus?: SupplierArchiveStatus;
+};
+
+
+export type SupplierPartsQuery = {
+  search?: string;
+  page?: number;
+  limit?: number;
+  categoryId?: string;
+  archiveStatus?: SupplierArchiveStatus;
+  activeStatus?: SupplierPartActiveStatus;
 };
 
 export type PaginationMeta = {

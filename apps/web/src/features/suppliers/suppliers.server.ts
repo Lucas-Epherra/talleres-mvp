@@ -4,6 +4,8 @@ import type {
   Supplier,
   SupplierCategoriesQuery,
   SupplierCategory,
+  SupplierPart,
+  SupplierPartsQuery,
   SupplierListItem,
   SuppliersQuery,
 } from "./types";
@@ -75,4 +77,45 @@ export function getSupplierCategories(
     : "/suppliers/categories";
 
   return apiServerFetch<PaginatedResponse<SupplierCategory>>(path);
+}
+
+/**
+ * Fetches paginated catalog parts for one supplier.
+ */
+export function getSupplierParts(
+  supplierId: string,
+  query: SupplierPartsQuery = {},
+): Promise<PaginatedResponse<SupplierPart>> {
+  const params = new URLSearchParams();
+
+  if (query.search) {
+    params.set("search", query.search);
+  }
+
+  if (query.page && query.page > 1) {
+    params.set("page", String(query.page));
+  }
+
+  if (query.limit) {
+    params.set("limit", String(query.limit));
+  }
+
+  if (query.categoryId) {
+    params.set("categoryId", query.categoryId);
+  }
+
+  if (query.archiveStatus && query.archiveStatus !== "active") {
+    params.set("archiveStatus", query.archiveStatus);
+  }
+
+  if (query.activeStatus && query.activeStatus !== "active") {
+    params.set("activeStatus", query.activeStatus);
+  }
+
+  const queryString = params.toString();
+  const path = queryString
+    ? `/suppliers/${supplierId}/parts?${queryString}`
+    : `/suppliers/${supplierId}/parts`;
+
+  return apiServerFetch<PaginatedResponse<SupplierPart>>(path);
 }

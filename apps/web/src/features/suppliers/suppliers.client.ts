@@ -1,10 +1,15 @@
 import { apiFetch } from "../../lib/api";
 import type {
   ArchiveSupplierInput,
+  ArchiveSupplierPartInput,
   CreateSupplierInput,
+  CreateSupplierPartInput,
   RestoreSupplierInput,
+  RestoreSupplierPartInput,
   Supplier,
+  SupplierPart,
   UpdateSupplierInput,
+  UpdateSupplierPartInput,
 } from "./types";
 
 /**
@@ -54,4 +59,65 @@ export function restoreSupplier(
     method: "PATCH",
     body: JSON.stringify(input),
   });
+}
+
+/**
+ * Creates a catalog part for one supplier.
+ */
+export function createSupplierPart(
+  supplierId: string,
+  input: CreateSupplierPartInput,
+): Promise<SupplierPart> {
+  return apiFetch<SupplierPart>(`/suppliers/${supplierId}/parts`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+/**
+ * Updates a catalog part without affecting historical order lines.
+ */
+export function updateSupplierPart(
+  supplierId: string,
+  partId: string,
+  input: UpdateSupplierPartInput,
+): Promise<SupplierPart> {
+  return apiFetch<SupplierPart>(`/suppliers/${supplierId}/parts/${partId}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+/**
+ * Archives a catalog part while preserving historical order lines.
+ */
+export function archiveSupplierPart(
+  supplierId: string,
+  partId: string,
+  input: ArchiveSupplierPartInput,
+): Promise<SupplierPart> {
+  return apiFetch<SupplierPart>(
+    `/suppliers/${supplierId}/parts/${partId}/archive`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+/**
+ * Restores an archived catalog part.
+ */
+export function restoreSupplierPart(
+  supplierId: string,
+  partId: string,
+  input: RestoreSupplierPartInput,
+): Promise<SupplierPart> {
+  return apiFetch<SupplierPart>(
+    `/suppliers/${supplierId}/parts/${partId}/restore`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    },
+  );
 }
