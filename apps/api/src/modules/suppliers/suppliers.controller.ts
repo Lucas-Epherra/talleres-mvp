@@ -12,12 +12,17 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { ArchiveSupplierDto } from './dto/archive-supplier.dto';
+import { ArchiveSupplierPartDto } from './dto/archive-supplier-part.dto';
 import { CreateSupplierCategoryDto } from './dto/create-supplier-category.dto';
+import { CreateSupplierPartDto } from './dto/create-supplier-part.dto';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { FindSupplierCategoriesQueryDto } from './dto/find-supplier-categories-query.dto';
+import { FindSupplierPartsQueryDto } from './dto/find-supplier-parts-query.dto';
 import { FindSuppliersQueryDto } from './dto/find-suppliers-query.dto';
 import { RestoreSupplierDto } from './dto/restore-supplier.dto';
+import { RestoreSupplierPartDto } from './dto/restore-supplier-part.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
+import { UpdateSupplierPartDto } from './dto/update-supplier-part.dto';
 import { SuppliersService } from './suppliers.service';
 
 /**
@@ -58,6 +63,92 @@ export class SuppliersController {
     @Body() dto: CreateSupplierCategoryDto,
   ) {
     return this.suppliersService.createCategory(user.workshopId, dto);
+  }
+
+  /**
+   * Lists catalog parts for one supplier.
+   */
+  @Get(':supplierId/parts')
+  findParts(
+    @CurrentUser() user: AuthUser,
+    @Param('supplierId') supplierId: string,
+    @Query() query: FindSupplierPartsQueryDto,
+  ) {
+    return this.suppliersService.findParts(user.workshopId, supplierId, query);
+  }
+
+  /**
+   * Creates a catalog part for one supplier.
+   */
+  @Post(':supplierId/parts')
+  createPart(
+    @CurrentUser() user: AuthUser,
+    @Param('supplierId') supplierId: string,
+    @Body() dto: CreateSupplierPartDto,
+  ) {
+    return this.suppliersService.createPart(
+      user.workshopId,
+      user.id,
+      supplierId,
+      dto,
+    );
+  }
+
+  /**
+   * Updates a catalog part for one supplier.
+   */
+  @Patch(':supplierId/parts/:partId')
+  updatePart(
+    @CurrentUser() user: AuthUser,
+    @Param('supplierId') supplierId: string,
+    @Param('partId') partId: string,
+    @Body() dto: UpdateSupplierPartDto,
+  ) {
+    return this.suppliersService.updatePart(
+      user.workshopId,
+      user.id,
+      supplierId,
+      partId,
+      dto,
+    );
+  }
+
+  /**
+   * Archives a catalog part without deleting historical order lines.
+   */
+  @Patch(':supplierId/parts/:partId/archive')
+  archivePart(
+    @CurrentUser() user: AuthUser,
+    @Param('supplierId') supplierId: string,
+    @Param('partId') partId: string,
+    @Body() dto: ArchiveSupplierPartDto,
+  ) {
+    return this.suppliersService.archivePart(
+      user.workshopId,
+      user.id,
+      supplierId,
+      partId,
+      dto,
+    );
+  }
+
+  /**
+   * Restores an archived catalog part.
+   */
+  @Patch(':supplierId/parts/:partId/restore')
+  restorePart(
+    @CurrentUser() user: AuthUser,
+    @Param('supplierId') supplierId: string,
+    @Param('partId') partId: string,
+    @Body() dto: RestoreSupplierPartDto,
+  ) {
+    return this.suppliersService.restorePart(
+      user.workshopId,
+      user.id,
+      supplierId,
+      partId,
+      dto,
+    );
   }
 
   /**

@@ -4,18 +4,26 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, SupplierEventType } from '@prisma/client';
+import { Prisma, SupplierEventType, SupplierMarkupType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ArchiveSupplierDto } from './dto/archive-supplier.dto';
+import { ArchiveSupplierPartDto } from './dto/archive-supplier-part.dto';
 import { CreateSupplierCategoryDto } from './dto/create-supplier-category.dto';
+import { CreateSupplierPartDto } from './dto/create-supplier-part.dto';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { FindSupplierCategoriesQueryDto } from './dto/find-supplier-categories-query.dto';
+import {
+  type SupplierPartActiveStatus,
+  FindSupplierPartsQueryDto,
+} from './dto/find-supplier-parts-query.dto';
 import {
   type SupplierArchiveStatus,
   FindSuppliersQueryDto,
 } from './dto/find-suppliers-query.dto';
 import { RestoreSupplierDto } from './dto/restore-supplier.dto';
+import { RestoreSupplierPartDto } from './dto/restore-supplier-part.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
+import { UpdateSupplierPartDto } from './dto/update-supplier-part.dto';
 
 const DEFAULT_SUPPLIERS_PAGE = 1;
 const DEFAULT_SUPPLIERS_LIMIT = 10;
@@ -23,6 +31,10 @@ const MAX_SEARCH_LENGTH = 120;
 
 const DEFAULT_CATEGORIES_PAGE = 1;
 const DEFAULT_CATEGORIES_LIMIT = 50;
+
+const DEFAULT_PARTS_PAGE = 1;
+const DEFAULT_PARTS_LIMIT = 10;
+const MAX_MONEY_VALUE = 9999999999.99;
 
 type SuppliersPrismaClient = PrismaService | Prisma.TransactionClient;
 
@@ -64,6 +76,38 @@ type NormalizedSupplierUpdateData = {
   notes?: string | null;
   categoryNames?: string[];
 };
+
+type SupplierPartPricing = {
+  currentCost: number;
+  suggestedMarkupType: SupplierMarkupType;
+  suggestedMarkupValue: number | null;
+  suggestedCustomerPrice: number;
+};
+
+type NormalizedSupplierPartCreateData = {
+  categoryId?: string;
+  name: string;
+  sku?: string;
+  description?: string;
+  currentCost: number;
+  suggestedMarkupType: SupplierMarkupType;
+  suggestedMarkupValue: number | null;
+  suggestedCustomerPrice: number;
+  isActive: boolean;
+};
+
+type NormalizedSupplierPartUpdateData = {
+  categoryId?: string | null;
+  name?: string;
+  sku?: string | null;
+  description?: string | null;
+  currentCost: number;
+  suggestedMarkupType: SupplierMarkupType;
+  suggestedMarkupValue: number | null;
+  suggestedCustomerPrice: number;
+  isActive?: boolean;
+};
+
 
 /**
  * Handles supplier persistence, financial summaries and audit events.
@@ -495,6 +539,382 @@ export class SuppliersService {
   }
 
   /**
+   * Lists catalog parts for one supplier.
+   */
+  async findParts(
+    workshopId: string,
+    supplierId: string,
+    query: FindSupplierPartsQueryDto = {},
+  ) {
+    await this.ensureSupplierBelongsToWorkshop(workshopId, supplierId);
+
+    const page = query.page ?? DEFAULT_PARTS_PAGE;
+    const limit = query.limit ?? DEFAULT_PARTS_LIMIT;
+    const skip = (page - 1) * limit;
+    const normalizedSearch = normalizeSearch(query.search);
+
+    const where: Prisma.SupplierPartWhereInput = {
+      workshopId,
+      supplierId,
+      ...buildSupplierPartArchiveFilter(query.archiveStatus),
+      ...buildSupplierPartActiveFilter(query.activeStatus),
+      ...(query.categoryId ? { categoryId: query.categoryId } : {}),
+      ...(normalizedSearch
+        ? {
+            OR: [
+              {
+                name: {
+                  contains: normalizedSearch,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+              {
+                sku: {
+                  contains: normalizedSearch,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+              {
+                description: {
+                  contains: normalizedSearch,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+              {
+                category: {
+                  name: {
+                    contains: normalizedSearch,
+                    mode: Prisma.QueryMode.insensitive,
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [totalItems, data] = await this.prisma.$transaction([
+      this.prisma.supplierPart.count({ where }),
+      this.prisma.supplierPart.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: [{ isActive: 'desc' }, { updatedAt: 'desc' }],
+        include: {
+          category: true,
+        },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / limit);
+    const meta: PaginationMeta = {
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasPreviousPage: page > 1,
+      hasNextPage: page < totalPages,
+    };
+
+    return {
+      data: data.map(mapSupplierPartForResponse),
+      meta,
+    };
+  }
+
+  /**
+   * Creates one catalog part for a supplier.
+   */
+  async createPart(
+    workshopId: string,
+    userId: string,
+    supplierId: string,
+    dto: CreateSupplierPartDto,
+  ) {
+    const supplier = await this.ensureSupplierBelongsToWorkshop(
+      workshopId,
+      supplierId,
+    );
+
+    if (supplier.archivedAt) {
+      throw new BadRequestException(
+        'No se pueden cargar repuestos en un proveedor archivado. Restauralo primero.',
+      );
+    }
+
+    const data = normalizeSupplierPartCreateData(dto);
+
+    if (data.categoryId) {
+      await this.ensureSupplierCategoryBelongsToWorkshop(
+        workshopId,
+        data.categoryId,
+      );
+    }
+
+    try {
+      const part = await this.prisma.$transaction(async (tx) => {
+        const createdPart = await tx.supplierPart.create({
+          data: {
+            workshopId,
+            supplierId: supplier.id,
+            categoryId: data.categoryId,
+            name: data.name,
+            sku: data.sku,
+            description: data.description,
+            currentCost: data.currentCost,
+            suggestedMarkupType: data.suggestedMarkupType,
+            suggestedMarkupValue: data.suggestedMarkupValue,
+            suggestedCustomerPrice: data.suggestedCustomerPrice,
+            isActive: data.isActive,
+          },
+          include: {
+            category: true,
+          },
+        });
+
+        await this.createSupplierEvent(tx, {
+          workshopId,
+          supplierId: supplier.id,
+          userId,
+          type: SupplierEventType.PART_CREATED,
+          description: `Se cargó el repuesto ${data.name} para ${supplier.name}.`,
+          metadata: {
+            partId: createdPart.id,
+            currentCost: data.currentCost,
+            suggestedCustomerPrice: data.suggestedCustomerPrice,
+            suggestedMarkupType: data.suggestedMarkupType,
+            suggestedMarkupValue: data.suggestedMarkupValue,
+          },
+        });
+
+        return createdPart;
+      });
+
+      return mapSupplierPartForResponse(part);
+    } catch (error) {
+      handleSupplierPartWriteError(error);
+    }
+  }
+
+  /**
+   * Updates one catalog part without affecting historical work order lines.
+   */
+  async updatePart(
+    workshopId: string,
+    userId: string,
+    supplierId: string,
+    partId: string,
+    dto: UpdateSupplierPartDto,
+  ) {
+    const supplier = await this.ensureSupplierBelongsToWorkshop(
+      workshopId,
+      supplierId,
+    );
+
+    if (supplier.archivedAt) {
+      throw new BadRequestException(
+        'No se pueden editar repuestos de un proveedor archivado. Restauralo primero.',
+      );
+    }
+
+    const currentPart = await this.ensureSupplierPartBelongsToSupplier(
+      workshopId,
+      supplier.id,
+      partId,
+    );
+
+    if (currentPart.archivedAt) {
+      throw new BadRequestException(
+        'Un repuesto archivado no puede editarse. Restauralo primero.',
+      );
+    }
+
+    const data = normalizeSupplierPartUpdateData(dto, currentPart);
+
+    if (data.categoryId) {
+      await this.ensureSupplierCategoryBelongsToWorkshop(
+        workshopId,
+        data.categoryId,
+      );
+    }
+
+    try {
+      const part = await this.prisma.$transaction(async (tx) => {
+        const updatedPart = await tx.supplierPart.update({
+          where: {
+            id: currentPart.id,
+          },
+          data: {
+            categoryId: data.categoryId,
+            name: data.name,
+            sku: data.sku,
+            description: data.description,
+            currentCost: data.currentCost,
+            suggestedMarkupType: data.suggestedMarkupType,
+            suggestedMarkupValue: data.suggestedMarkupValue,
+            suggestedCustomerPrice: data.suggestedCustomerPrice,
+            isActive: data.isActive,
+          },
+          include: {
+            category: true,
+          },
+        });
+
+        await this.createSupplierEvent(tx, {
+          workshopId,
+          supplierId: supplier.id,
+          userId,
+          type: SupplierEventType.PART_UPDATED,
+          description: `Se actualizó el repuesto ${updatedPart.name}.`,
+          metadata: {
+            partId: updatedPart.id,
+            currentCost: data.currentCost,
+            suggestedCustomerPrice: data.suggestedCustomerPrice,
+            suggestedMarkupType: data.suggestedMarkupType,
+            suggestedMarkupValue: data.suggestedMarkupValue,
+          },
+        });
+
+        return updatedPart;
+      });
+
+      return mapSupplierPartForResponse(part);
+    } catch (error) {
+      handleSupplierPartWriteError(error);
+    }
+  }
+
+  /**
+   * Archives one catalog part without deleting historical work order lines.
+   */
+  async archivePart(
+    workshopId: string,
+    userId: string,
+    supplierId: string,
+    partId: string,
+    dto: ArchiveSupplierPartDto,
+  ) {
+    const supplier = await this.ensureSupplierBelongsToWorkshop(
+      workshopId,
+      supplierId,
+    );
+    const currentPart = await this.ensureSupplierPartBelongsToSupplier(
+      workshopId,
+      supplier.id,
+      partId,
+    );
+
+    if (currentPart.archivedAt) {
+      throw new BadRequestException('El repuesto ya está archivado.');
+    }
+
+    const reason = normalizeRequiredMultilineText(
+      dto.reason,
+      'Motivo de archivado',
+    );
+    const archivedAt = new Date();
+
+    const part = await this.prisma.$transaction(async (tx) => {
+      const archivedPart = await tx.supplierPart.update({
+        where: {
+          id: currentPart.id,
+        },
+        data: {
+          archivedAt,
+          isActive: false,
+        },
+        include: {
+          category: true,
+        },
+      });
+
+      await this.createSupplierEvent(tx, {
+        workshopId,
+        supplierId: supplier.id,
+        userId,
+        type: SupplierEventType.PART_ARCHIVED,
+        description: `Se archivó el repuesto ${currentPart.name}. Motivo: ${reason}`,
+        metadata: {
+          partId: currentPart.id,
+          reason,
+        },
+      });
+
+      return archivedPart;
+    });
+
+    return mapSupplierPartForResponse(part);
+  }
+
+  /**
+   * Restores one archived catalog part and makes it operational again.
+   */
+  async restorePart(
+    workshopId: string,
+    userId: string,
+    supplierId: string,
+    partId: string,
+    dto: RestoreSupplierPartDto,
+  ) {
+    const supplier = await this.ensureSupplierBelongsToWorkshop(
+      workshopId,
+      supplierId,
+    );
+
+    if (supplier.archivedAt) {
+      throw new BadRequestException(
+        'No se puede restaurar un repuesto de un proveedor archivado. Restaurá primero el proveedor.',
+      );
+    }
+
+    const currentPart = await this.ensureSupplierPartBelongsToSupplier(
+      workshopId,
+      supplier.id,
+      partId,
+    );
+
+    if (!currentPart.archivedAt) {
+      throw new BadRequestException('El repuesto no está archivado.');
+    }
+
+    const reason = normalizeRequiredMultilineText(
+      dto.reason,
+      'Motivo de restauración',
+    );
+
+    const part = await this.prisma.$transaction(async (tx) => {
+      const restoredPart = await tx.supplierPart.update({
+        where: {
+          id: currentPart.id,
+        },
+        data: {
+          archivedAt: null,
+          isActive: true,
+        },
+        include: {
+          category: true,
+        },
+      });
+
+      await this.createSupplierEvent(tx, {
+        workshopId,
+        supplierId: supplier.id,
+        userId,
+        type: SupplierEventType.PART_UPDATED,
+        description: `Se restauró el repuesto ${currentPart.name}. Motivo: ${reason}`,
+        metadata: {
+          partId: currentPart.id,
+          reason,
+        },
+      });
+
+      return restoredPart;
+    });
+
+    return mapSupplierPartForResponse(part);
+  }
+
+  /**
    * Ensures a supplier belongs to the workshop and returns minimal state.
    */
   private async ensureSupplierBelongsToWorkshop(workshopId: string, id: string) {
@@ -515,6 +935,72 @@ export class SuppliersService {
     }
 
     return supplier;
+  }
+
+  /**
+   * Ensures a category belongs to the workshop and can be used by catalog parts.
+   */
+  private async ensureSupplierCategoryBelongsToWorkshop(
+    workshopId: string,
+    categoryId: string,
+    prisma: SuppliersPrismaClient = this.prisma,
+  ) {
+    const category = await prisma.supplierCategory.findFirst({
+      where: {
+        id: categoryId,
+        workshopId,
+      },
+      select: {
+        id: true,
+        archivedAt: true,
+      },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Categoría de proveedor no encontrada.');
+    }
+
+    if (category.archivedAt) {
+      throw new BadRequestException(
+        'La categoría seleccionada está archivada.',
+      );
+    }
+
+    return category;
+  }
+
+  /**
+   * Ensures one supplier part belongs to the supplier and workshop.
+   */
+  private async ensureSupplierPartBelongsToSupplier(
+    workshopId: string,
+    supplierId: string,
+    partId: string,
+  ) {
+    const part = await this.prisma.supplierPart.findFirst({
+      where: {
+        id: partId,
+        workshopId,
+        supplierId,
+      },
+      select: {
+        id: true,
+        name: true,
+        categoryId: true,
+        currentCost: true,
+        suggestedMarkupType: true,
+        suggestedMarkupValue: true,
+        suggestedCustomerPrice: true,
+        isActive: true,
+        archivedAt: true,
+      },
+    });
+
+    if (!part) {
+      throw new NotFoundException('Repuesto del proveedor no encontrado.');
+    }
+
+    return part;
   }
 
   /**
@@ -920,18 +1406,286 @@ function normalizeUpdateSupplierData(
 }
 
 /**
+ * Builds archive filter for supplier part lists.
+ */
+function buildSupplierPartArchiveFilter(
+  archiveStatus?: SupplierArchiveStatus,
+): Prisma.SupplierPartWhereInput {
+  if (archiveStatus === 'all') {
+    return {};
+  }
+
+  if (archiveStatus === 'archived') {
+    return {
+      archivedAt: {
+        not: null,
+      },
+    };
+  }
+
+  return {
+    archivedAt: null,
+  };
+}
+
+/**
+ * Builds active/inactive filter for supplier part lists.
+ */
+function buildSupplierPartActiveFilter(
+  activeStatus?: SupplierPartActiveStatus,
+): Prisma.SupplierPartWhereInput {
+  if (activeStatus === 'all') {
+    return {};
+  }
+
+  if (activeStatus === 'inactive') {
+    return {
+      isActive: false,
+    };
+  }
+
+  return {
+    isActive: true,
+  };
+}
+
+/**
+ * Normalizes catalog part create payload and resolves suggested customer price.
+ */
+function normalizeSupplierPartCreateData(
+  dto: CreateSupplierPartDto,
+): NormalizedSupplierPartCreateData {
+  const currentCost = normalizeMoney(dto.currentCost, 'Costo proveedor');
+  const pricing = resolveSupplierPartPricing({
+    currentCost,
+    suggestedMarkupType: dto.suggestedMarkupType ?? SupplierMarkupType.NONE,
+    suggestedMarkupValue: dto.suggestedMarkupValue,
+    suggestedCustomerPrice: dto.suggestedCustomerPrice,
+  });
+
+  return {
+    categoryId: dto.categoryId,
+    name: normalizeRequiredText(dto.name, 'Nombre del repuesto'),
+    sku: normalizeOptionalText(dto.sku) ?? undefined,
+    description: normalizeOptionalMultilineText(dto.description) ?? undefined,
+    currentCost,
+    suggestedMarkupType: pricing.suggestedMarkupType,
+    suggestedMarkupValue: pricing.suggestedMarkupValue,
+    suggestedCustomerPrice: pricing.suggestedCustomerPrice,
+    isActive: dto.isActive ?? true,
+  };
+}
+
+/**
+ * Normalizes catalog part update payload using the current persisted values as defaults.
+ */
+function normalizeSupplierPartUpdateData(
+  dto: UpdateSupplierPartDto,
+  currentPart: {
+    currentCost: Prisma.Decimal | number | string;
+    suggestedMarkupType: SupplierMarkupType | null;
+    suggestedMarkupValue: Prisma.Decimal | number | string | null;
+    suggestedCustomerPrice: Prisma.Decimal | number | string | null;
+  },
+): NormalizedSupplierPartUpdateData {
+  const currentCost =
+    dto.currentCost !== undefined && dto.currentCost !== null
+      ? normalizeMoney(dto.currentCost, 'Costo proveedor')
+      : decimalToNumber(currentPart.currentCost);
+  const suggestedMarkupType =
+    dto.suggestedMarkupType ??
+    currentPart.suggestedMarkupType ??
+    SupplierMarkupType.NONE;
+  const suggestedMarkupValue =
+    dto.suggestedMarkupValue !== undefined
+      ? dto.suggestedMarkupValue
+      : currentPart.suggestedMarkupValue;
+  const suggestedCustomerPrice =
+    dto.suggestedCustomerPrice !== undefined
+      ? dto.suggestedCustomerPrice
+      : currentPart.suggestedCustomerPrice;
+  const pricing = resolveSupplierPartPricing({
+    currentCost,
+    suggestedMarkupType,
+    suggestedMarkupValue,
+    suggestedCustomerPrice,
+  });
+  const data: NormalizedSupplierPartUpdateData = {
+    currentCost,
+    suggestedMarkupType: pricing.suggestedMarkupType,
+    suggestedMarkupValue: pricing.suggestedMarkupValue,
+    suggestedCustomerPrice: pricing.suggestedCustomerPrice,
+  };
+
+  if (dto.categoryId !== undefined) {
+    data.categoryId = dto.categoryId;
+  }
+
+  if (dto.name !== undefined) {
+    data.name = normalizeRequiredText(dto.name, 'Nombre del repuesto');
+  }
+
+  if (dto.sku !== undefined) {
+    data.sku = normalizeOptionalText(dto.sku);
+  }
+
+  if (dto.description !== undefined) {
+    data.description = normalizeOptionalMultilineText(dto.description);
+  }
+
+  if (dto.isActive !== undefined) {
+    data.isActive = dto.isActive;
+  }
+
+  return data;
+}
+
+/**
+ * Resolves suggested catalog pricing from cost and markup rules.
+ */
+function resolveSupplierPartPricing({
+  currentCost,
+  suggestedMarkupType,
+  suggestedMarkupValue,
+  suggestedCustomerPrice,
+}: {
+  currentCost: number;
+  suggestedMarkupType: SupplierMarkupType;
+  suggestedMarkupValue?: Prisma.Decimal | number | string | null;
+  suggestedCustomerPrice?: Prisma.Decimal | number | string | null;
+}): SupplierPartPricing {
+  if (suggestedMarkupType === SupplierMarkupType.NONE) {
+    return {
+      currentCost,
+      suggestedMarkupType,
+      suggestedMarkupValue: null,
+      suggestedCustomerPrice: currentCost,
+    };
+  }
+
+  if (suggestedMarkupType === SupplierMarkupType.PERCENTAGE) {
+    const markupValue = normalizeNullableMoney(
+      suggestedMarkupValue,
+      'Porcentaje de recargo',
+    );
+    const safeMarkupValue = markupValue ?? 0;
+
+    return {
+      currentCost,
+      suggestedMarkupType,
+      suggestedMarkupValue: safeMarkupValue,
+      suggestedCustomerPrice: roundMoney(currentCost * (1 + safeMarkupValue / 100)),
+    };
+  }
+
+  if (suggestedMarkupType === SupplierMarkupType.FIXED_AMOUNT) {
+    const markupValue = normalizeNullableMoney(
+      suggestedMarkupValue,
+      'Recargo fijo',
+    );
+    const safeMarkupValue = markupValue ?? 0;
+
+    return {
+      currentCost,
+      suggestedMarkupType,
+      suggestedMarkupValue: safeMarkupValue,
+      suggestedCustomerPrice: roundMoney(currentCost + safeMarkupValue),
+    };
+  }
+
+  return {
+    currentCost,
+    suggestedMarkupType: SupplierMarkupType.MANUAL_PRICE,
+    suggestedMarkupValue: null,
+    suggestedCustomerPrice: normalizeNullableMoney(
+      suggestedCustomerPrice,
+      'Precio sugerido al cliente',
+    ) ?? currentCost,
+  };
+}
+
+/**
+ * Normalizes required money values.
+ */
+function normalizeMoney(value: unknown, label: string): number {
+  const normalizedValue = normalizeNullableMoney(value, label);
+
+  if (normalizedValue === null) {
+    throw new BadRequestException(`${label} es obligatorio.`);
+  }
+
+  return normalizedValue;
+}
+
+/**
+ * Normalizes optional money values.
+ */
+function normalizeNullableMoney(value: unknown, label: string): number | null {
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue)) {
+    throw new BadRequestException(`${label} debe ser un número válido.`);
+  }
+
+  if (numericValue < 0) {
+    throw new BadRequestException(`${label} no puede ser negativo.`);
+  }
+
+  if (numericValue > MAX_MONEY_VALUE) {
+    throw new BadRequestException(`${label} es demasiado alto.`);
+  }
+
+  return roundMoney(numericValue);
+}
+
+/**
+ * Maps a supplier part to an API-friendly response with numeric money values.
+ */
+function mapSupplierPartForResponse(part: unknown) {
+  if (typeof part !== 'object' || part === null) {
+    return part;
+  }
+
+  const typedPart = part as {
+    currentCost?: Prisma.Decimal | number | string | null;
+    suggestedMarkupValue?: Prisma.Decimal | number | string | null;
+    suggestedCustomerPrice?: Prisma.Decimal | number | string | null;
+  };
+
+  return {
+    ...typedPart,
+    currentCost: decimalToNumber(typedPart.currentCost),
+    suggestedMarkupValue:
+      typedPart.suggestedMarkupValue === null ||
+      typedPart.suggestedMarkupValue === undefined
+        ? null
+        : decimalToNumber(typedPart.suggestedMarkupValue),
+    suggestedCustomerPrice:
+      typedPart.suggestedCustomerPrice === null ||
+      typedPart.suggestedCustomerPrice === undefined
+        ? null
+        : decimalToNumber(typedPart.suggestedCustomerPrice),
+  };
+}
+
+/**
  * Maps a supplier record to API response including computed financial metrics.
  */
-function mapSupplierForResponse<TSupplier extends { categoryAssignments?: unknown }>(
-  supplier: TSupplier,
-  metrics: SupplierMetrics,
-) {
+function mapSupplierForResponse<
+  TSupplier extends { categoryAssignments?: unknown; parts?: unknown },
+>(supplier: TSupplier, metrics: SupplierMetrics) {
   const categoryAssignments = Array.isArray(supplier.categoryAssignments)
     ? supplier.categoryAssignments
     : [];
+  const parts = Array.isArray(supplier.parts) ? supplier.parts : undefined;
 
   return {
     ...supplier,
+    ...(parts ? { parts: parts.map(mapSupplierPartForResponse) } : {}),
     categories: categoryAssignments
       .map((assignment) =>
         typeof assignment === 'object' && assignment !== null && 'category' in assignment
@@ -1168,6 +1922,22 @@ function handleSupplierWriteError(error: unknown): never {
   ) {
     throw new ConflictException(
       'Ya existe un proveedor con ese nombre en este taller.',
+    );
+  }
+
+  throw error;
+}
+
+/**
+ * Converts Prisma supplier part write errors into safe HTTP errors.
+ */
+function handleSupplierPartWriteError(error: unknown): never {
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === 'P2002'
+  ) {
+    throw new ConflictException(
+      'Ya existe un repuesto con ese nombre para este proveedor.',
     );
   }
 
