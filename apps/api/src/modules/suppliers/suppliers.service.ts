@@ -4,18 +4,28 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, SupplierEventType, SupplierMarkupType } from '@prisma/client';
+import {
+  Prisma,
+  SupplierEventType,
+  SupplierMarkupType,
+  SupplierPaymentMethod,
+} from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ArchiveSupplierDto } from './dto/archive-supplier.dto';
 import { ArchiveSupplierPartDto } from './dto/archive-supplier-part.dto';
 import { CreateSupplierCategoryDto } from './dto/create-supplier-category.dto';
 import { CreateSupplierPartDto } from './dto/create-supplier-part.dto';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
+import { CreateSupplierPaymentDto } from './dto/create-supplier-payment.dto';
 import { FindSupplierCategoriesQueryDto } from './dto/find-supplier-categories-query.dto';
 import {
   type SupplierPartActiveStatus,
   FindSupplierPartsQueryDto,
 } from './dto/find-supplier-parts-query.dto';
+import {
+  type SupplierPaymentStatus,
+  FindSupplierPaymentsQueryDto,
+} from './dto/find-supplier-payments-query.dto';
 import {
   type SupplierArchiveStatus,
   FindSuppliersQueryDto,
@@ -23,7 +33,9 @@ import {
 import { RestoreSupplierDto } from './dto/restore-supplier.dto';
 import { RestoreSupplierPartDto } from './dto/restore-supplier-part.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
+import { UpdateSupplierPaymentDto } from './dto/update-supplier-payment.dto';
 import { UpdateSupplierPartDto } from './dto/update-supplier-part.dto';
+import { VoidSupplierPaymentDto } from './dto/void-supplier-payment.dto';
 
 const DEFAULT_SUPPLIERS_PAGE = 1;
 const DEFAULT_SUPPLIERS_LIMIT = 10;
@@ -34,6 +46,9 @@ const DEFAULT_CATEGORIES_LIMIT = 50;
 
 const DEFAULT_PARTS_PAGE = 1;
 const DEFAULT_PARTS_LIMIT = 10;
+
+const DEFAULT_PAYMENTS_PAGE = 1;
+const DEFAULT_PAYMENTS_LIMIT = 10;
 const MAX_MONEY_VALUE = 9999999999.99;
 
 type SuppliersPrismaClient = PrismaService | Prisma.TransactionClient;
@@ -106,6 +121,23 @@ type NormalizedSupplierPartUpdateData = {
   suggestedMarkupValue: number | null;
   suggestedCustomerPrice: number;
   isActive?: boolean;
+};
+
+
+type NormalizedSupplierPaymentCreateData = {
+  amount: number;
+  paidAt: Date;
+  method: SupplierPaymentMethod;
+  reference?: string;
+  notes?: string;
+};
+
+type NormalizedSupplierPaymentUpdateData = {
+  amount?: number;
+  paidAt?: Date;
+  method?: SupplierPaymentMethod;
+  reference?: string | null;
+  notes?: string | null;
 };
 
 
@@ -914,6 +946,251 @@ export class SuppliersService {
     return mapSupplierPartForResponse(part);
   }
 
+
+  /**
+   * Lists payments registered for one supplier.
+   */
+  async findPayments(
+    workshopId: string,
+    supplierId: string,
+    query: FindSupplierPaymentsQueryDto = {},
+  ) {
+    await this.ensureSupplierBelongsToWorkshop(workshopId, supplierId);
+
+    const page = query.page ?? DEFAULT_PAYMENTS_PAGE;
+    const limit = query.limit ?? DEFAULT_PAYMENTS_LIMIT;
+    const skip = (page - 1) * limit;
+    const normalizedSearch = normalizeSearch(query.search);
+
+    const where: Prisma.SupplierPaymentWhereInput = {
+      workshopId,
+      supplierId,
+      ...buildSupplierPaymentStatusFilter(query.paymentStatus),
+      ...(query.method ? { method: query.method } : {}),
+      ...buildSupplierPaymentDateFilter(query.from, query.to),
+      ...(normalizedSearch
+        ? {
+            OR: [
+              {
+                reference: {
+                  contains: normalizedSearch,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+              {
+                notes: {
+                  contains: normalizedSearch,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [totalItems, data] = await this.prisma.$transaction([
+      this.prisma.supplierPayment.count({ where }),
+      this.prisma.supplierPayment.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: {
+          paidAt: 'desc',
+        },
+        include: this.getPaymentInclude(),
+      }),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / limit);
+    const meta: PaginationMeta = {
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasPreviousPage: page > 1,
+      hasNextPage: page < totalPages,
+    };
+
+    return {
+      data: data.map(mapSupplierPaymentForResponse),
+      meta,
+    };
+  }
+
+  /**
+   * Registers a payment made to a supplier.
+   */
+  async createPayment(
+    workshopId: string,
+    userId: string,
+    supplierId: string,
+    dto: CreateSupplierPaymentDto,
+  ) {
+    const supplier = await this.ensureSupplierBelongsToWorkshop(
+      workshopId,
+      supplierId,
+    );
+    const data = normalizeSupplierPaymentCreateData(dto);
+
+    const payment = await this.prisma.$transaction(async (tx) => {
+      const createdPayment = await tx.supplierPayment.create({
+        data: {
+          workshopId,
+          supplierId: supplier.id,
+          createdByUserId: userId,
+          amount: data.amount,
+          paidAt: data.paidAt,
+          method: data.method,
+          reference: data.reference,
+          notes: data.notes,
+        },
+        include: this.getPaymentInclude(),
+      });
+
+      await this.createSupplierEvent(tx, {
+        workshopId,
+        supplierId: supplier.id,
+        userId,
+        type: SupplierEventType.PAYMENT_CREATED,
+        description: `Se registró un pago a ${supplier.name} por $${data.amount.toFixed(2)}.`,
+        metadata: {
+          paymentId: createdPayment.id,
+          amount: data.amount,
+          paidAt: data.paidAt.toISOString(),
+          method: data.method,
+          reference: data.reference,
+        },
+      });
+
+      return createdPayment;
+    });
+
+    return mapSupplierPaymentForResponse(payment);
+  }
+
+  /**
+   * Corrects an active supplier payment.
+   */
+  async updatePayment(
+    workshopId: string,
+    userId: string,
+    supplierId: string,
+    paymentId: string,
+    dto: UpdateSupplierPaymentDto,
+  ) {
+    const supplier = await this.ensureSupplierBelongsToWorkshop(
+      workshopId,
+      supplierId,
+    );
+    const currentPayment = await this.ensureSupplierPaymentBelongsToSupplier(
+      workshopId,
+      supplier.id,
+      paymentId,
+    );
+
+    if (currentPayment.voidedAt) {
+      throw new BadRequestException(
+        'Un pago anulado no puede editarse. Registrá un nuevo pago si corresponde.',
+      );
+    }
+
+    const data = normalizeSupplierPaymentUpdateData(dto);
+
+    const payment = await this.prisma.$transaction(async (tx) => {
+      const updatedPayment = await tx.supplierPayment.update({
+        where: {
+          id: currentPayment.id,
+        },
+        data: {
+          amount: data.amount,
+          paidAt: data.paidAt,
+          method: data.method,
+          reference: data.reference,
+          notes: data.notes,
+        },
+        include: this.getPaymentInclude(),
+      });
+
+      await this.createSupplierEvent(tx, {
+        workshopId,
+        supplierId: supplier.id,
+        userId,
+        type: SupplierEventType.PAYMENT_UPDATED,
+        description: `Se actualizó un pago de ${supplier.name}.`,
+        metadata: {
+          paymentId: updatedPayment.id,
+          amount: decimalToNumber(updatedPayment.amount),
+          paidAt: updatedPayment.paidAt.toISOString(),
+          method: updatedPayment.method,
+          reference: updatedPayment.reference,
+        },
+      });
+
+      return updatedPayment;
+    });
+
+    return mapSupplierPaymentForResponse(payment);
+  }
+
+  /**
+   * Voids a supplier payment without deleting financial history.
+   */
+  async voidPayment(
+    workshopId: string,
+    userId: string,
+    supplierId: string,
+    paymentId: string,
+    dto: VoidSupplierPaymentDto,
+  ) {
+    const supplier = await this.ensureSupplierBelongsToWorkshop(
+      workshopId,
+      supplierId,
+    );
+    const currentPayment = await this.ensureSupplierPaymentBelongsToSupplier(
+      workshopId,
+      supplier.id,
+      paymentId,
+    );
+
+    if (currentPayment.voidedAt) {
+      throw new BadRequestException('El pago ya está anulado.');
+    }
+
+    const reason = normalizeRequiredMultilineText(dto.reason, 'Motivo de anulación');
+    const voidedAt = new Date();
+
+    const payment = await this.prisma.$transaction(async (tx) => {
+      const voidedPayment = await tx.supplierPayment.update({
+        where: {
+          id: currentPayment.id,
+        },
+        data: {
+          voidedAt,
+          voidedReason: reason,
+          voidedByUserId: userId,
+        },
+        include: this.getPaymentInclude(),
+      });
+
+      await this.createSupplierEvent(tx, {
+        workshopId,
+        supplierId: supplier.id,
+        userId,
+        type: SupplierEventType.PAYMENT_VOIDED,
+        description: `Se anuló un pago a ${supplier.name}. Motivo: ${reason}`,
+        metadata: {
+          paymentId: currentPayment.id,
+          amount: decimalToNumber(currentPayment.amount),
+          reason,
+        },
+      });
+
+      return voidedPayment;
+    });
+
+    return mapSupplierPaymentForResponse(payment);
+  }
+
   /**
    * Ensures a supplier belongs to the workshop and returns minimal state.
    */
@@ -1001,6 +1278,39 @@ export class SuppliersService {
     }
 
     return part;
+  }
+
+
+  /**
+   * Ensures one payment belongs to the supplier and workshop.
+   */
+  private async ensureSupplierPaymentBelongsToSupplier(
+    workshopId: string,
+    supplierId: string,
+    paymentId: string,
+  ) {
+    const payment = await this.prisma.supplierPayment.findFirst({
+      where: {
+        id: paymentId,
+        workshopId,
+        supplierId,
+      },
+      select: {
+        id: true,
+        amount: true,
+        paidAt: true,
+        method: true,
+        reference: true,
+        notes: true,
+        voidedAt: true,
+      },
+    });
+
+    if (!payment) {
+      throw new NotFoundException('Pago de proveedor no encontrado.');
+    }
+
+    return payment;
   }
 
   /**
@@ -1172,6 +1482,29 @@ export class SuppliersService {
     return metricsBySupplierId;
   }
 
+
+  /**
+   * Include used by supplier payment lists and mutations.
+   */
+  private getPaymentInclude() {
+    return {
+      createdByUser: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      voidedByUser: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+    } satisfies Prisma.SupplierPaymentInclude;
+  }
+
   /**
    * Include used by supplier lists.
    */
@@ -1298,6 +1631,49 @@ export class SuppliersService {
   }
 }
 
+
+/**
+ * Builds status filter for supplier payment lists.
+ */
+function buildSupplierPaymentStatusFilter(
+  paymentStatus?: SupplierPaymentStatus,
+): Prisma.SupplierPaymentWhereInput {
+  if (paymentStatus === 'all') {
+    return {};
+  }
+
+  if (paymentStatus === 'voided') {
+    return {
+      voidedAt: {
+        not: null,
+      },
+    };
+  }
+
+  return {
+    voidedAt: null,
+  };
+}
+
+/**
+ * Builds paidAt boundaries for supplier payment lists.
+ */
+function buildSupplierPaymentDateFilter(
+  from?: string,
+  to?: string,
+): Prisma.SupplierPaymentWhereInput {
+  if (!from && !to) {
+    return {};
+  }
+
+  return {
+    paidAt: {
+      ...(from ? { gte: parsePaymentDate(from, 'Fecha desde') } : {}),
+      ...(to ? { lte: parsePaymentDate(to, 'Fecha hasta') } : {}),
+    },
+  };
+}
+
 /**
  * Builds archive filter for supplier lists.
  */
@@ -1342,6 +1718,84 @@ function buildSupplierCategoryArchiveFilter(
   return {
     archivedAt: null,
   };
+}
+
+
+/**
+ * Normalizes supplier payment create payload.
+ */
+function normalizeSupplierPaymentCreateData(
+  dto: CreateSupplierPaymentDto,
+): NormalizedSupplierPaymentCreateData {
+  return {
+    amount: normalizePositiveMoney(dto.amount, 'Monto del pago'),
+    paidAt: normalizePaymentDate(dto.paidAt, 'Fecha de pago') ?? new Date(),
+    method: dto.method ?? SupplierPaymentMethod.OTHER,
+    reference: normalizeOptionalText(dto.reference) ?? undefined,
+    notes: normalizeOptionalMultilineText(dto.notes) ?? undefined,
+  };
+}
+
+/**
+ * Normalizes supplier payment update payload.
+ */
+function normalizeSupplierPaymentUpdateData(
+  dto: UpdateSupplierPaymentDto,
+): NormalizedSupplierPaymentUpdateData {
+  const data: NormalizedSupplierPaymentUpdateData = {};
+
+  if (dto.amount !== undefined && dto.amount !== null) {
+    data.amount = normalizePositiveMoney(dto.amount, 'Monto del pago');
+  }
+
+  if (dto.paidAt !== undefined) {
+    const paidAt = normalizePaymentDate(dto.paidAt, 'Fecha de pago');
+
+    if (paidAt) {
+      data.paidAt = paidAt;
+    }
+  }
+
+  if (dto.method !== undefined) {
+    data.method = dto.method;
+  }
+
+  if (dto.reference !== undefined) {
+    data.reference = normalizeOptionalText(dto.reference);
+  }
+
+  if (dto.notes !== undefined) {
+    data.notes = normalizeOptionalMultilineText(dto.notes);
+  }
+
+  return data;
+}
+
+/**
+ * Normalizes optional payment date strings into Date objects.
+ */
+function normalizePaymentDate(
+  value: string | null | undefined,
+  label: string,
+): Date | null {
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+
+  return parsePaymentDate(value, label);
+}
+
+/**
+ * Parses payment dates and rejects invalid values with a safe message.
+ */
+function parsePaymentDate(value: string, label: string): Date {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestException(`${label} no es válida.`);
+  }
+
+  return date;
 }
 
 /**
@@ -1604,6 +2058,20 @@ function resolveSupplierPartPricing({
   };
 }
 
+
+/**
+ * Normalizes required positive money values.
+ */
+function normalizePositiveMoney(value: unknown, label: string): number {
+  const normalizedValue = normalizeMoney(value, label);
+
+  if (normalizedValue <= 0) {
+    throw new BadRequestException(`${label} debe ser mayor a cero.`);
+  }
+
+  return normalizedValue;
+}
+
 /**
  * Normalizes required money values.
  */
@@ -1642,6 +2110,25 @@ function normalizeNullableMoney(value: unknown, label: string): number | null {
   return roundMoney(numericValue);
 }
 
+
+/**
+ * Maps a supplier payment to an API-friendly response with numeric money values.
+ */
+function mapSupplierPaymentForResponse(payment: unknown) {
+  if (typeof payment !== 'object' || payment === null) {
+    return payment;
+  }
+
+  const typedPayment = payment as {
+    amount?: Prisma.Decimal | number | string | null;
+  };
+
+  return {
+    ...typedPayment,
+    amount: decimalToNumber(typedPayment.amount),
+  };
+}
+
 /**
  * Maps a supplier part to an API-friendly response with numeric money values.
  */
@@ -1676,16 +2163,26 @@ function mapSupplierPartForResponse(part: unknown) {
  * Maps a supplier record to API response including computed financial metrics.
  */
 function mapSupplierForResponse<
-  TSupplier extends { categoryAssignments?: unknown; parts?: unknown },
+  TSupplier extends {
+    categoryAssignments?: unknown;
+    parts?: unknown;
+    payments?: unknown;
+  },
 >(supplier: TSupplier, metrics: SupplierMetrics) {
   const categoryAssignments = Array.isArray(supplier.categoryAssignments)
     ? supplier.categoryAssignments
     : [];
   const parts = Array.isArray(supplier.parts) ? supplier.parts : undefined;
+  const payments = Array.isArray(supplier.payments)
+    ? supplier.payments
+    : undefined;
 
   return {
     ...supplier,
     ...(parts ? { parts: parts.map(mapSupplierPartForResponse) } : {}),
+    ...(payments
+      ? { payments: payments.map(mapSupplierPaymentForResponse) }
+      : {}),
     categories: categoryAssignments
       .map((assignment) =>
         typeof assignment === 'object' && assignment !== null && 'category' in assignment

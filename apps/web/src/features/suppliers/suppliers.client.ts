@@ -4,12 +4,16 @@ import type {
   ArchiveSupplierPartInput,
   CreateSupplierInput,
   CreateSupplierPartInput,
+  CreateSupplierPaymentInput,
   RestoreSupplierInput,
   RestoreSupplierPartInput,
   Supplier,
   SupplierPart,
+  SupplierPayment,
   UpdateSupplierInput,
   UpdateSupplierPartInput,
+  UpdateSupplierPaymentInput,
+  VoidSupplierPaymentInput,
 } from "./types";
 
 /**
@@ -115,6 +119,54 @@ export function restoreSupplierPart(
 ): Promise<SupplierPart> {
   return apiFetch<SupplierPart>(
     `/suppliers/${supplierId}/parts/${partId}/restore`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+
+/**
+ * Registers a payment made to one supplier.
+ */
+export function createSupplierPayment(
+  supplierId: string,
+  input: CreateSupplierPaymentInput,
+): Promise<SupplierPayment> {
+  return apiFetch<SupplierPayment>(`/suppliers/${supplierId}/payments`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+/**
+ * Corrects an active supplier payment.
+ */
+export function updateSupplierPayment(
+  supplierId: string,
+  paymentId: string,
+  input: UpdateSupplierPaymentInput,
+): Promise<SupplierPayment> {
+  return apiFetch<SupplierPayment>(
+    `/suppliers/${supplierId}/payments/${paymentId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+/**
+ * Voids a supplier payment without deleting the historical record.
+ */
+export function voidSupplierPayment(
+  supplierId: string,
+  paymentId: string,
+  input: VoidSupplierPaymentInput,
+): Promise<SupplierPayment> {
+  return apiFetch<SupplierPayment>(
+    `/suppliers/${supplierId}/payments/${paymentId}/void`,
     {
       method: "PATCH",
       body: JSON.stringify(input),

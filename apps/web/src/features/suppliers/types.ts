@@ -11,12 +11,28 @@ export const SUPPLIER_MARKUP_TYPES = [
   "MANUAL_PRICE",
 ] as const;
 
+export const SUPPLIER_PAYMENT_METHODS = [
+  "CASH",
+  "BANK_TRANSFER",
+  "MERCADO_PAGO",
+  "CARD",
+  "OTHER",
+] as const;
+
+export const SUPPLIER_PAYMENT_STATUSES = ["active", "voided", "all"] as const;
+
 export type SupplierArchiveStatus = (typeof SUPPLIER_ARCHIVE_STATUSES)[number];
 
 export type SupplierPartActiveStatus =
   (typeof SUPPLIER_PART_ACTIVE_STATUSES)[number];
 
 export type SupplierMarkupType = (typeof SUPPLIER_MARKUP_TYPES)[number];
+
+export type SupplierPaymentMethod =
+  (typeof SUPPLIER_PAYMENT_METHODS)[number];
+
+export type SupplierPaymentStatus =
+  (typeof SUPPLIER_PAYMENT_STATUSES)[number];
 
 export type SupplierMetrics = {
   purchasedTotal: number | string;
@@ -124,7 +140,7 @@ export type SupplierPaymentPreview = {
   supplierId: string;
   amount: number | string;
   paidAt: string;
-  method: string;
+  method: SupplierPaymentMethod;
   reference: string | null;
   notes: string | null;
   voidedAt: string | null;
@@ -134,6 +150,29 @@ export type SupplierPaymentPreview = {
   createdByUser: SupplierEventUser | null;
   voidedByUser: SupplierEventUser | null;
 };
+
+export type SupplierPayment = SupplierPaymentPreview;
+
+export type CreateSupplierPaymentInput = {
+  amount: number;
+  paidAt?: string;
+  method?: SupplierPaymentMethod;
+  reference?: string;
+  notes?: string;
+};
+
+export type UpdateSupplierPaymentInput = {
+  amount?: number | null;
+  paidAt?: string;
+  method?: SupplierPaymentMethod;
+  reference?: string | null;
+  notes?: string | null;
+};
+
+export type VoidSupplierPaymentInput = {
+  reason: string;
+};
+
 
 export type SupplierWorkOrderLinePreview = {
   id: string;
@@ -254,6 +293,16 @@ export type SupplierPartsQuery = {
   categoryId?: string;
   archiveStatus?: SupplierArchiveStatus;
   activeStatus?: SupplierPartActiveStatus;
+};
+
+export type SupplierPaymentsQuery = {
+  search?: string;
+  page?: number;
+  limit?: number;
+  method?: SupplierPaymentMethod;
+  paymentStatus?: SupplierPaymentStatus;
+  from?: string;
+  to?: string;
 };
 
 export type PaginationMeta = {

@@ -6,7 +6,6 @@ import {
   Handshake,
   PackageSearch,
   Pencil,
-  ReceiptText,
   UserRound,
 } from "lucide-react";
 import type { Metadata } from "next";
@@ -14,20 +13,20 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SupplierArchiveActions } from "../../../../features/suppliers/components/SupplierArchiveActions";
 import { SupplierPartsCatalog } from "../../../../features/suppliers/components/SupplierPartsCatalog";
+import { SupplierPaymentsPanel } from "../../../../features/suppliers/components/SupplierPaymentsPanel";
 import {
   getSupplier,
   getSupplierCategories,
   getSupplierParts,
+  getSupplierPayments,
 } from "../../../../features/suppliers/suppliers.server";
 import type {
   Supplier,
   SupplierEvent,
-  SupplierPaymentPreview,
   SupplierWorkOrderLinePreview,
 } from "../../../../features/suppliers/types";
 import { ApiError } from "../../../../lib/api";
 import {
-  formatDate,
   formatDateTime,
   formatMoney,
   formatWorkOrderStatus,
@@ -51,11 +50,15 @@ export const metadata: Metadata = {
 export default async function SupplierDetailPage({ params }: SupplierDetailPageProps) {
   const { id } = await params;
   const supplier = await resolveSupplier(id);
-  const [partsResponse, categoriesResponse] = await Promise.all([
+  const [partsResponse, paymentsResponse, categoriesResponse] = await Promise.all([
     getSupplierParts(supplier.id, {
       limit: 50,
       archiveStatus: "all",
       activeStatus: "all",
+    }),
+    getSupplierPayments(supplier.id, {
+      limit: 50,
+      paymentStatus: "all",
     }),
     getSupplierCategories({
       limit: 50,
@@ -130,7 +133,15 @@ export default async function SupplierDetailPage({ params }: SupplierDetailPageP
             isSupplierArchived={isArchived}
           />
           <SupplierPurchasesSection lines={supplier.workOrderPartLines} />
-          <SupplierPaymentsSection payments={supplier.payments} />
+          <SupplierPaymentsPanel
+            supplierId={supplier.id}
+            supplierName={supplier.name}
+            initialPayments={paymentsResponse.data}
+            initialMeta={paymentsResponse.meta}
+            paidTotal={supplier.metrics.paidTotal}
+            pendingBalance={supplier.metrics.pendingBalance}
+            isSupplierArchived={isArchived}
+          />
         </div>
 
         <aside className="space-y-6">
@@ -396,56 +407,6 @@ function SupplierPurchasesSection({
   );
 }
 
-function SupplierPaymentsSection({ payments }: { payments: SupplierPaymentPreview[] }) {
-  return (
-    <section
-      aria-labelledby="supplier-payments-heading"
-      className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
-    >
-      <SectionHeading
-        eyebrow="Pagos"
-        headingId="supplier-payments-heading"
-        title="Pagos al proveedor"
-        description="Historial preparado para registrar pagos y calcular deuda real en la siguiente fase."
-      />
-
-      {payments.length > 0 ? (
-        <div className="mt-5 grid gap-3">
-          {payments.map((payment) => (
-            <div
-              key={payment.id}
-              className="rounded-2xl border border-border bg-surface-muted/85 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
-            >
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="inline-flex items-center gap-2 text-[0.65rem] font-bold uppercase tracking-[0.18em] text-primary">
-                    <ReceiptText className="size-3.5" aria-hidden="true" />
-                    {formatSupplierPaymentMethod(payment.method)}
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-muted-foreground">
-                    {formatDate(payment.paidAt)}
-                    {payment.reference ? ` · Ref. ${payment.reference}` : ""}
-                  </p>
-                </div>
-
-                <p className="font-display text-lg font-black text-foreground">
-                  {formatMoney(payment.amount)}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <ModulePlaceholder
-          eyebrow="Pagos preparados"
-          title="Sin pagos registrados"
-          description="En la siguiente fase este bloque servirá para registrar pagos, referencias y actualizar automáticamente la deuda del proveedor."
-        />
-      )}
-    </section>
-  );
-}
-
 function ModulePlaceholder({
   eyebrow,
   title,
@@ -589,18 +550,6 @@ async function resolveSupplier(id: string): Promise<Supplier> {
 
     throw error;
   }
-}
-
-function formatSupplierPaymentMethod(method: string): string {
-  const labels: Record<string, string> = {
-    CASH: "Efectivo",
-    BANK_TRANSFER: "Transferencia",
-    MERCADO_PAGO: "Mercado Pago",
-    CARD: "Tarjeta",
-    OTHER: "Otro método",
-  };
-
-  return labels[method] ?? method;
 }
 
 function formatSupplierEventType(type: string): string {

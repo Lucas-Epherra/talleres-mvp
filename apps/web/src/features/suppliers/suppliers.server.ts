@@ -6,6 +6,8 @@ import type {
   SupplierCategory,
   SupplierPart,
   SupplierPartsQuery,
+  SupplierPayment,
+  SupplierPaymentsQuery,
   SupplierListItem,
   SuppliersQuery,
 } from "./types";
@@ -118,4 +120,50 @@ export function getSupplierParts(
     : `/suppliers/${supplierId}/parts`;
 
   return apiServerFetch<PaginatedResponse<SupplierPart>>(path);
+}
+
+
+/**
+ * Fetches paginated payments registered for one supplier.
+ */
+export function getSupplierPayments(
+  supplierId: string,
+  query: SupplierPaymentsQuery = {},
+): Promise<PaginatedResponse<SupplierPayment>> {
+  const params = new URLSearchParams();
+
+  if (query.search) {
+    params.set("search", query.search);
+  }
+
+  if (query.page && query.page > 1) {
+    params.set("page", String(query.page));
+  }
+
+  if (query.limit) {
+    params.set("limit", String(query.limit));
+  }
+
+  if (query.method) {
+    params.set("method", query.method);
+  }
+
+  if (query.paymentStatus && query.paymentStatus !== "active") {
+    params.set("paymentStatus", query.paymentStatus);
+  }
+
+  if (query.from) {
+    params.set("from", query.from);
+  }
+
+  if (query.to) {
+    params.set("to", query.to);
+  }
+
+  const queryString = params.toString();
+  const path = queryString
+    ? `/suppliers/${supplierId}/payments?${queryString}`
+    : `/suppliers/${supplierId}/payments`;
+
+  return apiServerFetch<PaginatedResponse<SupplierPayment>>(path);
 }

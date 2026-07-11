@@ -16,13 +16,17 @@ import { ArchiveSupplierPartDto } from './dto/archive-supplier-part.dto';
 import { CreateSupplierCategoryDto } from './dto/create-supplier-category.dto';
 import { CreateSupplierPartDto } from './dto/create-supplier-part.dto';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
+import { CreateSupplierPaymentDto } from './dto/create-supplier-payment.dto';
 import { FindSupplierCategoriesQueryDto } from './dto/find-supplier-categories-query.dto';
 import { FindSupplierPartsQueryDto } from './dto/find-supplier-parts-query.dto';
+import { FindSupplierPaymentsQueryDto } from './dto/find-supplier-payments-query.dto';
 import { FindSuppliersQueryDto } from './dto/find-suppliers-query.dto';
 import { RestoreSupplierDto } from './dto/restore-supplier.dto';
 import { RestoreSupplierPartDto } from './dto/restore-supplier-part.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
+import { UpdateSupplierPaymentDto } from './dto/update-supplier-payment.dto';
 import { UpdateSupplierPartDto } from './dto/update-supplier-part.dto';
+import { VoidSupplierPaymentDto } from './dto/void-supplier-payment.dto';
 import { SuppliersService } from './suppliers.service';
 
 /**
@@ -147,6 +151,78 @@ export class SuppliersController {
       user.id,
       supplierId,
       partId,
+      dto,
+    );
+  }
+
+
+  /**
+   * Lists payments registered for one supplier.
+   */
+  @Get(':supplierId/payments')
+  findPayments(
+    @CurrentUser() user: AuthUser,
+    @Param('supplierId') supplierId: string,
+    @Query() query: FindSupplierPaymentsQueryDto,
+  ) {
+    return this.suppliersService.findPayments(
+      user.workshopId,
+      supplierId,
+      query,
+    );
+  }
+
+  /**
+   * Registers a payment made to one supplier.
+   */
+  @Post(':supplierId/payments')
+  createPayment(
+    @CurrentUser() user: AuthUser,
+    @Param('supplierId') supplierId: string,
+    @Body() dto: CreateSupplierPaymentDto,
+  ) {
+    return this.suppliersService.createPayment(
+      user.workshopId,
+      user.id,
+      supplierId,
+      dto,
+    );
+  }
+
+  /**
+   * Corrects an active supplier payment.
+   */
+  @Patch(':supplierId/payments/:paymentId')
+  updatePayment(
+    @CurrentUser() user: AuthUser,
+    @Param('supplierId') supplierId: string,
+    @Param('paymentId') paymentId: string,
+    @Body() dto: UpdateSupplierPaymentDto,
+  ) {
+    return this.suppliersService.updatePayment(
+      user.workshopId,
+      user.id,
+      supplierId,
+      paymentId,
+      dto,
+    );
+  }
+
+  /**
+   * Voids a supplier payment without deleting financial history.
+   */
+  @Patch(':supplierId/payments/:paymentId/void')
+  voidPayment(
+    @CurrentUser() user: AuthUser,
+    @Param('supplierId') supplierId: string,
+    @Param('paymentId') paymentId: string,
+    @Body() dto: VoidSupplierPaymentDto,
+  ) {
+    return this.suppliersService.voidPayment(
+      user.workshopId,
+      user.id,
+      supplierId,
+      paymentId,
       dto,
     );
   }
