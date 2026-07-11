@@ -13,25 +13,33 @@ import {
 import { getApiErrorMessage } from "../../../lib/api";
 import { formatMileage } from "../../../lib/format";
 import { updateWorkOrder } from "../work-orders.client";
-import type { UpdateWorkOrderInput, WorkOrder } from "../types";
+import type {
+  UpdateWorkOrderInput,
+  WorkOrder,
+  WorkOrderSupplierCatalogItem,
+} from "../types";
 import { WorkOrderNotesEditor } from "./WorkOrderNotesEditor";
-import { WorkOrderPartsEditor } from "./WorkOrderPartsEditor";
 import {
   apiMoneyToInputString,
   formatCurrency,
-  getWorkOrderPartsTotal,
   parseMoneyInputValue,
   parseWorkOrderNotes,
-  parseWorkOrderParts,
   serializeWorkOrderNotes,
-  serializeWorkOrderParts,
-  validateWorkOrderParts,
   type WorkOrderNoteDraft,
-  type WorkOrderPartDraft,
 } from "../utils/work-order-form";
+import {
+  createStructuredPartDraftsFromWorkOrder,
+  getStructuredPartsCustomerTotal,
+  serializeStructuredPartDrafts,
+  serializeStructuredPartsToLegacyText,
+  validateStructuredPartDrafts,
+  WorkOrderSupplierPartsEditor,
+  type WorkOrderStructuredPartDraft,
+} from "./WorkOrderSupplierPartsEditor";
 
 type EditWorkOrderFormProps = {
   workOrder: WorkOrder;
+  supplierCatalog?: WorkOrderSupplierCatalogItem[];
 };
 
 /**
@@ -41,7 +49,10 @@ type EditWorkOrderFormProps = {
  * state, error handling, dynamic parts/notes and client-side navigation after
  * a successful PATCH.
  */
-export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
+export function EditWorkOrderForm({
+  workOrder,
+  supplierCatalog = [],
+}: EditWorkOrderFormProps) {
   const router = useRouter();
   const errorId = useId();
 
@@ -50,14 +61,17 @@ export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
   const [laborCost, setLaborCost] = useState(() =>
     apiMoneyToInputString(workOrder.laborCost),
   );
-  const [parts, setParts] = useState<WorkOrderPartDraft[]>(() =>
-    parseWorkOrderParts(workOrder.partsUsed, workOrder.partsCost),
+  const [partLines, setPartLines] = useState<WorkOrderStructuredPartDraft[]>(
+    () => createStructuredPartDraftsFromWorkOrder(workOrder),
   );
   const [notes, setNotes] = useState<WorkOrderNoteDraft[]>(() =>
     parseWorkOrderNotes(workOrder.notes),
   );
 
-  const partsCost = useMemo(() => getWorkOrderPartsTotal(parts), [parts]);
+  const partsCost = useMemo(
+    () => getStructuredPartsCustomerTotal(partLines),
+    [partLines],
+  );
   const parsedLaborCost = parseMoneyInputValue(laborCost);
   const hasAnyCost = parsedLaborCost !== null || partsCost > 0;
   const calculatedTotal = (parsedLaborCost ?? 0) + partsCost;
@@ -71,7 +85,7 @@ export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
 
     const formData = new FormData(event.currentTarget);
     const reportedIssue = getRequiredString(formData, "reportedIssue");
-    const partsValidationMessage = validateWorkOrderParts(parts);
+    const partsValidationMessage = validateStructuredPartDrafts(partLines);
 
     if (!reportedIssue) {
       setErrorMessage("El problema reportado es obligatorio.");
@@ -88,7 +102,11 @@ export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
       return;
     }
 
-    const serializedParts = serializeWorkOrderParts(parts);
+    const serializedPartLines = serializeStructuredPartDrafts(partLines);
+    const serializedParts = serializeStructuredPartsToLegacyText(
+      partLines,
+      supplierCatalog,
+    );
     const serializedNotes = serializeWorkOrderNotes(notes);
 
     const input: UpdateWorkOrderInput = {
@@ -102,6 +120,7 @@ export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
       estimatedTotal: hasAnyCost ? calculatedTotal : null,
       finalTotal: hasAnyCost ? calculatedTotal : null,
       notes: serializedNotes,
+      partLines: serializedPartLines,
     };
 
     try {
@@ -226,7 +245,11 @@ export function EditWorkOrderForm({ workOrder }: EditWorkOrderFormProps) {
         </div>
       </FormSection>
 
-      <WorkOrderPartsEditor parts={parts} onChange={setParts} />
+      <WorkOrderSupplierPartsEditor
+        parts={partLines}
+        onChange={setPartLines}
+        supplierCatalog={supplierCatalog}
+      />
 
       <FormSection
         headingId="edit-work-order-costs-heading"

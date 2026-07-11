@@ -1,5 +1,7 @@
 import { Transform, Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  IsArray,
   IsEnum,
   IsInt,
   IsNumber,
@@ -9,11 +11,14 @@ import {
   MaxLength,
   Min,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
 import { WorkOrderStatus } from '@prisma/client';
+import { WorkOrderPartLineDto } from './work-order-part-line.dto';
 
 const MAX_MILEAGE = 2000000;
 const MAX_MONEY_VALUE = 9999999999.99;
+const MAX_WORK_ORDER_PART_LINES = 100;
 
 /**
  * Converts nullable number payloads into values that class-validator and the
@@ -113,4 +118,12 @@ export class UpdateWorkOrderDto {
   @IsString()
   @MaxLength(800)
   notes?: string | null;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(MAX_WORK_ORDER_PART_LINES)
+  @ValidateNested({ each: true })
+  @Type(() => WorkOrderPartLineDto)
+  partLines?: WorkOrderPartLineDto[];
 }
+

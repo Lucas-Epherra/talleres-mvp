@@ -1,5 +1,7 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  IsArray,
   IsInt,
   IsNumber,
   IsOptional,
@@ -9,10 +11,13 @@ import {
   MaxLength,
   Min,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
+import { WorkOrderPartLineDto } from './work-order-part-line.dto';
 
 const MAX_MILEAGE = 2000000;
 const MAX_MONEY_VALUE = 9999999999.99;
+const MAX_WORK_ORDER_PART_LINES = 100;
 
 /**
  * Payload required to create a work order associated with an existing vehicle.
@@ -83,4 +88,12 @@ export class CreateWorkOrderDto {
   @IsString()
   @MaxLength(800)
   notes?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(MAX_WORK_ORDER_PART_LINES)
+  @ValidateNested({ each: true })
+  @Type(() => WorkOrderPartLineDto)
+  partLines?: WorkOrderPartLineDto[];
 }
+

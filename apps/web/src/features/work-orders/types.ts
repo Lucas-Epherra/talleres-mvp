@@ -1,5 +1,14 @@
 import type { WorkOrderStatus } from "../../lib/format";
 
+export const SUPPLIER_MARKUP_TYPES = [
+  "NONE",
+  "PERCENTAGE",
+  "FIXED_AMOUNT",
+  "MANUAL_PRICE",
+] as const;
+
+export type SupplierMarkupType = (typeof SUPPLIER_MARKUP_TYPES)[number];
+
 export type CreateWorkOrderInput = {
   vehicleId: string;
   reportedIssue: string;
@@ -12,6 +21,7 @@ export type CreateWorkOrderInput = {
   estimatedTotal?: number;
   finalTotal?: number;
   notes?: string;
+  partLines?: WorkOrderPartLineInput[];
 };
 
 export type UpdateWorkOrderInput = {
@@ -25,6 +35,20 @@ export type UpdateWorkOrderInput = {
   estimatedTotal?: number | null;
   finalTotal?: number | null;
   notes?: string | null;
+  partLines?: WorkOrderPartLineInput[];
+};
+
+export type WorkOrderPartLineInput = {
+  supplierId?: string;
+  supplierPartId?: string;
+  partName?: string;
+  quantity?: number;
+  supplierUnitCost?: number;
+  customerUnitPrice?: number;
+  markupType?: SupplierMarkupType;
+  markupValue?: number;
+  purchasedAt?: string;
+  notes?: string;
 };
 
 export type UpdateWorkOrderStatusInput = {
@@ -54,6 +78,68 @@ export type WorkOrderVehicle = {
   year: number | null;
   mileage: number | null;
   customer: WorkOrderCustomer;
+};
+
+export type WorkOrderSupplierCatalogPart = {
+  id: string;
+  supplierId: string;
+  categoryId: string | null;
+  name: string;
+  sku: string | null;
+  currentCost: number | string;
+  suggestedMarkupType: SupplierMarkupType | null;
+  suggestedMarkupValue: number | string | null;
+  suggestedCustomerPrice: number | string | null;
+  isActive: boolean;
+  archivedAt: string | null;
+  category: {
+    id: string;
+    name: string;
+  } | null;
+};
+
+export type WorkOrderSupplierCatalogItem = {
+  id: string;
+  name: string;
+  contactName: string | null;
+  phone: string | null;
+  archivedAt: string | null;
+  parts: WorkOrderSupplierCatalogPart[];
+};
+
+export type WorkOrderPartLine = {
+  id: string;
+  workshopId: string;
+  workOrderId: string;
+  supplierId: string | null;
+  supplierPartId: string | null;
+  partNameSnapshot: string;
+  supplierNameSnapshot: string | null;
+  quantity: number | string;
+  supplierUnitCost: number | string;
+  customerUnitPrice: number | string;
+  markupType: SupplierMarkupType;
+  markupValue: number | string | null;
+  supplierSubtotal: number | string;
+  customerSubtotal: number | string;
+  grossProfit: number | string;
+  purchasedAt: string;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  supplier: {
+    id: string;
+    name: string;
+  } | null;
+  supplierPart: {
+    id: string;
+    name: string;
+    sku: string | null;
+    category: {
+      id: string;
+      name: string;
+    } | null;
+  } | null;
 };
 
 export type WorkOrderEventType =
@@ -104,6 +190,7 @@ export type WorkOrder = {
   createdAt: string;
   updatedAt: string;
   vehicle: WorkOrderVehicle;
+  partLines?: WorkOrderPartLine[];
   events?: WorkOrderEvent[];
 };
 

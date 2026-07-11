@@ -4,7 +4,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, WorkOrderEventType, WorkOrderStatus } from '@prisma/client';
+import {
+  Prisma,
+  SupplierMarkupType,
+  WorkOrderEventType,
+  WorkOrderStatus,
+} from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { UpdateWorkOrderStatusDto } from './dto/update-work-order-status.dto';
@@ -12,12 +17,17 @@ import { UpdateWorkOrderDto } from './dto/update-work-order.dto';
 import { ReopenWorkOrderDto } from './dto/reopen-work-order.dto';
 import { CancelWorkOrderDto } from './dto/cancel-work-order.dto';
 import { FindWorkOrdersQueryDto } from './dto/find-work-orders-query.dto';
+import type { WorkOrderPartLineDto } from './dto/work-order-part-line.dto';
 
 const INITIAL_ORDER_NUMBER = 1000;
 const CREATE_ORDER_MAX_ATTEMPTS = 3;
 const MAX_SEARCH_LENGTH = 80;
 const MAX_MILEAGE = 2000000;
 const MAX_MONEY_VALUE = 9999999999.99;
+const MAX_WORK_ORDER_PART_LINES = 100;
+const MAX_PART_LINE_QUANTITY = 999999.99;
+const MAX_PART_LINE_NAME_LENGTH = 160;
+const MAX_PART_LINE_NOTES_LENGTH = 500;
 
 const DEFAULT_WORK_ORDERS_PAGE = 1;
 const DEFAULT_WORK_ORDERS_LIMIT = 10;
@@ -40,6 +50,23 @@ type WorkOrderVehicleContext = {
   customer: {
     archivedAt: Date | null;
   };
+};
+
+type NormalizedWorkOrderPartLine = {
+  supplierId: string | null;
+  supplierPartId: string | null;
+  partNameSnapshot: string;
+  supplierNameSnapshot: string | null;
+  quantity: Prisma.Decimal;
+  supplierUnitCost: Prisma.Decimal;
+  customerUnitPrice: Prisma.Decimal;
+  markupType: SupplierMarkupType;
+  markupValue: Prisma.Decimal | null;
+  supplierSubtotal: Prisma.Decimal;
+  customerSubtotal: Prisma.Decimal;
+  grossProfit: Prisma.Decimal;
+  purchasedAt: Date;
+  notes: string | null;
 };
 
 /**
@@ -235,6 +262,19 @@ export class WorkOrdersService {
             data.vehicleId,
             tx,
           );
+          const partLines = await this.normalizeWorkOrderPartLines(
+            workshopId,
+            dto.partLines,
+            tx,
+          );
+          const financials = this.resolveCreateFinancials({
+            laborCost: data.laborCost,
+            legacyPartsCost: data.partsCost,
+            legacyEstimatedTotal: data.estimatedTotal,
+            legacyFinalTotal: data.finalTotal,
+            partLines,
+            hasStructuredPartLines: dto.partLines !== undefined,
+          });
 
           const orderNumber = await this.getNextOrderNumber(workshopId, tx);
 
@@ -249,10 +289,33 @@ export class WorkOrdersService {
               partsUsed: data.partsUsed,
               entryMileage: data.entryMileage,
               laborCost: data.laborCost,
-              partsCost: data.partsCost,
-              estimatedTotal: data.estimatedTotal,
-              finalTotal: data.finalTotal,
+              partsCost: financials.partsCost,
+              estimatedTotal: financials.estimatedTotal,
+              finalTotal: financials.finalTotal,
               notes: data.notes,
+              ...(partLines.length > 0
+                ? {
+                    partLines: {
+                      create: partLines.map((partLine) => ({
+                        workshopId,
+                        supplierId: partLine.supplierId,
+                        supplierPartId: partLine.supplierPartId,
+                        partNameSnapshot: partLine.partNameSnapshot,
+                        supplierNameSnapshot: partLine.supplierNameSnapshot,
+                        quantity: partLine.quantity,
+                        supplierUnitCost: partLine.supplierUnitCost,
+                        customerUnitPrice: partLine.customerUnitPrice,
+                        markupType: partLine.markupType,
+                        markupValue: partLine.markupValue,
+                        supplierSubtotal: partLine.supplierSubtotal,
+                        customerSubtotal: partLine.customerSubtotal,
+                        grossProfit: partLine.grossProfit,
+                        purchasedAt: partLine.purchasedAt,
+                        notes: partLine.notes,
+                      })),
+                    },
+                  }
+                : {}),
             },
             include: this.getDefaultInclude(),
           });
@@ -329,6 +392,28 @@ export class WorkOrdersService {
 
     try {
       return await this.prisma.$transaction(async (tx) => {
+        const nextLaborCost = this.normalizeMoney(dto.laborCost, 'Mano de obra');
+        const partLines =
+          dto.partLines !== undefined
+            ? await this.normalizeWorkOrderPartLines(
+                workshopId,
+                dto.partLines,
+                tx,
+              )
+            : undefined;
+        const financials = this.resolveUpdateFinancials({
+          currentLaborCost: currentWorkOrder.laborCost,
+          nextLaborCost,
+          legacyPartsCost: this.normalizeMoney(dto.partsCost, 'Repuestos'),
+          legacyEstimatedTotal: this.normalizeMoney(
+            dto.estimatedTotal,
+            'Total estimado',
+          ),
+          legacyFinalTotal: this.normalizeMoney(dto.finalTotal, 'Total final'),
+          partLines,
+          hasStructuredPartLines: dto.partLines !== undefined,
+        });
+
         const updatedWorkOrder = await tx.workOrder.update({
           where: {
             id: currentWorkOrder.id,
@@ -358,13 +443,10 @@ export class WorkOrdersService {
               2000,
             ),
             entryMileage: this.normalizeMileage(dto.entryMileage),
-            laborCost: this.normalizeMoney(dto.laborCost, 'Mano de obra'),
-            partsCost: this.normalizeMoney(dto.partsCost, 'Repuestos'),
-            estimatedTotal: this.normalizeMoney(
-              dto.estimatedTotal,
-              'Total estimado',
-            ),
-            finalTotal: this.normalizeMoney(dto.finalTotal, 'Total final'),
+            laborCost: nextLaborCost,
+            partsCost: financials.partsCost,
+            estimatedTotal: financials.estimatedTotal,
+            finalTotal: financials.finalTotal,
             status: nextStatus,
             deliveryDate,
             notes: this.normalizeOptionalNullableMultilineText(
@@ -375,6 +457,38 @@ export class WorkOrdersService {
           },
           include: this.getDefaultInclude(),
         });
+
+        if (partLines !== undefined) {
+          await tx.workOrderPartLine.deleteMany({
+            where: {
+              workshopId,
+              workOrderId: currentWorkOrder.id,
+            },
+          });
+
+          if (partLines.length > 0) {
+            await tx.workOrderPartLine.createMany({
+              data: partLines.map((partLine) => ({
+                workshopId,
+                workOrderId: currentWorkOrder.id,
+                supplierId: partLine.supplierId,
+                supplierPartId: partLine.supplierPartId,
+                partNameSnapshot: partLine.partNameSnapshot,
+                supplierNameSnapshot: partLine.supplierNameSnapshot,
+                quantity: partLine.quantity,
+                supplierUnitCost: partLine.supplierUnitCost,
+                customerUnitPrice: partLine.customerUnitPrice,
+                markupType: partLine.markupType,
+                markupValue: partLine.markupValue,
+                supplierSubtotal: partLine.supplierSubtotal,
+                customerSubtotal: partLine.customerSubtotal,
+                grossProfit: partLine.grossProfit,
+                purchasedAt: partLine.purchasedAt,
+                notes: partLine.notes,
+              })),
+            });
+          }
+        }
 
         if (typeof dto.entryMileage === 'number') {
           await this.updateVehicleMileageIfNeeded(
@@ -1043,6 +1157,456 @@ export class WorkOrdersService {
   }
 
   /**
+   * Normalizes structured work order part lines and calculates monetary totals
+   * from backend-trusted supplier/catalog data whenever possible.
+   */
+  private async normalizeWorkOrderPartLines(
+    workshopId: string,
+    partLines: WorkOrderPartLineDto[] | undefined,
+    prisma: WorkOrdersPrismaClient,
+  ): Promise<NormalizedWorkOrderPartLine[]> {
+    if (partLines === undefined) {
+      return [];
+    }
+
+    if (partLines.length > MAX_WORK_ORDER_PART_LINES) {
+      throw new BadRequestException(
+        `Una orden no puede tener más de ${MAX_WORK_ORDER_PART_LINES} repuestos.`,
+      );
+    }
+
+    const normalizedPartLines: NormalizedWorkOrderPartLine[] = [];
+
+    for (const [index, partLine] of partLines.entries()) {
+      const lineNumber = index + 1;
+      const supplierPart = partLine.supplierPartId
+        ? await this.findSupplierPartForLine(
+            workshopId,
+            partLine.supplierPartId,
+            prisma,
+          )
+        : null;
+      const supplierId = supplierPart?.supplierId ?? partLine.supplierId ?? null;
+      const supplier =
+        supplierPart?.supplier ??
+        (supplierId
+          ? await this.findSupplierForLine(workshopId, supplierId, prisma)
+          : null);
+
+      if (
+        supplierPart &&
+        partLine.supplierId &&
+        partLine.supplierId !== supplierPart.supplierId
+      ) {
+        throw new BadRequestException(
+          `El proveedor de la línea ${lineNumber} no coincide con el repuesto seleccionado.`,
+        );
+      }
+
+      const partNameSnapshot = this.normalizePartLineName(
+        partLine.partName ?? supplierPart?.name,
+        lineNumber,
+      );
+      const supplierUnitCost = this.normalizeRequiredMoney(
+        partLine.supplierUnitCost ?? this.decimalToNumber(supplierPart?.currentCost),
+        `Costo proveedor de la línea ${lineNumber}`,
+      );
+      const markupType =
+        partLine.markupType ??
+        supplierPart?.suggestedMarkupType ??
+        (partLine.customerUnitPrice !== undefined
+          ? SupplierMarkupType.MANUAL_PRICE
+          : SupplierMarkupType.NONE);
+      const markupValue = this.normalizeMarkupValue(
+        partLine.markupValue ??
+          this.decimalToNumber(supplierPart?.suggestedMarkupValue),
+        markupType,
+        lineNumber,
+      );
+      const customerUnitPrice = this.resolveCustomerUnitPrice({
+        supplierUnitCost,
+        explicitCustomerUnitPrice: partLine.customerUnitPrice,
+        suggestedCustomerPrice: supplierPart?.suggestedCustomerPrice,
+        markupType,
+        markupValue,
+        lineNumber,
+      });
+      const quantity = this.normalizePartLineQuantity(partLine.quantity, lineNumber);
+      const supplierSubtotal = supplierUnitCost.times(quantity).toDecimalPlaces(2);
+      const customerSubtotal = customerUnitPrice.times(quantity).toDecimalPlaces(2);
+      const grossProfit = customerSubtotal.minus(supplierSubtotal).toDecimalPlaces(2);
+
+      normalizedPartLines.push({
+        supplierId,
+        supplierPartId: supplierPart?.id ?? null,
+        partNameSnapshot,
+        supplierNameSnapshot: supplier?.name ?? null,
+        quantity,
+        supplierUnitCost,
+        customerUnitPrice,
+        markupType,
+        markupValue,
+        supplierSubtotal,
+        customerSubtotal,
+        grossProfit,
+        purchasedAt: partLine.purchasedAt
+          ? this.normalizePurchasedAt(partLine.purchasedAt, lineNumber)
+          : new Date(),
+        notes: this.normalizeNullableText(
+          partLine.notes,
+          `Notas de la línea ${lineNumber}`,
+          MAX_PART_LINE_NOTES_LENGTH,
+        ),
+      });
+    }
+
+    return normalizedPartLines;
+  }
+
+  /**
+   * Returns one active supplier part from this workshop for a structured line.
+   */
+  private async findSupplierPartForLine(
+    workshopId: string,
+    supplierPartId: string,
+    prisma: WorkOrdersPrismaClient,
+  ) {
+    const supplierPart = await prisma.supplierPart.findFirst({
+      where: {
+        id: supplierPartId,
+        workshopId,
+      },
+      include: {
+        supplier: {
+          select: {
+            id: true,
+            name: true,
+            archivedAt: true,
+          },
+        },
+      },
+    });
+
+    if (!supplierPart || supplierPart.archivedAt || !supplierPart.isActive) {
+      throw new NotFoundException('Repuesto de proveedor no encontrado o inactivo.');
+    }
+
+    if (supplierPart.supplier.archivedAt) {
+      throw new BadRequestException(
+        'No se puede usar un repuesto de un proveedor archivado.',
+      );
+    }
+
+    return supplierPart;
+  }
+
+  /**
+   * Returns one active supplier from this workshop for manual structured lines.
+   */
+  private async findSupplierForLine(
+    workshopId: string,
+    supplierId: string,
+    prisma: WorkOrdersPrismaClient,
+  ) {
+    const supplier = await prisma.supplier.findFirst({
+      where: {
+        id: supplierId,
+        workshopId,
+      },
+      select: {
+        id: true,
+        name: true,
+        archivedAt: true,
+      },
+    });
+
+    if (!supplier || supplier.archivedAt) {
+      throw new NotFoundException('Proveedor no encontrado o archivado.');
+    }
+
+    return supplier;
+  }
+
+  /**
+   * Resolves financial fields when a work order is created.
+   */
+  private resolveCreateFinancials({
+    laborCost,
+    legacyPartsCost,
+    legacyEstimatedTotal,
+    legacyFinalTotal,
+    partLines,
+    hasStructuredPartLines,
+  }: {
+    laborCost: Prisma.Decimal | null | undefined;
+    legacyPartsCost: Prisma.Decimal | null | undefined;
+    legacyEstimatedTotal: Prisma.Decimal | null | undefined;
+    legacyFinalTotal: Prisma.Decimal | null | undefined;
+    partLines: NormalizedWorkOrderPartLine[];
+    hasStructuredPartLines: boolean;
+  }) {
+    if (!hasStructuredPartLines) {
+      return {
+        partsCost: legacyPartsCost,
+        estimatedTotal: legacyEstimatedTotal,
+        finalTotal: legacyFinalTotal,
+      };
+    }
+
+    const partsCost = this.sumPartLineCustomerSubtotals(partLines);
+    const total = this.calculateWorkOrderTotal(laborCost, partsCost);
+
+    return {
+      partsCost: this.nullIfZero(partsCost),
+      estimatedTotal: total,
+      finalTotal: total,
+    };
+  }
+
+  /**
+   * Resolves financial fields when structured part lines are replaced on edit.
+   */
+  private resolveUpdateFinancials({
+    currentLaborCost,
+    nextLaborCost,
+    legacyPartsCost,
+    legacyEstimatedTotal,
+    legacyFinalTotal,
+    partLines,
+    hasStructuredPartLines,
+  }: {
+    currentLaborCost: Prisma.Decimal | null | undefined;
+    nextLaborCost: Prisma.Decimal | null | undefined;
+    legacyPartsCost: Prisma.Decimal | null | undefined;
+    legacyEstimatedTotal: Prisma.Decimal | null | undefined;
+    legacyFinalTotal: Prisma.Decimal | null | undefined;
+    partLines: NormalizedWorkOrderPartLine[] | undefined;
+    hasStructuredPartLines: boolean;
+  }) {
+    if (!hasStructuredPartLines || !partLines) {
+      return {
+        partsCost: legacyPartsCost,
+        estimatedTotal: legacyEstimatedTotal,
+        finalTotal: legacyFinalTotal,
+      };
+    }
+
+    const resolvedLaborCost =
+      nextLaborCost === undefined ? currentLaborCost : nextLaborCost;
+    const partsCost = this.sumPartLineCustomerSubtotals(partLines);
+    const total = this.calculateWorkOrderTotal(resolvedLaborCost, partsCost);
+
+    return {
+      partsCost: this.nullIfZero(partsCost),
+      estimatedTotal: total,
+      finalTotal: total,
+    };
+  }
+
+  /**
+   * Sums the customer-facing value of structured part lines.
+   */
+  private sumPartLineCustomerSubtotals(
+    partLines: NormalizedWorkOrderPartLine[],
+  ): Prisma.Decimal {
+    return partLines.reduce(
+      (total, partLine) => total.plus(partLine.customerSubtotal),
+      new Prisma.Decimal(0),
+    );
+  }
+
+  /**
+   * Calculates the total charged to the customer from labor and sale-priced parts.
+   */
+  private calculateWorkOrderTotal(
+    laborCost: Prisma.Decimal | null | undefined,
+    partsCost: Prisma.Decimal | null | undefined,
+  ): Prisma.Decimal | null {
+    const total = new Prisma.Decimal(0)
+      .plus(laborCost ?? 0)
+      .plus(partsCost ?? 0)
+      .toDecimalPlaces(2);
+
+    return total.equals(0) ? null : total;
+  }
+
+  /**
+   * Converts zero monetary values to null for optional work order totals.
+   */
+  private nullIfZero(value: Prisma.Decimal): Prisma.Decimal | null {
+    return value.equals(0) ? null : value.toDecimalPlaces(2);
+  }
+
+  /**
+   * Resolves the customer-facing unit price from explicit price or markup rules.
+   */
+  private resolveCustomerUnitPrice({
+    supplierUnitCost,
+    explicitCustomerUnitPrice,
+    suggestedCustomerPrice,
+    markupType,
+    markupValue,
+    lineNumber,
+  }: {
+    supplierUnitCost: Prisma.Decimal;
+    explicitCustomerUnitPrice?: number;
+    suggestedCustomerPrice?: Prisma.Decimal | null;
+    markupType: SupplierMarkupType;
+    markupValue: Prisma.Decimal | null;
+    lineNumber: number;
+  }): Prisma.Decimal {
+    if (explicitCustomerUnitPrice !== undefined) {
+      return this.normalizeRequiredMoney(
+        explicitCustomerUnitPrice,
+        `Precio cliente de la línea ${lineNumber}`,
+      );
+    }
+
+    if (
+      suggestedCustomerPrice &&
+      markupType === SupplierMarkupType.MANUAL_PRICE
+    ) {
+      return suggestedCustomerPrice.toDecimalPlaces(2);
+    }
+
+    if (markupType === SupplierMarkupType.NONE) {
+      return supplierUnitCost.toDecimalPlaces(2);
+    }
+
+    if (markupType === SupplierMarkupType.PERCENTAGE) {
+      const percentage = markupValue ?? new Prisma.Decimal(0);
+      return supplierUnitCost
+        .times(new Prisma.Decimal(1).plus(percentage.div(100)))
+        .toDecimalPlaces(2);
+    }
+
+    if (markupType === SupplierMarkupType.FIXED_AMOUNT) {
+      return supplierUnitCost.plus(markupValue ?? 0).toDecimalPlaces(2);
+    }
+
+    if (markupType === SupplierMarkupType.MANUAL_PRICE && markupValue) {
+      return markupValue.toDecimalPlaces(2);
+    }
+
+    return supplierUnitCost.toDecimalPlaces(2);
+  }
+
+  /**
+   * Normalizes the part name snapshot stored in the work order line.
+   */
+  private normalizePartLineName(
+    value: string | undefined,
+    lineNumber: number,
+  ): string {
+    const normalizedValue = value?.trim();
+
+    if (!normalizedValue) {
+      throw new BadRequestException(
+        `El nombre del repuesto es obligatorio en la línea ${lineNumber}.`,
+      );
+    }
+
+    if (normalizedValue.length > MAX_PART_LINE_NAME_LENGTH) {
+      throw new BadRequestException(
+        `El nombre del repuesto de la línea ${lineNumber} no puede superar ${MAX_PART_LINE_NAME_LENGTH} caracteres.`,
+      );
+    }
+
+    return normalizedValue;
+  }
+
+  /**
+   * Normalizes quantity for structured part lines.
+   */
+  private normalizePartLineQuantity(
+    value: number | undefined,
+    lineNumber: number,
+  ): Prisma.Decimal {
+    const quantity = value ?? 1;
+
+    if (
+      !Number.isFinite(quantity) ||
+      quantity <= 0 ||
+      quantity > MAX_PART_LINE_QUANTITY
+    ) {
+      throw new BadRequestException(
+        `La cantidad de la línea ${lineNumber} debe ser mayor a 0 y menor a ${MAX_PART_LINE_QUANTITY}.`,
+      );
+    }
+
+    return new Prisma.Decimal(quantity.toFixed(2));
+  }
+
+  /**
+   * Normalizes a required money value for structured part lines.
+   */
+  private normalizeRequiredMoney(
+    value: number | null | undefined,
+    fieldName: string,
+  ): Prisma.Decimal {
+    if (value === undefined || value === null) {
+      throw new BadRequestException(`${fieldName} es obligatorio.`);
+    }
+
+    if (!Number.isFinite(value) || value < 0 || value > MAX_MONEY_VALUE) {
+      throw new BadRequestException(
+        `${fieldName} debe ser un número entre 0 y ${MAX_MONEY_VALUE}.`,
+      );
+    }
+
+    return new Prisma.Decimal(value.toFixed(2));
+  }
+
+  /**
+   * Normalizes markup values according to the selected markup type.
+   */
+  private normalizeMarkupValue(
+    value: number | null | undefined,
+    markupType: SupplierMarkupType,
+    lineNumber: number,
+  ): Prisma.Decimal | null {
+    if (markupType === SupplierMarkupType.NONE) {
+      return null;
+    }
+
+    if (value === undefined || value === null) {
+      return null;
+    }
+
+    if (!Number.isFinite(value) || value < 0 || value > MAX_MONEY_VALUE) {
+      throw new BadRequestException(
+        `El recargo de la línea ${lineNumber} debe ser un número válido.`,
+      );
+    }
+
+    return new Prisma.Decimal(value.toFixed(2));
+  }
+
+  /**
+   * Normalizes purchase date for structured part lines.
+   */
+  private normalizePurchasedAt(value: string, lineNumber: number): Date {
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      throw new BadRequestException(
+        `La fecha de compra de la línea ${lineNumber} no es válida.`,
+      );
+    }
+
+    return date;
+  }
+
+  /**
+   * Converts a Prisma Decimal to a plain number when present.
+   */
+  private decimalToNumber(
+    value: Prisma.Decimal | null | undefined,
+  ): number | undefined {
+    return value ? value.toNumber() : undefined;
+  }
+
+  /**
    * Validates and converts money values to Prisma Decimal.
    *
    * Undefined means "do not update". Null means "clear value".
@@ -1106,6 +1670,32 @@ export class WorkOrdersService {
   private getDetailInclude() {
     return {
       ...this.getDefaultInclude(),
+      partLines: {
+        orderBy: {
+          createdAt: 'asc',
+        },
+        include: {
+          supplier: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          supplierPart: {
+            select: {
+              id: true,
+              name: true,
+              sku: true,
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      },
       events: {
         orderBy: {
           createdAt: 'desc',

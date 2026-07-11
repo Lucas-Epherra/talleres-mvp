@@ -11,21 +11,24 @@ import {
 } from "react";
 import { getApiErrorMessage } from "../../../lib/api";
 import { createWorkOrder } from "../work-orders.client";
-import type { CreateWorkOrderInput } from "../types";
+import type { CreateWorkOrderInput, WorkOrderSupplierCatalogItem } from "../types";
 import { WorkOrderNotesEditor } from "./WorkOrderNotesEditor";
-import { WorkOrderPartsEditor } from "./WorkOrderPartsEditor";
 import {
   createEmptyWorkOrderNote,
-  createEmptyWorkOrderPart,
   formatCurrency,
-  getWorkOrderPartsTotal,
   parseMoneyInputValue,
   serializeWorkOrderNotes,
-  serializeWorkOrderParts,
-  validateWorkOrderParts,
   type WorkOrderNoteDraft,
-  type WorkOrderPartDraft,
 } from "../utils/work-order-form";
+import {
+  createEmptyStructuredPartDraft,
+  getStructuredPartsCustomerTotal,
+  serializeStructuredPartDrafts,
+  serializeStructuredPartsToLegacyText,
+  validateStructuredPartDrafts,
+  WorkOrderSupplierPartsEditor,
+  type WorkOrderStructuredPartDraft,
+} from "./WorkOrderSupplierPartsEditor";
 
 type CreateWorkOrderVehicleContext = {
   id: string;
@@ -38,6 +41,7 @@ type CreateWorkOrderVehicleContext = {
 
 type CreateWorkOrderFormProps = {
   vehicle: CreateWorkOrderVehicleContext;
+  supplierCatalog?: WorkOrderSupplierCatalogItem[];
 };
 
 /**
@@ -47,7 +51,10 @@ type CreateWorkOrderFormProps = {
  * submit handling, loading state, dynamic parts/notes and client-side
  * navigation after mutation.
  */
-export function CreateWorkOrderForm({ vehicle }: CreateWorkOrderFormProps) {
+export function CreateWorkOrderForm({
+  vehicle,
+  supplierCatalog = [],
+}: CreateWorkOrderFormProps) {
   const router = useRouter();
   const errorId = useId();
   const vehicleId = vehicle.id;
@@ -55,14 +62,17 @@ export function CreateWorkOrderForm({ vehicle }: CreateWorkOrderFormProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [laborCost, setLaborCost] = useState("");
-  const [parts, setParts] = useState<WorkOrderPartDraft[]>([
-    createEmptyWorkOrderPart(),
+  const [partLines, setPartLines] = useState<WorkOrderStructuredPartDraft[]>([
+    createEmptyStructuredPartDraft(),
   ]);
   const [notes, setNotes] = useState<WorkOrderNoteDraft[]>([
     createEmptyWorkOrderNote(),
   ]);
 
-  const partsCost = useMemo(() => getWorkOrderPartsTotal(parts), [parts]);
+  const partsCost = useMemo(
+    () => getStructuredPartsCustomerTotal(partLines),
+    [partLines],
+  );
   const parsedLaborCost = parseMoneyInputValue(laborCost);
   const hasAnyCost = parsedLaborCost !== null || partsCost > 0;
   const calculatedTotal = (parsedLaborCost ?? 0) + partsCost;
@@ -76,7 +86,7 @@ export function CreateWorkOrderForm({ vehicle }: CreateWorkOrderFormProps) {
 
     const formData = new FormData(event.currentTarget);
     const reportedIssue = getRequiredString(formData, "reportedIssue");
-    const partsValidationMessage = validateWorkOrderParts(parts);
+    const partsValidationMessage = validateStructuredPartDrafts(partLines);
 
     if (!reportedIssue) {
       setErrorMessage("El problema reportado es obligatorio.");
@@ -93,7 +103,11 @@ export function CreateWorkOrderForm({ vehicle }: CreateWorkOrderFormProps) {
       return;
     }
 
-    const serializedParts = serializeWorkOrderParts(parts);
+    const serializedPartLines = serializeStructuredPartDrafts(partLines);
+    const serializedParts = serializeStructuredPartsToLegacyText(
+      partLines,
+      supplierCatalog,
+    );
     const serializedNotes = serializeWorkOrderNotes(notes);
 
     const input: CreateWorkOrderInput = {
@@ -108,6 +122,7 @@ export function CreateWorkOrderForm({ vehicle }: CreateWorkOrderFormProps) {
       estimatedTotal: hasAnyCost ? calculatedTotal : undefined,
       finalTotal: hasAnyCost ? calculatedTotal : undefined,
       notes: serializedNotes ?? undefined,
+      partLines: serializedPartLines,
     };
 
     try {
@@ -225,7 +240,11 @@ export function CreateWorkOrderForm({ vehicle }: CreateWorkOrderFormProps) {
         </div>
       </FormSection>
 
-      <WorkOrderPartsEditor parts={parts} onChange={setParts} />
+      <WorkOrderSupplierPartsEditor
+        parts={partLines}
+        onChange={setPartLines}
+        supplierCatalog={supplierCatalog}
+      />
 
       <FormSection
         headingId="work-order-costs-heading"
