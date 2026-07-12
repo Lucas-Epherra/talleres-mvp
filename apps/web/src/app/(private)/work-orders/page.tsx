@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Pagination } from "../../../components/ui/Pagination";
 import { SearchForm } from "../../../components/ui/SearchForm";
 import { WorkOrderCard } from "../../../features/work-orders/components/WorkOrderCard";
-import { getPaginatedWorkOrders } from "../../../features/work-orders/work-orders.service";
+import { getPaginatedWorkOrders } from "../../../features/work-orders/work-orders.server";
 import type { WorkOrder } from "../../../features/work-orders/types";
 import {
   formatMoney,

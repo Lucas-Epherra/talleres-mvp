@@ -7,7 +7,7 @@ import { EditWorkOrderForm } from "../../../../../features/work-orders/component
 import {
   getWorkOrder,
   getWorkOrderSupplierCatalog,
-} from "../../../../../features/work-orders/work-orders.service";
+} from "../../../../../features/work-orders/work-orders.server";
 import type { WorkOrder } from "../../../../../features/work-orders/types";
 
 export const metadata: Metadata = {

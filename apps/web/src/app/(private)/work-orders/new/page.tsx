@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { CreateWorkOrderForm } from "../../../../features/work-orders/components/CreateWorkOrderForm";
-import { getWorkOrderSupplierCatalog } from "../../../../features/work-orders/work-orders.service";
+import { getWorkOrderSupplierCatalog } from "../../../../features/work-orders/work-orders.server";
 import { getVehicleProfile } from "../../../../features/vehicles/vehicles.server";
 import type { VehicleProfile } from "../../../../features/vehicles/types";
 import { ApiError } from "../../../../lib/api";
