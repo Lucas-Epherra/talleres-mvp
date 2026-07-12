@@ -46,7 +46,7 @@ export function WorkOrderSupplierPartsEditor({
   const supplierTotal = getStructuredPartsSupplierTotal(parts);
   const customerTotal = getStructuredPartsCustomerTotal(parts);
   const grossProfit = customerTotal - supplierTotal;
-  const hasSupplierCatalog = supplierCatalog.length > 0;
+  const hasAvailableSuppliers = supplierCatalog.length > 0;
 
   function updatePart(
     partId: string,
@@ -178,11 +178,11 @@ export function WorkOrderSupplierPartsEditor({
         </div>
       </div>
 
-      {!hasSupplierCatalog ? (
+      {!hasAvailableSuppliers ? (
         <p className="mt-5 rounded-2xl border border-warning/45 bg-warning/10 px-4 py-3 text-sm font-semibold leading-6 text-foreground">
-          Todavía no hay proveedores activos cargados. Podés crear una línea
-          manual, pero no va a aumentar deuda de proveedor hasta que selecciones
-          uno.
+          Todavía no hay proveedores disponibles para seleccionar. Podés cargar
+          una línea manual, pero no va a aumentar deuda de proveedor hasta que
+          elijas uno.
         </p>
       ) : null}
 
@@ -207,7 +207,7 @@ export function WorkOrderSupplierPartsEditor({
                   </p>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
                     {part.supplierId
-                      ? "Esta línea puede impactar en deuda del proveedor."
+                      ? "Esta línea impacta en deuda del proveedor si cargás costo."
                       : "Línea manual sin proveedor asignado."}
                   </p>
                 </div>

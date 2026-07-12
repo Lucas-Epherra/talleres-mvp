@@ -82,58 +82,54 @@ export function getWorkOrder(workOrderId: string): Promise<WorkOrder> {
 }
 
 /**
- * Fetches active suppliers with their active catalog parts for work order forms.
+ * Fetches available suppliers with their catalog parts for work order forms.
  *
- * The form must still load when the supplier catalog is temporarily unavailable
- * in production. In that case it returns an empty catalog and the user can keep
- * working with manual part lines instead of crashing the server-rendered page.
+ * Suppliers are considered available when they are not archived. Catalog parts
+ * are also filtered only by archive state; there is no visible "active/inactive"
+ * concept in the product flow.
  */
 export async function getWorkOrderSupplierCatalog(): Promise<
   WorkOrderSupplierCatalogItem[]
 > {
-  try {
-    const suppliersPage = await apiServerFetch<
-      PaginatedResponse<SupplierCatalogListItem>
-    >("/suppliers?limit=100");
+  const suppliersPage = await apiServerFetch<
+    PaginatedResponse<SupplierCatalogListItem>
+  >("/suppliers?limit=50");
 
-    const activeSuppliers = suppliersPage.data.filter(
-      (supplier) => !supplier.archivedAt,
-    );
+  const availableSuppliers = suppliersPage.data.filter(
+    (supplier) => !supplier.archivedAt,
+  );
 
-    const suppliersWithParts = await Promise.all(
-      activeSuppliers.map(async (supplier) => {
-        try {
-          const partsPage = await apiServerFetch<
-            PaginatedResponse<WorkOrderSupplierCatalogPart>
-          >(`/suppliers/${supplier.id}/parts?limit=200`);
+  const suppliersWithParts = await Promise.all(
+    availableSuppliers.map(async (supplier) => {
+      try {
+        const partsPage = await apiServerFetch<
+          PaginatedResponse<WorkOrderSupplierCatalogPart>
+        >(
+          `/suppliers/${supplier.id}/parts?limit=50&archiveStatus=active&activeStatus=all`,
+        );
 
-          return {
-            id: supplier.id,
-            name: supplier.name,
-            contactName: supplier.contactName,
-            phone: supplier.phone,
-            archivedAt: supplier.archivedAt,
-            parts: partsPage.data.filter(
-              (part) => part.isActive && !part.archivedAt,
-            ),
-          } satisfies WorkOrderSupplierCatalogItem;
-        } catch {
-          return {
-            id: supplier.id,
-            name: supplier.name,
-            contactName: supplier.contactName,
-            phone: supplier.phone,
-            archivedAt: supplier.archivedAt,
-            parts: [],
-          } satisfies WorkOrderSupplierCatalogItem;
-        }
-      }),
-    );
+        return {
+          id: supplier.id,
+          name: supplier.name,
+          contactName: supplier.contactName,
+          phone: supplier.phone,
+          archivedAt: supplier.archivedAt,
+          parts: partsPage.data.filter((part) => !part.archivedAt),
+        } satisfies WorkOrderSupplierCatalogItem;
+      } catch {
+        return {
+          id: supplier.id,
+          name: supplier.name,
+          contactName: supplier.contactName,
+          phone: supplier.phone,
+          archivedAt: supplier.archivedAt,
+          parts: [],
+        } satisfies WorkOrderSupplierCatalogItem;
+      }
+    }),
+  );
 
-    return suppliersWithParts.sort((firstSupplier, secondSupplier) =>
-      firstSupplier.name.localeCompare(secondSupplier.name, "es-AR"),
-    );
-  } catch {
-    return [];
-  }
+  return suppliersWithParts.sort((firstSupplier, secondSupplier) =>
+    firstSupplier.name.localeCompare(secondSupplier.name, "es-AR"),
+  );
 }

@@ -3,7 +3,6 @@
 import {
   Archive,
   Calculator,
-  CheckCircle2,
   CircleDollarSign,
   PackagePlus,
   PackageSearch,
@@ -67,9 +66,7 @@ export function SupplierPartsCatalog({
   const [editingPartId, setEditingPartId] = useState<string | null>(null);
 
   const visibleParts = initialParts;
-  const activePartsCount = visibleParts.filter(
-    (part) => part.isActive && !part.archivedAt,
-  ).length;
+  const availablePartsCount = visibleParts.filter((part) => !part.archivedAt).length;
   const archivedPartsCount = visibleParts.filter((part) => part.archivedAt).length;
 
   return (
@@ -99,7 +96,7 @@ export function SupplierPartsCatalog({
         </div>
 
         <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[26rem]">
-          <CatalogMetric label="Activos" value={activePartsCount.toString()} />
+          <CatalogMetric label="Disponibles" value={availablePartsCount.toString()} />
           <CatalogMetric
             label="Archivados"
             value={archivedPartsCount.toString()}
@@ -257,8 +254,6 @@ function SupplierPartForm({
   const [manualCustomerPrice, setManualCustomerPrice] = useState(
     toInputMoney(part?.suggestedCustomerPrice),
   );
-  const [isActive, setIsActive] = useState(part?.isActive ?? true);
-
   const pricingPreview = useMemo(
     () =>
       resolvePricingPreview({
@@ -317,7 +312,7 @@ function SupplierPartForm({
           : undefined,
       suggestedCustomerPrice:
         markupType === "MANUAL_PRICE" ? parsedManualCustomerPrice ?? parsedCost : undefined,
-      isActive,
+      isActive: true,
     } satisfies CreateSupplierPartInput;
 
     try {
@@ -462,16 +457,6 @@ function SupplierPartForm({
               recomendado para futuras órdenes.
             </p>
           </div>
-
-          <label className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface-muted px-3 py-2 text-xs font-bold text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={isActive}
-              onChange={(event) => setIsActive(event.target.checked)}
-              className="size-4 rounded border-border-strong text-primary focus:ring-primary/20"
-            />
-            Repuesto activo
-          </label>
         </div>
 
         <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_260px]">
@@ -614,9 +599,7 @@ function SupplierPartCard({
         "rounded-2xl border p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition",
         isArchived
           ? "border-border bg-surface-muted/55 opacity-80"
-          : part.isActive
-            ? "border-border bg-surface-muted/85 hover:border-primary/35"
-            : "border-warning/35 bg-warning/5",
+          : "border-border bg-surface-muted/85 hover:border-primary/35",
       )}
     >
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -843,19 +826,10 @@ function StatusPill({ part }: { part: SupplierPart }) {
     );
   }
 
-  if (!part.isActive) {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-warning/35 bg-warning/10 px-2.5 py-1 text-[0.6rem] font-black uppercase tracking-[0.14em] text-warning">
-        <X className="size-3" aria-hidden="true" />
-        Inactivo
-      </span>
-    );
-  }
-
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-[0.6rem] font-black uppercase tracking-[0.14em] text-primary">
-      <CheckCircle2 className="size-3" aria-hidden="true" />
-      Activo
+      <PackageSearch className="size-3" aria-hidden="true" />
+      Disponible
     </span>
   );
 }

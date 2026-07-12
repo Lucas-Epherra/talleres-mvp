@@ -276,7 +276,7 @@ function SupplierArchiveStatusFilters({
     value: SupplierArchiveStatus;
     icon?: typeof Archive | typeof WalletCards;
   }> = [
-    { label: "Activos", value: "active", icon: WalletCards },
+    { label: "Disponibles", value: "active", icon: WalletCards },
     { label: "Archivados", value: "archived", icon: Archive },
     { label: "Todos", value: "all" },
   ];
@@ -360,7 +360,7 @@ function getResultsTitle(
   }
 
   const titles: Record<SupplierArchiveStatus, string> = {
-    active: "Proveedores activos",
+    active: "Proveedores disponibles",
     archived: "Proveedores archivados",
     all: "Todos los proveedores",
   };
