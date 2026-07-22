@@ -28,6 +28,7 @@ import { getPaginatedAppointments } from "../../../../features/appointments/appo
 import { IssueReceiptButton } from "../../../../features/receipts/components/IssueReceiptButton";
 import { getReceipts } from "../../../../features/receipts/receipts.server";
 import { WorkOrderAppointmentsPanel } from "../../../../features/work-orders/components/WorkOrderAppointmentsPanel";
+import { WorkOrderStructuredPartsPanel } from "../../../../features/work-orders/components/WorkOrderStructuredPartsPanel";
 import { ReopenWorkOrderForm } from "../../../../features/work-orders/components/ReopenWorkOrderForm";
 import { CancelWorkOrderForm } from "../../../../features/work-orders/components/CancelWorkOrderForm";
 import {
@@ -80,6 +81,8 @@ export default async function WorkOrderDetailPage({
   const isCancelled = workOrder.status === "CANCELLED";
   const isClosed = isDelivered || isCancelled;
   const issuedReceipt = receiptsPage.data[0] ?? null;
+  const partLines = workOrder.partLines ?? [];
+  const hasStructuredPartLines = partLines.length > 0;
 
   return (
     <section className="space-y-6">
@@ -178,15 +181,17 @@ export default async function WorkOrderDetailPage({
               value={getReadableText(workOrder.workDone, "Trabajo pendiente")}
             />
 
-            <DetailSheetRow
-              label="Repuestos usados"
-              value={
-                <WorkOrderPartsValue
-                  value={workOrder.partsUsed}
-                  fallback="Sin repuestos cargados"
-                />
-              }
-            />
+            {!hasStructuredPartLines ? (
+              <DetailSheetRow
+                label="Repuestos usados"
+                value={
+                  <WorkOrderPartsValue
+                    value={workOrder.partsUsed}
+                    fallback="Sin repuestos cargados"
+                  />
+                }
+              />
+            ) : null}
 
             <DetailSheetRow
               label="Notas"
@@ -198,6 +203,10 @@ export default async function WorkOrderDetailPage({
               }
             />
           </DetailSheet>
+
+          {hasStructuredPartLines ? (
+            <WorkOrderStructuredPartsPanel partLines={partLines} />
+          ) : null}
 
           <DetailSheet
             headingId="work-order-costs-heading"
@@ -224,7 +233,7 @@ export default async function WorkOrderDetailPage({
             />
 
             <DetailSheetRow
-              label="Repuestos"
+              label="Repuestos al cliente"
               value={formatMoney(workOrder.partsCost)}
             />
 
