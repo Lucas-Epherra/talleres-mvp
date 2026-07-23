@@ -157,255 +157,295 @@ export default async function WorkOrderDetailPage({
         </div>
       </header>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
-        <div className="min-w-0 space-y-6">
-          <DetailSheet
-            headingId="work-order-description-heading"
-            title="Información del trabajo"
-          >
-            <DetailSheetRow
-              label="Problema reportado"
-              value={workOrder.reportedIssue}
-            />
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
+        <DetailSheet
+          headingId="work-order-description-heading"
+          title="Información del trabajo"
+        >
+          <DetailSheetRow
+            label="Problema reportado"
+            value={workOrder.reportedIssue}
+          />
 
-            <DetailSheetRow
-              label="Diagnóstico"
-              value={getReadableText(
-                workOrder.diagnosis,
-                "Diagnóstico pendiente",
-              )}
-            />
+          <DetailSheetRow
+            label="Diagnóstico"
+            value={getReadableText(
+              workOrder.diagnosis,
+              "Diagnóstico pendiente",
+            )}
+          />
 
-            <DetailSheetRow
-              label="Trabajo realizado"
-              value={getReadableText(workOrder.workDone, "Trabajo pendiente")}
-            />
+          <DetailSheetRow
+            label="Trabajo realizado"
+            value={getReadableText(workOrder.workDone, "Trabajo pendiente")}
+          />
 
-            {!hasStructuredPartLines ? (
-              <DetailSheetRow
-                label="Repuestos usados"
-                value={
-                  <WorkOrderPartsValue
-                    value={workOrder.partsUsed}
-                    fallback="Sin repuestos cargados"
-                  />
-                }
-              />
-            ) : null}
-
+          {!hasStructuredPartLines ? (
             <DetailSheetRow
-              label="Notas"
+              label="Repuestos usados"
               value={
-                <WorkOrderNotesValue
-                  value={workOrder.notes}
-                  fallback="Sin notas internas"
+                <WorkOrderPartsValue
+                  value={workOrder.partsUsed}
+                  fallback="Sin repuestos cargados"
                 />
               }
             />
-          </DetailSheet>
-
-          {hasStructuredPartLines ? (
-            <WorkOrderStructuredPartsPanel partLines={partLines} />
           ) : null}
 
-          <DetailSheet
-            headingId="work-order-costs-heading"
-            title="Fechas, kilometraje y costos"
-          >
-            <DetailSheetRow
-              label="Ingreso"
-              value={formatDate(workOrder.entryDate)}
-            />
+          <DetailSheetRow
+            label="Notas"
+            value={
+              <WorkOrderNotesValue
+                value={workOrder.notes}
+                fallback="Sin notas internas"
+              />
+            }
+          />
+        </DetailSheet>
 
-            <DetailSheetRow
-              label="Entrega"
-              value={formatDate(workOrder.deliveryDate)}
-            />
+        <DetailSheet
+          headingId="work-order-vehicle-heading"
+          title="Vehículo"
+          action={
+            <Link
+              href={`/vehicles/${vehicle.id}`}
+              className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
+            >
+              <CarFront className="size-3.5 shrink-0" aria-hidden="true" />
+              Abrir ficha
+            </Link>
+          }
+        >
+          <DetailSheetRow label="Patente" value={vehicle.licensePlate} />
+          <DetailSheetRow label="Marca" value={vehicle.brand} />
+          <DetailSheetRow label="Modelo" value={vehicle.model} />
+          <DetailSheetRow
+            label="Año"
+            value={vehicle.year ? vehicle.year.toString() : "Sin cargar"}
+          />
+          <DetailSheetRow
+            label="Kilometraje"
+            value={formatMileage(vehicle.mileage)}
+          />
+        </DetailSheet>
+      </div>
 
-            <DetailSheetRow
-              label="Km ingreso"
-              value={formatMileage(workOrder.entryMileage)}
-            />
+      <DetailSheet
+        headingId="work-order-costs-heading"
+        title="Fechas, kilometraje y costos"
+      >
+        <DetailSheetRow
+          label="Ingreso"
+          value={formatDate(workOrder.entryDate)}
+        />
 
-            <DetailSheetRow
-              label="Mano de obra"
-              value={formatMoney(workOrder.laborCost)}
-            />
+        <DetailSheetRow
+          label="Entrega"
+          value={formatDate(workOrder.deliveryDate)}
+        />
 
-            <DetailSheetRow
-              label="Repuestos al cliente"
-              value={formatMoney(workOrder.partsCost)}
-            />
+        <DetailSheetRow
+          label="Km ingreso"
+          value={formatMileage(workOrder.entryMileage)}
+        />
 
-            <DetailSheetRow
-              label="Total final"
-              value={formatMoney(workOrder.finalTotal)}
-            />
-          </DetailSheet>
+        <DetailSheetRow
+          label="Mano de obra"
+          value={formatMoney(workOrder.laborCost)}
+        />
 
-          <section
-            aria-labelledby="work-order-receipt-heading"
-            className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
-          >
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex min-w-0 items-start gap-3">
-                <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-primary">
-                  <ReceiptText className="size-5" aria-hidden="true" />
-                </div>
+        <DetailSheetRow
+          label="Repuestos al cliente"
+          value={formatMoney(workOrder.partsCost)}
+        />
 
-                <div className="min-w-0">
-                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
-                    Cobro
-                  </p>
+        <DetailSheetRow
+          label="Total final"
+          value={formatMoney(workOrder.finalTotal)}
+        />
+      </DetailSheet>
 
-                  <h2
-                    id="work-order-receipt-heading"
-                    className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
-                  >
-                    Recibo interno
-                  </h2>
+      <WorkOrderCustomerSummary customer={customer} />
 
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                    Generá un comprobante interno tipo talonario con los datos actuales de
-                    la orden. No reemplaza factura ni documentación fiscal.
-                  </p>
-                </div>
-              </div>
+      {hasStructuredPartLines ? (
+        <WorkOrderStructuredPartsPanel partLines={partLines} />
+      ) : null}
 
-              <div className="shrink-0">
-                {issuedReceipt ? (
-                  <Link
-                    href={`/receipts/${issuedReceipt.id}`}
-                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
-                  >
-                    <ReceiptText className="size-4 shrink-0" aria-hidden="true" />
-                    Ver recibo
-                  </Link>
-                ) : !isCancelled ? (
-                  <IssueReceiptButton workOrderId={workOrder.id} />
-                ) : (
-                  <p className="rounded-2xl border border-border-strong bg-surface-muted px-4 py-3 text-sm font-semibold text-muted-foreground">
-                    Las órdenes anuladas no pueden emitir recibo.
-                  </p>
-                )}
-              </div>
+      <section
+        aria-labelledby="work-order-receipt-heading"
+        className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-primary">
+              <ReceiptText className="size-5" aria-hidden="true" />
             </div>
 
-            {issuedReceipt ? (
-              <p className="mt-5 rounded-2xl border border-border-strong bg-surface-muted px-4 py-3 text-sm font-semibold leading-6 text-foreground">
-                Esta orden ya tiene un recibo interno emitido. Para conservar trazabilidad,
-                el recibo queda como snapshot y no se modifica aunque la orden cambie.
+            <div className="min-w-0">
+              <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+                Cobro
               </p>
-            ) : null}
-          </section>
 
-          <WorkOrderAppointmentsPanel
-            workOrder={workOrder}
-            appointments={linkedAppointmentsPage.data}
-          />
+              <h2
+                id="work-order-receipt-heading"
+                className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
+              >
+                Recibo interno
+              </h2>
 
-          {!isClosed ? (
-            <section
-              aria-labelledby="work-order-status-heading"
-              className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
-            >
-              <div className="flex items-start gap-3">
-                <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-primary">
-                  <ListChecks className="size-5" aria-hidden="true" />
-                </div>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                Generá un comprobante interno tipo talonario con los datos actuales de
+                la orden. No reemplaza factura ni documentación fiscal.
+              </p>
+            </div>
+          </div>
 
-                <div className="min-w-0">
-                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
-                    Flujo operativo
-                  </p>
-
-                  <h2
-                    id="work-order-status-heading"
-                    className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
-                  >
-                    Actualizar estado
-                  </h2>
-
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                    Cambiá el estado de la orden cuando el trabajo avance dentro
-                    del taller.
-                  </p>
-                </div>
-              </div>
-
-              <UpdateWorkOrderStatusForm
-                workOrderId={workOrder.id}
-                currentStatus={workOrder.status}
-              />
-            </section>
-          ) : null}
-
-          <WorkOrderTimeline events={workOrder.events ?? []} />
-
-          <WorkOrderCriticalZone
-            workOrderId={workOrder.id}
-            isClosed={isClosed}
-            isDelivered={isDelivered}
-            isCancelled={isCancelled}
-          />
+          <div className="shrink-0">
+            {issuedReceipt ? (
+              <Link
+                href={`/receipts/${issuedReceipt.id}`}
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
+              >
+                <ReceiptText className="size-4 shrink-0" aria-hidden="true" />
+                Ver recibo
+              </Link>
+            ) : !isCancelled ? (
+              <IssueReceiptButton workOrderId={workOrder.id} />
+            ) : (
+              <p className="rounded-2xl border border-border-strong bg-surface-muted px-4 py-3 text-sm font-semibold text-muted-foreground">
+                Las órdenes anuladas no pueden emitir recibo.
+              </p>
+            )}
+          </div>
         </div>
 
-        <aside className="min-w-0 space-y-6 xl:h-fit xl:self-start">
-          <DetailSheet
-            headingId="work-order-vehicle-heading"
-            title="Vehículo"
-            action={
-              <Link
-                href={`/vehicles/${vehicle.id}`}
-                className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
+        {issuedReceipt ? (
+          <p className="mt-5 rounded-2xl border border-border-strong bg-surface-muted px-4 py-3 text-sm font-semibold leading-6 text-foreground">
+            Esta orden ya tiene un recibo interno emitido. Para conservar trazabilidad,
+            el recibo queda como snapshot y no se modifica aunque la orden cambie.
+          </p>
+        ) : null}
+      </section>
+
+      <WorkOrderAppointmentsPanel
+        workOrder={workOrder}
+        appointments={linkedAppointmentsPage.data}
+      />
+
+      {!isClosed ? (
+        <section
+          aria-labelledby="work-order-status-heading"
+          className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
+        >
+          <div className="flex items-start gap-3">
+            <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-primary">
+              <ListChecks className="size-5" aria-hidden="true" />
+            </div>
+
+            <div className="min-w-0">
+              <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+                Flujo operativo
+              </p>
+
+              <h2
+                id="work-order-status-heading"
+                className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
               >
-                <CarFront className="size-3.5 shrink-0" aria-hidden="true" />
-                Abrir ficha
-              </Link>
-            }
+                Actualizar estado
+              </h2>
+
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                Cambiá el estado de la orden cuando el trabajo avance dentro
+                del taller.
+              </p>
+            </div>
+          </div>
+
+          <UpdateWorkOrderStatusForm
+            workOrderId={workOrder.id}
+            currentStatus={workOrder.status}
+          />
+        </section>
+      ) : null}
+
+      <WorkOrderTimeline events={workOrder.events ?? []} />
+
+      <WorkOrderCriticalZone
+        workOrderId={workOrder.id}
+        isClosed={isClosed}
+        isDelivered={isDelivered}
+        isCancelled={isCancelled}
+      />
+    </section>
+  );
+}
+
+type WorkOrderCustomerSummaryProps = {
+  customer: WorkOrder["vehicle"]["customer"];
+};
+
+/**
+ * Horizontal customer summary placed before the purchase planilla.
+ */
+function WorkOrderCustomerSummary({
+  customer,
+}: WorkOrderCustomerSummaryProps) {
+  return (
+    <section
+      aria-labelledby="work-order-customer-heading"
+      className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-5 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-6"
+    >
+      <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="inline-flex items-center gap-2 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+            <UserRound className="size-4 shrink-0" aria-hidden="true" />
+            Ficha técnica
+          </p>
+          <h2
+            id="work-order-customer-heading"
+            className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
           >
-            <DetailSheetRow label="Patente" value={vehicle.licensePlate} />
-            <DetailSheetRow label="Marca" value={vehicle.brand} />
-            <DetailSheetRow label="Modelo" value={vehicle.model} />
-            <DetailSheetRow
-              label="Año"
-              value={vehicle.year ? vehicle.year.toString() : "Sin cargar"}
-            />
-            <DetailSheetRow
-              label="Kilometraje"
-              value={formatMileage(vehicle.mileage)}
-            />
-          </DetailSheet>
+            Cliente
+          </h2>
+        </div>
 
-          <DetailSheet
-            headingId="work-order-customer-heading"
-            title="Cliente"
-            action={
-              <Link
-                href={`/customers/${customer.id}`}
-                className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
-              >
-                <UserRound className="size-3.5 shrink-0" aria-hidden="true" />
-                Ver cliente
-              </Link>
-            }
-          >
-            <DetailSheetRow label="Nombre" value={customer.fullName} />
-
-            <DetailSheetRow
-              label="Teléfono"
-              value={customer.phone ?? "Sin teléfono"}
-            />
-
-            <DetailSheetRow
-              label="Email"
-              value={
-                <BreakableDetailValue value={customer.email ?? "Sin email"} />
-              }
-            />
-          </DetailSheet>
-        </aside>
+        <Link
+          href={`/customers/${customer.id}`}
+          className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
+        >
+          <UserRound className="size-3.5 shrink-0" aria-hidden="true" />
+          Ver cliente
+        </Link>
       </div>
+
+      <dl className="mt-5 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border border-border bg-surface-muted/85 p-4">
+          <dt className="text-[0.62rem] font-black uppercase tracking-[0.16em] text-primary">
+            Nombre
+          </dt>
+          <dd className="mt-2 wrap-anywhere text-sm font-black text-foreground">
+            {customer.fullName}
+          </dd>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-surface-muted/85 p-4">
+          <dt className="text-[0.62rem] font-black uppercase tracking-[0.16em] text-primary">
+            Teléfono
+          </dt>
+          <dd className="mt-2 wrap-anywhere text-sm font-black text-foreground">
+            {customer.phone ?? "Sin teléfono"}
+          </dd>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-surface-muted/85 p-4">
+          <dt className="text-[0.62rem] font-black uppercase tracking-[0.16em] text-primary">
+            Email
+          </dt>
+          <dd className="mt-2 wrap-anywhere text-sm font-black text-foreground">
+            <BreakableDetailValue value={customer.email ?? "Sin email"} />
+          </dd>
+        </div>
+      </dl>
     </section>
   );
 }
