@@ -4,7 +4,7 @@ import Link from "next/link";
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { Pagination } from "../../../components/ui/Pagination";
 import { SearchForm } from "../../../components/ui/SearchForm";
-import { SupplierCard } from "../../../features/suppliers/components/SupplierCard";
+import { SuppliersTable } from "../../../features/suppliers/components/SuppliersTable";
 import { getPaginatedSuppliers } from "../../../features/suppliers/suppliers.server";
 import {
   SUPPLIER_ARCHIVE_STATUSES,
@@ -122,15 +122,7 @@ export default async function SuppliersPage({ searchParams }: SuppliersPageProps
 
         {suppliers.length > 0 ? (
           <>
-            <div className="grid gap-3.5">
-              {suppliers.map((supplier, index) => (
-                <SupplierCard
-                  key={supplier.id}
-                  supplier={supplier}
-                  variant={index % 2 === 0 ? "accent" : "neutral"}
-                />
-              ))}
-            </div>
+            <SuppliersTable suppliers={suppliers} />
 
             <Pagination
               basePath="/suppliers"
