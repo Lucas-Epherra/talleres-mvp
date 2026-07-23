@@ -230,42 +230,70 @@ export default async function WorkOrderDetailPage({
         </DetailSheet>
       </div>
 
-      <DetailSheet
-        headingId="work-order-costs-heading"
-        title="Fechas, kilometraje y costos"
-      >
-        <DetailSheetRow
-          label="Ingreso"
-          value={formatDate(workOrder.entryDate)}
-        />
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
+        <DetailSheet
+          headingId="work-order-costs-heading"
+          title="Fechas, kilometraje y costos"
+        >
+          <DetailSheetRow
+            label="Ingreso"
+            value={formatDate(workOrder.entryDate)}
+          />
 
-        <DetailSheetRow
-          label="Entrega"
-          value={formatDate(workOrder.deliveryDate)}
-        />
+          <DetailSheetRow
+            label="Entrega"
+            value={formatDate(workOrder.deliveryDate)}
+          />
 
-        <DetailSheetRow
-          label="Km ingreso"
-          value={formatMileage(workOrder.entryMileage)}
-        />
+          <DetailSheetRow
+            label="Km ingreso"
+            value={formatMileage(workOrder.entryMileage)}
+          />
 
-        <DetailSheetRow
-          label="Mano de obra"
-          value={formatMoney(workOrder.laborCost)}
-        />
+          <DetailSheetRow
+            label="Mano de obra"
+            value={formatMoney(workOrder.laborCost)}
+          />
 
-        <DetailSheetRow
-          label="Repuestos al cliente"
-          value={formatMoney(workOrder.partsCost)}
-        />
+          <DetailSheetRow
+            label="Repuestos al cliente"
+            value={formatMoney(workOrder.partsCost)}
+          />
 
-        <DetailSheetRow
-          label="Total final"
-          value={formatMoney(workOrder.finalTotal)}
-        />
-      </DetailSheet>
+          <DetailSheetRow
+            label="Total final"
+            value={formatMoney(workOrder.finalTotal)}
+          />
+        </DetailSheet>
 
-      <WorkOrderCustomerSummary customer={customer} />
+        <DetailSheet
+          headingId="work-order-customer-heading"
+          title="Cliente asociado"
+          action={
+            <Link
+              href={`/customers/${customer.id}`}
+              className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
+            >
+              <UserRound className="size-3.5 shrink-0" aria-hidden="true" />
+              Ver cliente
+            </Link>
+          }
+        >
+          <DetailSheetRow label="Nombre" value={customer.fullName} />
+
+          <DetailSheetRow
+            label="Teléfono"
+            value={customer.phone ?? "Sin teléfono"}
+          />
+
+          <DetailSheetRow
+            label="Email"
+            value={
+              <BreakableDetailValue value={customer.email ?? "Sin email"} />
+            }
+          />
+        </DetailSheet>
+      </div>
 
       {hasStructuredPartLines ? (
         <WorkOrderStructuredPartsPanel partLines={partLines} />
@@ -376,76 +404,6 @@ export default async function WorkOrderDetailPage({
         isDelivered={isDelivered}
         isCancelled={isCancelled}
       />
-    </section>
-  );
-}
-
-type WorkOrderCustomerSummaryProps = {
-  customer: WorkOrder["vehicle"]["customer"];
-};
-
-/**
- * Horizontal customer summary placed before the purchase planilla.
- */
-function WorkOrderCustomerSummary({
-  customer,
-}: WorkOrderCustomerSummaryProps) {
-  return (
-    <section
-      aria-labelledby="work-order-customer-heading"
-      className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-5 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-6"
-    >
-      <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="inline-flex items-center gap-2 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
-            <UserRound className="size-4 shrink-0" aria-hidden="true" />
-            Ficha técnica
-          </p>
-          <h2
-            id="work-order-customer-heading"
-            className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
-          >
-            Cliente
-          </h2>
-        </div>
-
-        <Link
-          href={`/customers/${customer.id}`}
-          className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
-        >
-          <UserRound className="size-3.5 shrink-0" aria-hidden="true" />
-          Ver cliente
-        </Link>
-      </div>
-
-      <dl className="mt-5 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-border bg-surface-muted/85 p-4">
-          <dt className="text-[0.62rem] font-black uppercase tracking-[0.16em] text-primary">
-            Nombre
-          </dt>
-          <dd className="mt-2 wrap-anywhere text-sm font-black text-foreground">
-            {customer.fullName}
-          </dd>
-        </div>
-
-        <div className="rounded-2xl border border-border bg-surface-muted/85 p-4">
-          <dt className="text-[0.62rem] font-black uppercase tracking-[0.16em] text-primary">
-            Teléfono
-          </dt>
-          <dd className="mt-2 wrap-anywhere text-sm font-black text-foreground">
-            {customer.phone ?? "Sin teléfono"}
-          </dd>
-        </div>
-
-        <div className="rounded-2xl border border-border bg-surface-muted/85 p-4">
-          <dt className="text-[0.62rem] font-black uppercase tracking-[0.16em] text-primary">
-            Email
-          </dt>
-          <dd className="mt-2 wrap-anywhere text-sm font-black text-foreground">
-            <BreakableDetailValue value={customer.email ?? "Sin email"} />
-          </dd>
-        </div>
-      </dl>
     </section>
   );
 }
