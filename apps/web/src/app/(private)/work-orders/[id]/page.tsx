@@ -16,6 +16,7 @@ import {
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { ApiError } from "../../../../lib/api";
 import {
   formatDate,
@@ -38,10 +39,6 @@ import {
 } from "../../../../features/work-orders/components/WorkOrderDetailValues";
 import { getWorkOrder } from "../../../../features/work-orders/work-orders.server";
 import type { WorkOrder } from "../../../../features/work-orders/types";
-import {
-  DetailSheet,
-  DetailSheetRow,
-} from "../../../../components/ui/DetailSheet";
 
 type WorkOrderDetailPageProps = {
   params: Promise<{
@@ -157,143 +154,12 @@ export default async function WorkOrderDetailPage({
         </div>
       </header>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
-        <DetailSheet
-          headingId="work-order-description-heading"
-          title="Información del trabajo"
-        >
-          <DetailSheetRow
-            label="Problema reportado"
-            value={workOrder.reportedIssue}
-          />
-
-          <DetailSheetRow
-            label="Diagnóstico"
-            value={getReadableText(
-              workOrder.diagnosis,
-              "Diagnóstico pendiente",
-            )}
-          />
-
-          <DetailSheetRow
-            label="Trabajo realizado"
-            value={getReadableText(workOrder.workDone, "Trabajo pendiente")}
-          />
-
-          {!hasStructuredPartLines ? (
-            <DetailSheetRow
-              label="Repuestos usados"
-              value={
-                <WorkOrderPartsValue
-                  value={workOrder.partsUsed}
-                  fallback="Sin repuestos cargados"
-                />
-              }
-            />
-          ) : null}
-
-          <DetailSheetRow
-            label="Notas"
-            value={
-              <WorkOrderNotesValue
-                value={workOrder.notes}
-                fallback="Sin notas internas"
-              />
-            }
-          />
-        </DetailSheet>
-
-        <DetailSheet
-          headingId="work-order-vehicle-heading"
-          title="Vehículo"
-          action={
-            <Link
-              href={`/vehicles/${vehicle.id}`}
-              className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
-            >
-              <CarFront className="size-3.5 shrink-0" aria-hidden="true" />
-              Abrir ficha
-            </Link>
-          }
-        >
-          <DetailSheetRow label="Patente" value={vehicle.licensePlate} />
-          <DetailSheetRow label="Marca" value={vehicle.brand} />
-          <DetailSheetRow label="Modelo" value={vehicle.model} />
-          <DetailSheetRow
-            label="Año"
-            value={vehicle.year ? vehicle.year.toString() : "Sin cargar"}
-          />
-          <DetailSheetRow
-            label="Kilometraje"
-            value={formatMileage(vehicle.mileage)}
-          />
-        </DetailSheet>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
-        <DetailSheet
-          headingId="work-order-costs-heading"
-          title="Fechas, kilometraje y costos"
-        >
-          <DetailSheetRow
-            label="Ingreso"
-            value={formatDate(workOrder.entryDate)}
-          />
-
-          <DetailSheetRow
-            label="Entrega"
-            value={formatDate(workOrder.deliveryDate)}
-          />
-
-          <DetailSheetRow
-            label="Km ingreso"
-            value={formatMileage(workOrder.entryMileage)}
-          />
-
-          <DetailSheetRow
-            label="Mano de obra"
-            value={formatMoney(workOrder.laborCost)}
-          />
-
-          <DetailSheetRow
-            label="Repuestos al cliente"
-            value={formatMoney(workOrder.partsCost)}
-          />
-
-          <DetailSheetRow
-            label="Total final"
-            value={formatMoney(workOrder.finalTotal)}
-          />
-        </DetailSheet>
-
-        <DetailSheet
-          headingId="work-order-customer-heading"
-          title="Cliente asociado"
-          action={
-            <Link
-              href={`/customers/${customer.id}`}
-              className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
-            >
-              <UserRound className="size-3.5 shrink-0" aria-hidden="true" />
-              Ver cliente
-            </Link>
-          }
-        >
-          <DetailSheetRow label="Nombre" value={customer.fullName} />
-
-          <DetailSheetRow
-            label="Teléfono"
-            value={customer.phone ?? "Sin teléfono"}
-          />
-
-          <DetailSheetRow
-            label="Email"
-            value={
-              <BreakableDetailValue value={customer.email ?? "Sin email"} />
-            }
-          />
-        </DetailSheet>
-      </div>
+      <WorkOrderTechnicalSheet
+        workOrder={workOrder}
+        vehicle={vehicle}
+        customer={customer}
+        hasStructuredPartLines={hasStructuredPartLines}
+      />
 
       {hasStructuredPartLines ? (
         <WorkOrderStructuredPartsPanel partLines={partLines} />
@@ -405,6 +271,277 @@ export default async function WorkOrderDetailPage({
         isCancelled={isCancelled}
       />
     </section>
+  );
+}
+
+type WorkOrderTechnicalSheetProps = {
+  workOrder: WorkOrder;
+  vehicle: WorkOrder["vehicle"];
+  customer: WorkOrder["vehicle"]["customer"];
+  hasStructuredPartLines: boolean;
+};
+
+/**
+ * Unified operational sheet for the work order.
+ *
+ * Related technical, vehicle, financial and customer data share one container
+ * so workshop administrators can scan the record as a single document.
+ */
+function WorkOrderTechnicalSheet({
+  workOrder,
+  vehicle,
+  customer,
+  hasStructuredPartLines,
+}: WorkOrderTechnicalSheetProps) {
+  return (
+    <section
+      aria-labelledby="work-order-technical-sheet-heading"
+      className="overflow-hidden rounded-[1.35rem] border border-border bg-surface shadow-(--shadow-industrial) ring-1 ring-white/3"
+    >
+      <header className="flex flex-col gap-4 border-b border-border bg-linear-to-r from-surface via-surface to-surface-elevated px-5 py-5 sm:flex-row sm:items-start sm:justify-between sm:px-6">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-primary">
+            <ClipboardCheck className="size-5" aria-hidden="true" />
+          </div>
+
+          <div className="min-w-0">
+            <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+              Ficha técnica
+            </p>
+
+            <h2
+              id="work-order-technical-sheet-heading"
+              className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
+            >
+              Ficha operativa de la orden
+            </h2>
+
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+              Información técnica, vehículo, cliente, fechas y valores reunidos
+              en una única ficha de consulta.
+            </p>
+          </div>
+        </div>
+
+        <p className="inline-flex w-fit shrink-0 items-center rounded-full border border-border-strong bg-surface-muted px-3 py-2 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+          Orden #{workOrder.orderNumber}
+        </p>
+      </header>
+
+      <div className="grid lg:grid-cols-[minmax(0,1fr)_340px]">
+        <TechnicalSheetSection
+          eyebrow="Trabajo operativo"
+          title="Información del trabajo"
+          className="border-b border-border lg:border-r"
+        >
+          <TechnicalSheetRow
+            label="Problema reportado"
+            value={workOrder.reportedIssue}
+          />
+          <TechnicalSheetRow
+            label="Diagnóstico"
+            value={getReadableText(
+              workOrder.diagnosis,
+              "Diagnóstico pendiente",
+            )}
+          />
+          <TechnicalSheetRow
+            label="Trabajo realizado"
+            value={getReadableText(workOrder.workDone, "Trabajo pendiente")}
+          />
+          {!hasStructuredPartLines ? (
+            <TechnicalSheetRow
+              label="Repuestos usados"
+              value={
+                <WorkOrderPartsValue
+                  value={workOrder.partsUsed}
+                  fallback="Sin repuestos cargados"
+                />
+              }
+            />
+          ) : null}
+          <TechnicalSheetRow
+            label="Notas"
+            value={
+              <WorkOrderNotesValue
+                value={workOrder.notes}
+                fallback="Sin notas internas"
+              />
+            }
+            last
+          />
+        </TechnicalSheetSection>
+
+        <TechnicalSheetSection
+          eyebrow="Activo asociado"
+          title="Vehículo"
+          action={
+            <Link
+              href={`/vehicles/${vehicle.id}`}
+              className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
+            >
+              <CarFront className="size-3.5 shrink-0" aria-hidden="true" />
+              Abrir ficha
+            </Link>
+          }
+          className="border-b border-border"
+        >
+          <TechnicalSheetRow label="Patente" value={vehicle.licensePlate} />
+          <TechnicalSheetRow label="Marca" value={vehicle.brand} />
+          <TechnicalSheetRow label="Modelo" value={vehicle.model} />
+          <TechnicalSheetRow
+            label="Año"
+            value={vehicle.year ? vehicle.year.toString() : "Sin cargar"}
+          />
+          <TechnicalSheetRow
+            label="Kilometraje"
+            value={formatMileage(vehicle.mileage)}
+            last
+          />
+        </TechnicalSheetSection>
+
+        <TechnicalSheetSection
+          eyebrow="Control económico"
+          title="Fechas, kilometraje y costos"
+          className="border-b border-border lg:border-b-0 lg:border-r"
+        >
+          <TechnicalSheetRow
+            label="Ingreso"
+            value={formatDate(workOrder.entryDate)}
+          />
+          <TechnicalSheetRow
+            label="Entrega"
+            value={formatDate(workOrder.deliveryDate)}
+          />
+          <TechnicalSheetRow
+            label="Km ingreso"
+            value={formatMileage(workOrder.entryMileage)}
+          />
+          <TechnicalSheetRow
+            label="Mano de obra"
+            value={formatMoney(workOrder.laborCost)}
+          />
+          <TechnicalSheetRow
+            label="Repuestos al cliente"
+            value={formatMoney(workOrder.partsCost)}
+          />
+          <TechnicalSheetRow
+            label="Total final"
+            value={formatMoney(workOrder.finalTotal)}
+            emphasis
+            last
+          />
+        </TechnicalSheetSection>
+
+        <TechnicalSheetSection
+          eyebrow="Responsable de la orden"
+          title="Cliente asociado"
+          action={
+            <Link
+              href={`/customers/${customer.id}`}
+              className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
+            >
+              <UserRound className="size-3.5 shrink-0" aria-hidden="true" />
+              Ver cliente
+            </Link>
+          }
+        >
+          <TechnicalSheetRow label="Nombre" value={customer.fullName} />
+          <TechnicalSheetRow
+            label="Teléfono"
+            value={customer.phone ?? "Sin teléfono"}
+          />
+          <TechnicalSheetRow
+            label="Email"
+            value={
+              <BreakableDetailValue value={customer.email ?? "Sin email"} />
+            }
+            last
+          />
+        </TechnicalSheetSection>
+      </div>
+    </section>
+  );
+}
+
+type TechnicalSheetSectionProps = {
+  eyebrow: string;
+  title: string;
+  action?: ReactNode;
+  className?: string;
+  children: ReactNode;
+};
+
+/**
+ * One semantic area inside the unified technical sheet.
+ */
+function TechnicalSheetSection({
+  eyebrow,
+  title,
+  action,
+  className,
+  children,
+}: TechnicalSheetSectionProps) {
+  return (
+    <section className={className}>
+      <div className="flex min-h-20 flex-col gap-3 border-b border-border bg-surface-elevated/35 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="min-w-0">
+          <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-primary">
+            {eyebrow}
+          </p>
+          <h3 className="mt-1.5 font-display text-base font-black uppercase tracking-[0.04em] text-foreground">
+            {title}
+          </h3>
+        </div>
+
+        {action ? <div className="shrink-0">{action}</div> : null}
+      </div>
+
+      <dl>{children}</dl>
+    </section>
+  );
+}
+
+type TechnicalSheetRowProps = {
+  label: string;
+  value: ReactNode;
+  emphasis?: boolean;
+  last?: boolean;
+};
+
+/**
+ * Planilla-style label/value row used throughout the technical sheet.
+ */
+function TechnicalSheetRow({
+  label,
+  value,
+  emphasis = false,
+  last = false,
+}: TechnicalSheetRowProps) {
+  return (
+    <div
+      className={`grid min-h-12 grid-cols-[minmax(8.5rem,0.36fr)_minmax(0,1fr)] ${
+        last ? "" : "border-b border-border"
+      }`}
+    >
+      <dt
+        className={`flex items-center bg-surface-muted/55 px-4 py-3 text-[0.62rem] font-bold uppercase tracking-[0.18em] sm:px-5 ${
+          emphasis ? "text-primary" : "text-muted-foreground"
+        }`}
+      >
+        {label}
+      </dt>
+
+      <dd
+        className={`min-w-0 px-4 py-3 text-sm leading-6 sm:px-5 ${
+          emphasis
+            ? "bg-primary/5 font-black text-foreground"
+            : "font-medium text-foreground"
+        }`}
+      >
+        {value}
+      </dd>
+    </div>
   );
 }
 
