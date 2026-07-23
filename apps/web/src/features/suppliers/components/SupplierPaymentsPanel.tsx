@@ -61,6 +61,8 @@ export function SupplierPaymentsPanel({
 }: SupplierPaymentsPanelProps) {
   const [mode, setMode] = useState<PaymentMode>("list");
   const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
+  const editingPayment =
+    initialPayments.find((payment) => payment.id === editingPaymentId) ?? null;
   const activePaymentsCount = initialPayments.filter(
     (payment) => !payment.voidedAt,
   ).length;
@@ -71,57 +73,34 @@ export function SupplierPaymentsPanel({
   return (
     <section
       aria-labelledby="supplier-payments-heading"
-      className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-5 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-6"
+      className="overflow-hidden rounded-[1.35rem] border border-border bg-surface shadow-(--shadow-industrial) ring-1 ring-white/3"
     >
-      <div className="flex flex-col gap-4 border-b border-border pb-5 lg:flex-row lg:items-start lg:justify-between">
+      <header className="flex flex-col gap-4 border-b border-border px-5 py-5 sm:flex-row sm:items-start sm:justify-between sm:px-6">
         <div className="min-w-0">
-          <p className="inline-flex items-center gap-2 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
-            <ReceiptText className="size-4 shrink-0" aria-hidden="true" />
-            Pagos
-          </p>
+          <div className="flex items-start gap-3">
+            <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-primary">
+              <ReceiptText className="size-5" aria-hidden="true" />
+            </div>
 
-          <h2
-            id="supplier-payments-heading"
-            className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
-          >
-            Pagos al proveedor
-          </h2>
+            <div className="min-w-0">
+              <h2
+                id="supplier-payments-heading"
+                className="font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
+              >
+                Pagos al proveedor
+              </h2>
 
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Registrá pagos reales, referencias y correcciones. Este historial
-            alimenta la deuda del proveedor sin borrar movimientos anteriores.
-          </p>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+                Historial financiero de{" "}
+                <span className="font-semibold text-foreground">
+                  {supplierName}
+                </span>
+                . Los pagos registrados reducen el saldo pendiente sin eliminar
+                movimientos anteriores.
+              </p>
+            </div>
+          </div>
         </div>
-
-        <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[27rem]">
-          <PaymentMetric label="Abonado" value={formatMoney(paidTotal)} />
-          <PaymentMetric
-            label="Saldo pendiente"
-            value={formatMoney(pendingBalance)}
-            tone={Number(pendingBalance) > 0 ? "warning" : "neutral"}
-          />
-          <PaymentMetric
-            label="Movimientos"
-            value={initialMeta.totalItems.toString()}
-          />
-        </div>
-      </div>
-
-      {isSupplierArchived ? (
-        <p className="mt-5 rounded-2xl border border-warning/45 bg-warning/10 px-4 py-3 text-sm font-semibold leading-6 text-foreground">
-          Este proveedor está archivado. Restauralo antes de registrar o corregir
-          pagos.
-        </p>
-      ) : null}
-
-      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm leading-6 text-muted-foreground">
-          Historial financiero de{" "}
-          <span className="font-semibold text-foreground">{supplierName}</span>.
-          {voidedPaymentsCount > 0
-            ? ` Hay ${voidedPaymentsCount} pago${voidedPaymentsCount === 1 ? "" : "s"} anulado${voidedPaymentsCount === 1 ? "" : "s"}.`
-            : ""}
-        </p>
 
         {!isSupplierArchived ? (
           <button
@@ -134,8 +113,8 @@ export function SupplierPaymentsPanel({
             }}
             className={
               mode === "create"
-                ? "inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated"
-                : "inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover"
+                ? "inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated"
+                : "inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover"
             }
           >
             {mode === "create" ? (
@@ -146,39 +125,69 @@ export function SupplierPaymentsPanel({
             {mode === "create" ? "Cerrar carga" : "Registrar pago"}
           </button>
         ) : null}
-      </div>
+      </header>
 
-      <div className="mt-5 grid gap-2 sm:grid-cols-3">
-        <PaymentMiniMetric label="Activos" value={activePaymentsCount} />
-        <PaymentMiniMetric label="Anulados" value={voidedPaymentsCount} />
-        <PaymentMiniMetric label="Mostrados" value={initialPayments.length} />
-      </div>
+      <dl className="grid border-b border-border bg-surface-muted/35 sm:grid-cols-2 xl:grid-cols-4">
+        <PaymentSummaryMetric label="Abonado" value={formatMoney(paidTotal)} />
+        <PaymentSummaryMetric
+          label="Saldo pendiente"
+          value={formatMoney(pendingBalance)}
+          tone={Number(pendingBalance) > 0 ? "warning" : "neutral"}
+        />
+        <PaymentSummaryMetric
+          label="Registrados"
+          value={activePaymentsCount.toString()}
+        />
+        <PaymentSummaryMetric
+          label="Anulados"
+          value={voidedPaymentsCount.toString()}
+          last
+        />
+      </dl>
 
-      {mode === "create" ? (
-        <div className="mt-5">
-          <SupplierPaymentForm
-            supplierId={supplierId}
-            mode="create"
-            onCancel={() => setMode("list")}
-            onSaved={() => setMode("list")}
-          />
-        </div>
-      ) : null}
+      <div className="p-4 sm:p-5">
+        {isSupplierArchived ? (
+          <p className="rounded-2xl border border-warning/45 bg-warning/10 px-4 py-3 text-sm font-semibold leading-6 text-foreground">
+            Este proveedor está archivado. Restauralo antes de registrar o
+            corregir pagos.
+          </p>
+        ) : null}
 
-      {initialPayments.length > 0 ? (
-        <div className="mt-5 grid gap-3">
-          {initialPayments.map((payment) => (
-            <div key={payment.id}>
-              {editingPaymentId === payment.id ? (
-                <SupplierPaymentForm
-                  supplierId={supplierId}
-                  mode="edit"
-                  payment={payment}
-                  onCancel={() => setEditingPaymentId(null)}
-                  onSaved={() => setEditingPaymentId(null)}
-                />
-              ) : (
+        {mode === "create" ? (
+          <div className={isSupplierArchived ? "mt-5" : ""}>
+            <SupplierPaymentForm
+              supplierId={supplierId}
+              mode="create"
+              onCancel={() => setMode("list")}
+              onSaved={() => setMode("list")}
+            />
+          </div>
+        ) : null}
+
+        {editingPayment ? (
+          <div className={mode === "create" || isSupplierArchived ? "mt-5" : ""}>
+            <SupplierPaymentForm
+              supplierId={supplierId}
+              mode="edit"
+              payment={editingPayment}
+              onCancel={() => setEditingPaymentId(null)}
+              onSaved={() => setEditingPaymentId(null)}
+            />
+          </div>
+        ) : null}
+
+        {initialPayments.length > 0 ? (
+          <div
+            className={
+              mode === "create" || editingPayment || isSupplierArchived
+                ? "mt-5"
+                : ""
+            }
+          >
+            <div className="grid gap-3 xl:hidden">
+              {initialPayments.map((payment) => (
                 <SupplierPaymentCard
+                  key={payment.id}
                   supplierId={supplierId}
                   payment={payment}
                   isSupplierArchived={isSupplierArchived}
@@ -187,68 +196,229 @@ export function SupplierPaymentsPanel({
                     setEditingPaymentId(payment.id);
                   }}
                 />
-              )}
+              ))}
             </div>
-          ))}
-        </div>
-      ) : mode !== "create" ? (
-        <EmptyPaymentsState canCreate={!isSupplierArchived} />
-      ) : null}
 
-      {initialMeta.totalItems > initialPayments.length ? (
-        <p className="mt-4 rounded-2xl border border-border bg-surface-muted/70 px-4 py-3 text-sm leading-6 text-muted-foreground">
-          Se muestran {initialPayments.length} de {initialMeta.totalItems} pagos.
-          Más adelante agregaremos búsqueda y paginación dedicada de pagos.
-        </p>
-      ) : null}
+            <div className="hidden overflow-hidden rounded-2xl border border-border xl:block">
+              <table className="w-full table-fixed border-collapse text-left">
+                <caption className="sr-only">
+                  Historial de pagos del proveedor {supplierName}
+                </caption>
+
+                <thead className="bg-surface-muted/70">
+                  <tr className="border-b border-border">
+                    <PaymentTableHeading className="w-[13%]">
+                      Fecha
+                    </PaymentTableHeading>
+                    <PaymentTableHeading className="w-[16%]">
+                      Método
+                    </PaymentTableHeading>
+                    <PaymentTableHeading className="w-[31%]">
+                      Referencia y notas
+                    </PaymentTableHeading>
+                    <PaymentTableHeading align="right" className="w-[15%]">
+                      Importe
+                    </PaymentTableHeading>
+                    <PaymentTableHeading className="w-[12%]">
+                      Estado
+                    </PaymentTableHeading>
+                    <PaymentTableHeading align="right" className="w-[13%]">
+                      Acciones
+                    </PaymentTableHeading>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-border">
+                  {initialPayments.map((payment) => (
+                    <SupplierPaymentRow
+                      key={payment.id}
+                      supplierId={supplierId}
+                      payment={payment}
+                      isSupplierArchived={isSupplierArchived}
+                      onEdit={() => {
+                        setMode("list");
+                        setEditingPaymentId(payment.id);
+                      }}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : mode !== "create" ? (
+          <EmptyPaymentsState canCreate={!isSupplierArchived} />
+        ) : null}
+
+        {initialMeta.totalItems > initialPayments.length ? (
+          <p className="mt-4 rounded-2xl border border-border bg-surface-muted/70 px-4 py-3 text-sm leading-6 text-muted-foreground">
+            Se muestran {initialPayments.length} de {initialMeta.totalItems} pagos.
+            Más adelante agregaremos búsqueda y paginación dedicada.
+          </p>
+        ) : null}
+      </div>
     </section>
   );
 }
 
-type PaymentMetricProps = {
+function PaymentSummaryMetric({
+  label,
+  value,
+  tone = "neutral",
+  last = false,
+}: {
   label: string;
   value: string;
   tone?: "neutral" | "warning";
-};
-
-/**
- * Header metric for supplier payments.
- */
-function PaymentMetric({ label, value, tone = "neutral" }: PaymentMetricProps) {
+  last?: boolean;
+}) {
   return (
     <div
-      className={
-        tone === "warning"
-          ? "rounded-2xl border border-warning/45 bg-warning/10 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
-          : "rounded-2xl border border-border bg-surface-muted/85 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
-      }
+      className={buildClassName(
+        "min-w-0 px-5 py-4 sm:px-6",
+        !last && "border-b border-border sm:border-b-0 sm:border-r",
+        tone === "warning" && "bg-warning/5.5",
+      )}
     >
-      <p
-        className={
-          tone === "warning"
-            ? "text-[0.62rem] font-black uppercase tracking-[0.16em] text-warning"
-            : "text-[0.62rem] font-black uppercase tracking-[0.16em] text-primary"
-        }
+      <dt
+        className={buildClassName(
+          "text-[0.6rem] font-black uppercase tracking-[0.16em]",
+          tone === "warning" ? "text-warning" : "text-muted-foreground",
+        )}
       >
         {label}
-      </p>
-      <p className="mt-1 wrap-anywhere font-display text-lg font-black text-foreground">
+      </dt>
+      <dd className="mt-1.5 truncate font-display text-lg font-black tabular-nums text-foreground">
         {value}
-      </p>
+      </dd>
     </div>
   );
 }
 
-function PaymentMiniMetric({ label, value }: { label: string; value: number }) {
+function SupplierPaymentRow({
+  supplierId,
+  payment,
+  isSupplierArchived,
+  onEdit,
+}: SupplierPaymentCardProps) {
+  const isVoided = Boolean(payment.voidedAt);
+
   return (
-    <div className="rounded-2xl border border-border bg-surface-muted/65 px-3 py-2">
-      <p className="text-[0.58rem] font-black uppercase tracking-[0.16em] text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-1 font-display text-base font-black text-foreground">
-        {value}
-      </p>
-    </div>
+    <tr
+      className={buildClassName(
+        "align-middle transition-colors",
+        isVoided
+          ? "bg-surface-muted/45 text-muted-foreground"
+          : "bg-surface hover:bg-primary/2.5",
+      )}
+    >
+      <PaymentTableCell>
+        <p className="text-xs font-black text-foreground">
+          {formatDate(payment.paidAt)}
+        </p>
+        <p className="mt-1 text-[0.66rem] font-semibold text-muted-foreground">
+          Cargado {formatDateTime(payment.createdAt)}
+        </p>
+      </PaymentTableCell>
+
+      <PaymentTableCell>
+        <PaymentMethodBadge method={payment.method} />
+        <p className="mt-1.5 text-[0.66rem] font-semibold text-muted-foreground">
+          {payment.createdByUser?.name ?? "Sistema"}
+        </p>
+      </PaymentTableCell>
+
+      <PaymentTableCell>
+        <p className="wrap-anywhere text-xs font-black text-foreground">
+          {payment.reference ? `Ref. ${payment.reference}` : "Sin referencia"}
+        </p>
+        <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+          {payment.notes ?? "Sin notas internas."}
+        </p>
+        {isVoided && payment.voidedReason ? (
+          <p className="mt-1.5 line-clamp-2 text-xs font-semibold leading-5 text-warning">
+            Motivo: {payment.voidedReason}
+          </p>
+        ) : null}
+      </PaymentTableCell>
+
+      <PaymentTableCell align="right">
+        <span className="whitespace-nowrap text-sm font-black tabular-nums text-foreground">
+          {formatMoney(payment.amount)}
+        </span>
+      </PaymentTableCell>
+
+      <PaymentTableCell>
+        <PaymentStatusBadge isVoided={isVoided} />
+      </PaymentTableCell>
+
+      <PaymentTableCell align="right">
+        {!isSupplierArchived && !isVoided ? (
+          <div className="inline-flex items-center justify-end gap-1.5">
+            <button
+              type="button"
+              onClick={onEdit}
+              aria-label={`Corregir pago de ${formatMoney(payment.amount)}`}
+              title="Corregir pago"
+              className="grid size-9 place-items-center rounded-xl border border-border-strong bg-surface text-foreground transition hover:border-primary/60 hover:text-primary"
+            >
+              <Pencil className="size-4" aria-hidden="true" />
+            </button>
+
+            <VoidSupplierPaymentButton
+              supplierId={supplierId}
+              paymentId={payment.id}
+              compact
+            />
+          </div>
+        ) : (
+          <span className="text-xs font-semibold text-muted-foreground">
+            Sin acciones
+          </span>
+        )}
+      </PaymentTableCell>
+    </tr>
+  );
+}
+
+function PaymentTableHeading({
+  children,
+  align = "left",
+  className,
+}: {
+  children: ReactNode;
+  align?: "left" | "right";
+  className?: string;
+}) {
+  return (
+    <th
+      scope="col"
+      className={buildClassName(
+        "px-4 py-3.5 text-[0.56rem] font-black uppercase tracking-[0.14em] text-muted-foreground",
+        align === "right" ? "text-right" : "text-left",
+        className,
+      )}
+    >
+      {children}
+    </th>
+  );
+}
+
+function PaymentTableCell({
+  children,
+  align = "left",
+}: {
+  children: ReactNode;
+  align?: "left" | "right";
+}) {
+  return (
+    <td
+      className={buildClassName(
+        "px-4 py-4",
+        align === "right" ? "text-right" : "text-left",
+      )}
+    >
+      {children}
+    </td>
   );
 }
 
@@ -487,7 +657,7 @@ type SupplierPaymentCardProps = {
 };
 
 /**
- * Read-only payment movement card.
+ * Compact payment movement card used below desktop width.
  */
 function SupplierPaymentCard({
   supplierId,
@@ -500,74 +670,70 @@ function SupplierPaymentCard({
   return (
     <article
       className={buildClassName(
-        "rounded-2xl border p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition",
+        "overflow-hidden rounded-2xl border",
         isVoided
-          ? "border-border bg-surface-muted/55 opacity-80"
-          : "border-border bg-surface-muted/85 hover:border-primary/35",
+          ? "border-border bg-surface-muted/45"
+          : "border-border bg-surface",
       )}
     >
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+      <div className="flex flex-col gap-3 border-b border-border px-4 py-3.5 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <PaymentMethodBadge method={payment.method} />
             <PaymentStatusBadge isVoided={isVoided} />
           </div>
 
-          <p className="mt-3 font-display text-xl font-black text-foreground">
+          <p className="mt-3 font-display text-xl font-black tabular-nums text-foreground">
             {formatMoney(payment.amount)}
           </p>
 
           <p className="mt-1 text-xs font-semibold text-muted-foreground">
-            Pagado el {formatDate(payment.paidAt)} · Registrado {formatDateTime(payment.createdAt)}
+            Pagado el {formatDate(payment.paidAt)}
           </p>
-
-          {payment.reference ? (
-            <p className="mt-3 text-sm font-semibold text-foreground">
-              Ref. {payment.reference}
-            </p>
-          ) : null}
-
-          {payment.notes ? (
-            <p className="mt-2 whitespace-pre-line text-sm leading-6 text-muted-foreground">
-              {payment.notes}
-            </p>
-          ) : null}
-
-          {isVoided ? (
-            <p className="mt-3 rounded-2xl border border-warning/45 bg-warning/10 px-4 py-3 text-sm font-semibold leading-6 text-foreground">
-              Pago anulado{payment.voidedAt ? ` el ${formatDate(payment.voidedAt)}` : ""}.
-              {payment.voidedReason ? ` Motivo: ${payment.voidedReason}` : ""}
-            </p>
-          ) : null}
         </div>
 
-        <div className="grid gap-3 xl:min-w-[22rem]">
-          <div className="grid gap-2 sm:grid-cols-2">
-            <PaymentDatum label="Método" value={formatPaymentMethod(payment.method)} />
-            <PaymentDatum
-              label="Registró"
-              value={payment.createdByUser?.name ?? "Sistema"}
+        {!isSupplierArchived && !isVoided ? (
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={onEdit}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:text-primary"
+            >
+              <Pencil className="size-4 shrink-0" aria-hidden="true" />
+              Corregir
+            </button>
+
+            <VoidSupplierPaymentButton
+              supplierId={supplierId}
+              paymentId={payment.id}
             />
           </div>
+        ) : null}
+      </div>
 
-          {!isSupplierArchived && !isVoided ? (
-            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={onEdit}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated"
-              >
-                <Pencil className="size-4 shrink-0" aria-hidden="true" />
-                Corregir
-              </button>
+      <dl className="grid sm:grid-cols-2">
+        <PaymentDatum
+          label="Referencia"
+          value={payment.reference ?? "Sin referencia"}
+        />
+        <PaymentDatum
+          label="Registró"
+          value={payment.createdByUser?.name ?? "Sistema"}
+        />
+      </dl>
 
-              <VoidSupplierPaymentButton
-                supplierId={supplierId}
-                paymentId={payment.id}
-              />
-            </div>
-          ) : null}
-        </div>
+      <div className="border-t border-border bg-surface-muted/40 px-4 py-3">
+        <p className="text-sm leading-6 text-muted-foreground">
+          {payment.notes ?? "Sin notas internas."}
+        </p>
+
+        {isVoided ? (
+          <p className="mt-2 text-sm font-semibold leading-6 text-warning">
+            Pago anulado
+            {payment.voidedAt ? ` el ${formatDate(payment.voidedAt)}` : ""}.
+            {payment.voidedReason ? ` Motivo: ${payment.voidedReason}` : ""}
+          </p>
+        ) : null}
       </div>
     </article>
   );
@@ -575,13 +741,13 @@ function SupplierPaymentCard({
 
 function PaymentDatum({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border bg-surface px-3 py-2">
-      <p className="text-[0.58rem] font-black uppercase tracking-[0.16em] text-muted-foreground">
+    <div className="min-w-0 border-b border-border px-4 py-3 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0">
+      <dt className="text-[0.58rem] font-black uppercase tracking-[0.16em] text-muted-foreground">
         {label}
-      </p>
-      <p className="mt-1 truncate text-xs font-black text-foreground">
+      </dt>
+      <dd className="mt-1.5 wrap-anywhere text-xs font-black text-foreground">
         {value}
-      </p>
+      </dd>
     </div>
   );
 }
@@ -589,9 +755,11 @@ function PaymentDatum({ label, value }: { label: string; value: string }) {
 function VoidSupplierPaymentButton({
   supplierId,
   paymentId,
+  compact = false,
 }: {
   supplierId: string;
   paymentId: string;
+  compact?: boolean;
 }) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
@@ -629,61 +797,124 @@ function VoidSupplierPaymentButton({
     }
   }
 
-  if (!isOpen) {
-    return (
+  return (
+    <>
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-warning/45 bg-warning/10 px-4 text-sm font-bold text-foreground transition hover:border-warning"
+        aria-label="Anular pago"
+        title="Anular pago"
+        className={
+          compact
+            ? "grid size-9 place-items-center rounded-xl border border-warning/45 bg-warning/10 text-warning transition hover:border-warning"
+            : "inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-warning/45 bg-warning/10 px-4 text-sm font-bold text-foreground transition hover:border-warning"
+        }
       >
         <Archive className="size-4 shrink-0" aria-hidden="true" />
-        Anular
+        {compact ? <span className="sr-only">Anular</span> : "Anular"}
       </button>
-    );
-  }
 
-  return (
-    <form
-      onSubmit={handleSubmit}
-      className="rounded-2xl border border-border bg-surface p-3 sm:min-w-[22rem]"
-      noValidate
-    >
-      <label className="block text-xs font-bold text-foreground">
-        Motivo de anulación
-      </label>
-      <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-        <input
-          value={reason}
-          onChange={(event) => setReason(event.target.value)}
-          placeholder="Ej: Pago cargado por error."
-          className="h-10 min-w-0 flex-1 rounded-xl border border-border-strong bg-surface-muted px-3 text-sm text-foreground outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20"
-        />
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isSubmitting ? "Anulando..." : "Confirmar"}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setIsOpen(false);
-            setReason("");
-            setErrorMessage(null);
+      {isOpen ? (
+        <div
+          role="presentation"
+          className="fixed inset-0 z-50 grid place-items-center bg-black/55 p-4"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target && !isSubmitting) {
+              setIsOpen(false);
+              setReason("");
+              setErrorMessage(null);
+            }
           }}
-          className="inline-flex h-10 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-foreground transition hover:border-primary/60"
         >
-          Cerrar
-        </button>
-      </div>
+          <form
+            onSubmit={handleSubmit}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="void-supplier-payment-heading"
+            className="w-full max-w-lg rounded-[1.35rem] border border-border bg-surface p-5 shadow-2xl sm:p-6"
+            noValidate
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-border pb-4">
+              <div>
+                <p className="text-[0.62rem] font-black uppercase tracking-[0.18em] text-warning">
+                  Corrección financiera
+                </p>
+                <h3
+                  id="void-supplier-payment-heading"
+                  className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
+                >
+                  Anular pago
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  El movimiento se conservará en el historial y dejará de
+                  descontarse de la deuda del proveedor.
+                </p>
+              </div>
 
-      {errorMessage ? (
-        <p className="mt-2 text-xs font-semibold text-primary" role="alert">
-          {errorMessage}
-        </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  setReason("");
+                  setErrorMessage(null);
+                }}
+                disabled={isSubmitting}
+                aria-label="Cerrar"
+                className="grid size-9 shrink-0 place-items-center rounded-xl border border-border-strong bg-surface-muted text-foreground transition hover:border-primary/60"
+              >
+                <X className="size-4" aria-hidden="true" />
+              </button>
+            </div>
+
+            <label
+              htmlFor={`void-supplier-payment-${paymentId}`}
+              className="mt-5 block text-sm font-bold text-foreground"
+            >
+              Motivo de anulación
+            </label>
+            <textarea
+              id={`void-supplier-payment-${paymentId}`}
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              rows={4}
+              placeholder="Ej: Pago cargado por error."
+              className="mt-2 w-full resize-y rounded-xl border border-border-strong bg-surface-muted px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+
+            {errorMessage ? (
+              <p
+                className="mt-3 rounded-xl border border-primary/35 bg-primary/10 px-3 py-2 text-sm font-semibold text-foreground"
+                role="alert"
+              >
+                {errorMessage}
+              </p>
+            ) : null}
+
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row-reverse">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSubmitting ? "Anulando..." : "Confirmar anulación"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  setReason("");
+                  setErrorMessage(null);
+                }}
+                disabled={isSubmitting}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
       ) : null}
-    </form>
+    </>
   );
 }
 
@@ -733,7 +964,7 @@ function PaymentMethodBadge({ method }: { method: SupplierPaymentMethod }) {
 function PaymentStatusBadge({ isVoided }: { isVoided: boolean }) {
   if (isVoided) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-warning/35 bg-warning/10 px-2.5 py-1 text-[0.6rem] font-black uppercase tracking-[0.14em] text-warning">
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-warning/35 bg-warning/10 px-2.5 py-1 text-[0.58rem] font-black uppercase tracking-[0.13em] text-warning">
         <Archive className="size-3" aria-hidden="true" />
         Anulado
       </span>
@@ -741,9 +972,9 @@ function PaymentStatusBadge({ isVoided }: { isVoided: boolean }) {
   }
 
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-[0.6rem] font-black uppercase tracking-[0.14em] text-muted-foreground">
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-[0.58rem] font-black uppercase tracking-[0.13em] text-muted-foreground">
       <CalendarClock className="size-3" aria-hidden="true" />
-      Activo
+      Registrado
     </span>
   );
 }
