@@ -45,7 +45,7 @@ export const metadata: Metadata = {
 /**
  * Supplier detail page.
  *
- * Shows the supplier profile, financial summary, categories and recent activity.
+ * Shows the supplier profile, full-width catalog, linked purchases, payments and audit trail.
  */
 export default async function SupplierDetailPage({ params }: SupplierDetailPageProps) {
   const { id } = await params;
@@ -121,34 +121,34 @@ export default async function SupplierDetailPage({ params }: SupplierDetailPageP
 
       <SupplierMetricsGrid supplier={supplier} />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
-        <div className="min-w-0 space-y-6">
-          <SupplierDataSection supplier={supplier} />
-          <SupplierPartsCatalog
-            supplierId={supplier.id}
-            supplierName={supplier.name}
-            categories={categoriesResponse.data}
-            initialParts={partsResponse.data}
-            initialMeta={partsResponse.meta}
-            isSupplierArchived={isArchived}
-          />
-          <SupplierPurchasesSection lines={supplier.workOrderPartLines} />
-          <SupplierPaymentsPanel
-            supplierId={supplier.id}
-            supplierName={supplier.name}
-            initialPayments={paymentsResponse.data}
-            initialMeta={paymentsResponse.meta}
-            paidTotal={supplier.metrics.paidTotal}
-            pendingBalance={supplier.metrics.pendingBalance}
-            isSupplierArchived={isArchived}
-          />
-        </div>
-
-        <aside className="space-y-6">
-          <SupplierCategoriesSection categories={supplier.categories} />
-          <SupplierEventsSection events={supplier.events} />
-        </aside>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
+        <SupplierDataSection supplier={supplier} />
+        <SupplierCategoriesSection categories={supplier.categories} />
       </div>
+
+      <SupplierPartsCatalog
+        supplierId={supplier.id}
+        supplierName={supplier.name}
+        categories={categoriesResponse.data}
+        initialParts={partsResponse.data}
+        initialMeta={partsResponse.meta}
+        isSupplierArchived={isArchived}
+      />
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
+        <SupplierPurchasesSection lines={supplier.workOrderPartLines} />
+        <SupplierEventsSection events={supplier.events} />
+      </div>
+
+      <SupplierPaymentsPanel
+        supplierId={supplier.id}
+        supplierName={supplier.name}
+        initialPayments={paymentsResponse.data}
+        initialMeta={paymentsResponse.meta}
+        paidTotal={supplier.metrics.paidTotal}
+        pendingBalance={supplier.metrics.pendingBalance}
+        isSupplierArchived={isArchived}
+      />
 
       <SupplierArchiveActions
         supplierId={supplier.id}
@@ -274,7 +274,7 @@ function SupplierDataSection({ supplier }: SupplierDataSectionProps) {
         <DetailDatum label="Email" value={supplier.email ?? "Sin email"} />
         <DetailDatum label="CUIT / ID fiscal" value={supplier.taxId ?? "Sin cargar"} />
         <DetailDatum label="Dirección" value={supplier.address ?? "Sin dirección"} />
-        <DetailDatum label="Estado" value={supplier.archivedAt ? "Archivado" : "Activo"} />
+        <DetailDatum label="Disponibilidad" value={supplier.archivedAt ? "Archivado" : "Disponible"} />
         <DetailDatum label="Actualizado" value={formatDateTime(supplier.updatedAt)} />
       </dl>
 
@@ -354,53 +354,132 @@ function SupplierPurchasesSection({
   return (
     <section
       aria-labelledby="supplier-purchases-heading"
-      className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
+      className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-5 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-6"
     >
-      <SectionHeading
-        eyebrow="Compras"
-        headingId="supplier-purchases-heading"
-        title="Órdenes vinculadas"
-        description="Líneas de repuestos comprados a este proveedor y asociados a órdenes de trabajo."
-      />
+      <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+            Compras
+          </p>
+          <h2
+            id="supplier-purchases-heading"
+            className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
+          >
+            Órdenes vinculadas
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+            Repuestos comprados a este proveedor y asociados a órdenes de trabajo.
+          </p>
+        </div>
+
+        <span className="inline-flex w-fit items-center rounded-full border border-border bg-surface-muted/75 px-3 py-1.5 text-xs font-black text-foreground">
+          {lines.length} registro{lines.length === 1 ? "" : "s"}
+        </span>
+      </div>
 
       {lines.length > 0 ? (
-        <div className="mt-5 grid gap-3">
-          {lines.map((line) => (
-            <Link
-              key={line.id}
-              href={`/work-orders/${line.workOrder.id}`}
-              className="block rounded-2xl border border-border bg-surface-muted/85 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition hover:border-primary/45 hover:bg-surface-elevated"
-            >
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div className="min-w-0">
-                  <p className="inline-flex items-center gap-2 text-[0.65rem] font-bold uppercase tracking-[0.18em] text-primary">
-                    <ClipboardList className="size-3.5" aria-hidden="true" />
-                    Orden #{line.workOrder.orderNumber} · {formatWorkOrderStatus(line.workOrder.status)}
-                  </p>
+        <>
+          <div className="mt-5 grid gap-3 xl:hidden">
+            {lines.map((line) => (
+              <Link
+                key={line.id}
+                href={`/work-orders/${line.workOrder.id}`}
+                className="block rounded-2xl border border-border bg-surface-muted/75 p-4 transition hover:border-primary/35 hover:bg-surface-elevated"
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="inline-flex items-center gap-2 text-[0.62rem] font-black uppercase tracking-[0.16em] text-primary">
+                      <ClipboardList className="size-3.5" aria-hidden="true" />
+                      Orden #{line.workOrder.orderNumber} · {formatWorkOrderStatus(line.workOrder.status)}
+                    </p>
+                    <p className="mt-2 wrap-anywhere text-sm font-black text-foreground">
+                      {line.partNameSnapshot}
+                    </p>
+                    <p className="mt-1 text-xs font-semibold leading-5 text-muted-foreground">
+                      {line.workOrder.vehicle.licensePlate} · {line.workOrder.vehicle.brand} {line.workOrder.vehicle.model} · {line.workOrder.vehicle.customer.fullName}
+                    </p>
+                  </div>
 
-                  <p className="mt-2 wrap-anywhere text-sm font-black text-foreground">
-                    {line.partNameSnapshot}
-                  </p>
-
-                  <p className="mt-1 text-xs font-semibold text-muted-foreground">
-                    {line.workOrder.vehicle.licensePlate} · {line.workOrder.vehicle.brand} {line.workOrder.vehicle.model} · {line.workOrder.vehicle.customer.fullName}
-                  </p>
+                  <div className="grid shrink-0 gap-2 sm:min-w-64 sm:grid-cols-3">
+                    <MiniMoney label="Costo" value={line.supplierSubtotal} />
+                    <MiniMoney label="Cliente" value={line.customerSubtotal} />
+                    <MiniMoney label="Margen" value={line.grossProfit} />
+                  </div>
                 </div>
+              </Link>
+            ))}
+          </div>
 
-                <div className="grid shrink-0 gap-2 sm:grid-cols-3 lg:min-w-80">
-                  <MiniMoney label="Costo" value={line.supplierSubtotal} />
-                  <MiniMoney label="Cliente" value={line.customerSubtotal} />
-                  <MiniMoney label="Margen" value={line.grossProfit} />
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+          <div className="mt-5 hidden overflow-hidden rounded-2xl border border-border bg-surface xl:block">
+            <table className="w-full table-fixed border-collapse text-left">
+              <caption className="sr-only">
+                Planilla de órdenes vinculadas al proveedor
+              </caption>
+              <thead className="bg-surface-muted/75">
+                <tr className="border-b border-border">
+                  <th className="w-[17%] px-3 py-3.5 text-[0.56rem] font-black uppercase tracking-[0.14em] text-muted-foreground">Orden</th>
+                  <th className="w-[25%] px-3 py-3.5 text-[0.56rem] font-black uppercase tracking-[0.14em] text-muted-foreground">Repuesto</th>
+                  <th className="w-[24%] px-3 py-3.5 text-[0.56rem] font-black uppercase tracking-[0.14em] text-muted-foreground">Vehículo / cliente</th>
+                  <th className="w-[11%] px-3 py-3.5 text-right text-[0.56rem] font-black uppercase tracking-[0.14em] text-muted-foreground">Costo</th>
+                  <th className="w-[12%] px-3 py-3.5 text-right text-[0.56rem] font-black uppercase tracking-[0.14em] text-muted-foreground">Cliente</th>
+                  <th className="w-[11%] px-3 py-3.5 text-right text-[0.56rem] font-black uppercase tracking-[0.14em] text-muted-foreground">Margen</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {lines.map((line, index) => (
+                  <tr
+                    key={line.id}
+                    className={index % 2 === 0 ? "bg-surface transition-colors hover:bg-primary/[0.035]" : "bg-surface-muted/18 transition-colors hover:bg-primary/[0.035]"}
+                  >
+                    <td className="px-3 py-3.5">
+                      <Link
+                        href={`/work-orders/${line.workOrder.id}`}
+                        className="inline-flex flex-col font-black text-foreground transition hover:text-primary"
+                      >
+                        <span>#{line.workOrder.orderNumber}</span>
+                        <span className="mt-1 text-[0.58rem] uppercase tracking-[0.12em] text-muted-foreground">
+                          {formatWorkOrderStatus(line.workOrder.status)}
+                        </span>
+                      </Link>
+                    </td>
+                    <td className="px-3 py-3.5">
+                      <p className="wrap-anywhere text-xs font-black text-foreground">
+                        {line.partNameSnapshot}
+                      </p>
+                      {line.supplierPart?.sku ? (
+                        <p className="mt-1 text-[0.66rem] font-semibold text-muted-foreground">
+                          SKU {line.supplierPart.sku}
+                        </p>
+                      ) : null}
+                    </td>
+                    <td className="px-3 py-3.5">
+                      <p className="text-xs font-bold text-foreground">
+                        {line.workOrder.vehicle.licensePlate} · {line.workOrder.vehicle.brand} {line.workOrder.vehicle.model}
+                      </p>
+                      <p className="mt-1 truncate text-[0.66rem] font-semibold text-muted-foreground">
+                        {line.workOrder.vehicle.customer.fullName}
+                      </p>
+                    </td>
+                    <td className="px-3 py-3.5 text-right text-xs font-black tabular-nums text-foreground">
+                      {formatMoney(line.supplierSubtotal)}
+                    </td>
+                    <td className="px-3 py-3.5 text-right text-xs font-black tabular-nums text-foreground">
+                      {formatMoney(line.customerSubtotal)}
+                    </td>
+                    <td className="px-3 py-3.5 text-right text-xs font-black tabular-nums text-primary">
+                      {formatMoney(line.grossProfit)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       ) : (
         <ModulePlaceholder
           eyebrow="Compras preparadas"
           title="Sin compras vinculadas"
-          description="Cuando conectemos repuestos estructurados con órdenes, este historial mostrará costo proveedor, precio cliente y margen por cada línea."
+          description="Cuando cargues repuestos estructurados en órdenes, este historial mostrará costo proveedor, precio cliente y margen por línea."
         />
       )}
     </section>
