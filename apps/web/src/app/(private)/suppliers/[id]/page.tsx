@@ -121,10 +121,7 @@ export default async function SupplierDetailPage({ params }: SupplierDetailPageP
 
       <SupplierMetricsGrid supplier={supplier} />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
-        <SupplierDataSection supplier={supplier} />
-        <SupplierCategoriesSection categories={supplier.categories} />
-      </div>
+      <SupplierDataSection supplier={supplier} />
 
       <SupplierPartsCatalog
         supplierId={supplier.id}
@@ -280,6 +277,29 @@ function SupplierDataSection({ supplier }: SupplierDataSectionProps) {
 
       <div className="mt-3 rounded-2xl border border-border bg-surface-muted/85 p-4">
         <p className="text-[0.65rem] font-bold uppercase tracking-[0.18em] text-primary">
+          Categorías
+        </p>
+
+        {supplier.categories.length > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {supplier.categories.map((category) => (
+              <span
+                key={category.id}
+                className="rounded-full border border-border-strong bg-surface px-3 py-1.5 text-[0.62rem] font-black uppercase tracking-[0.14em] text-muted-foreground"
+              >
+                {category.name}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Este proveedor todavía no tiene categorías asignadas.
+          </p>
+        )}
+      </div>
+
+      <div className="mt-3 rounded-2xl border border-border bg-surface-muted/85 p-4">
+        <p className="text-[0.65rem] font-bold uppercase tracking-[0.18em] text-primary">
           Notas
         </p>
         <p className="mt-2 whitespace-pre-line text-sm leading-6 text-muted-foreground">
@@ -303,46 +323,6 @@ function DetailDatum({ label, value }: { label: string; value: string }) {
         {value}
       </dd>
     </div>
-  );
-}
-
-function SupplierCategoriesSection({
-  categories,
-}: {
-  categories: Supplier["categories"];
-}) {
-  return (
-    <section
-      aria-labelledby="supplier-categories-heading"
-      className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-5 shadow-(--shadow-industrial) ring-1 ring-white/3"
-    >
-      <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
-        Clasificación
-      </p>
-      <h2
-        id="supplier-categories-heading"
-        className="mt-2 font-display text-lg font-black uppercase tracking-[0.04em] text-foreground"
-      >
-        Categorías
-      </h2>
-
-      {categories.length > 0 ? (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {categories.map((category) => (
-            <span
-              key={category.id}
-              className="rounded-full border border-border-strong bg-surface-muted px-3 py-1.5 text-[0.66rem] font-black uppercase tracking-[0.16em] text-muted-foreground"
-            >
-              {category.name}
-            </span>
-          ))}
-        </div>
-      ) : (
-        <p className="mt-4 rounded-2xl border border-dashed border-border bg-surface-muted/70 px-4 py-4 text-sm leading-6 text-muted-foreground">
-          Este proveedor todavía no tiene categorías asignadas.
-        </p>
-      )}
-    </section>
   );
 }
 

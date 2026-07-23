@@ -37,8 +37,8 @@ export function SuppliersTable({ suppliers }: SuppliersTableProps) {
 
           <thead className="bg-surface-muted/75">
             <tr className="border-b border-border">
-              <TableHeading className="w-[27%]">Proveedor</TableHeading>
-              <TableHeading className="w-[19%]">Categorías</TableHeading>
+              <TableHeading className="w-[29%]">Proveedor</TableHeading>
+              <TableHeading className="w-[17%]">Categorías</TableHeading>
               <TableHeading align="right" className="w-[11%]">
                 Comprado
               </TableHeading>
@@ -130,7 +130,7 @@ function SupplierTableRow({
         <div className="flex flex-wrap gap-1.5">
           {supplier.categories.length > 0 ? (
             <>
-              {supplier.categories.slice(0, 3).map((category) => (
+              {supplier.categories.slice(0, 1).map((category) => (
                 <span
                   key={category.id}
                   className="inline-flex max-w-full truncate rounded-full border border-border-strong bg-surface-muted/80 px-2.5 py-1 text-[0.57rem] font-black uppercase tracking-[0.11em] text-muted-foreground"
@@ -139,9 +139,9 @@ function SupplierTableRow({
                 </span>
               ))}
 
-              {supplier.categories.length > 3 ? (
+              {supplier.categories.length > 1 ? (
                 <span className="inline-flex rounded-full border border-border bg-surface px-2.5 py-1 text-[0.57rem] font-black uppercase tracking-[0.11em] text-muted-foreground">
-                  +{supplier.categories.length - 3}
+                  +{supplier.categories.length - 1}
                 </span>
               ) : null}
             </>
