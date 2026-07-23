@@ -293,6 +293,8 @@ function WorkOrderTechnicalSheet({
   customer,
   hasStructuredPartLines,
 }: WorkOrderTechnicalSheetProps) {
+  const partLines = workOrder.partLines ?? [];
+
   return (
     <section
       aria-labelledby="work-order-technical-sheet-heading"
@@ -305,20 +307,16 @@ function WorkOrderTechnicalSheet({
           </div>
 
           <div className="min-w-0">
-            <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
-              Ficha técnica
-            </p>
-
             <h2
               id="work-order-technical-sheet-heading"
-              className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
+              className="font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
             >
               Ficha operativa de la orden
             </h2>
 
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Información técnica, vehículo, cliente, fechas y valores reunidos
-              en una única ficha de consulta.
+              Resumen técnico, económico y administrativo para consultar la orden
+              sin recorrer pantallas separadas.
             </p>
           </div>
         </div>
@@ -330,7 +328,6 @@ function WorkOrderTechnicalSheet({
 
       <div className="grid lg:grid-cols-[minmax(0,1fr)_340px]">
         <TechnicalSheetSection
-          eyebrow="Trabajo operativo"
           title="Información del trabajo"
           className="border-b border-border lg:border-r"
         >
@@ -373,7 +370,6 @@ function WorkOrderTechnicalSheet({
         </TechnicalSheetSection>
 
         <TechnicalSheetSection
-          eyebrow="Activo asociado"
           title="Vehículo"
           action={
             <Link
@@ -401,7 +397,6 @@ function WorkOrderTechnicalSheet({
         </TechnicalSheetSection>
 
         <TechnicalSheetSection
-          eyebrow="Control económico"
           title="Fechas, kilometraje y costos"
           className="border-b border-border lg:border-b-0 lg:border-r"
         >
@@ -423,7 +418,16 @@ function WorkOrderTechnicalSheet({
           />
           <TechnicalSheetRow
             label="Repuestos al cliente"
-            value={formatMoney(workOrder.partsCost)}
+            value={
+              hasStructuredPartLines ? (
+                <WorkOrderPartCostsSummary
+                  partLines={partLines}
+                  total={workOrder.partsCost}
+                />
+              ) : (
+                formatMoney(workOrder.partsCost)
+              )
+            }
           />
           <TechnicalSheetRow
             label="Total final"
@@ -434,7 +438,6 @@ function WorkOrderTechnicalSheet({
         </TechnicalSheetSection>
 
         <TechnicalSheetSection
-          eyebrow="Responsable de la orden"
           title="Cliente asociado"
           action={
             <Link
@@ -464,8 +467,72 @@ function WorkOrderTechnicalSheet({
   );
 }
 
+type WorkOrderPartCostsSummaryProps = {
+  partLines: NonNullable<WorkOrder["partLines"]>;
+  total: WorkOrder["partsCost"];
+};
+
+/**
+ * Compact customer-price breakdown used inside the operational sheet.
+ *
+ * Names stay visible next to their charged subtotal so an administrator can
+ * understand the total without opening the complete purchases table below.
+ */
+function WorkOrderPartCostsSummary({
+  partLines,
+  total,
+}: WorkOrderPartCostsSummaryProps) {
+  return (
+    <div className="space-y-2.5">
+      {partLines.map((partLine) => (
+        <div
+          key={partLine.id}
+          className="flex items-start justify-between gap-4"
+        >
+          <div className="min-w-0">
+            <p className="wrap-anywhere font-semibold text-foreground">
+              {partLine.partNameSnapshot}
+            </p>
+            <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+              {formatPartQuantity(partLine.quantity)} × {formatMoney(partLine.customerUnitPrice)}
+            </p>
+          </div>
+
+          <p className="shrink-0 font-bold tabular-nums text-foreground">
+            {formatMoney(partLine.customerSubtotal)}
+          </p>
+        </div>
+      ))}
+
+      <div className="flex items-center justify-between gap-4 border-t border-border pt-2.5">
+        <span className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
+          Total repuestos
+        </span>
+        <strong className="shrink-0 tabular-nums text-foreground">
+          {formatMoney(total)}
+        </strong>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Formats decimal quantities returned by Prisma without displaying unnecessary
+ * trailing zeroes.
+ */
+function formatPartQuantity(value: string | number): string {
+  const quantity = Number(value);
+
+  if (!Number.isFinite(quantity)) {
+    return String(value);
+  }
+
+  return new Intl.NumberFormat("es-AR", {
+    maximumFractionDigits: 2,
+  }).format(quantity);
+}
+
 type TechnicalSheetSectionProps = {
-  eyebrow: string;
   title: string;
   action?: ReactNode;
   className?: string;
@@ -476,7 +543,6 @@ type TechnicalSheetSectionProps = {
  * One semantic area inside the unified technical sheet.
  */
 function TechnicalSheetSection({
-  eyebrow,
   title,
   action,
   className,
@@ -484,15 +550,10 @@ function TechnicalSheetSection({
 }: TechnicalSheetSectionProps) {
   return (
     <section className={className}>
-      <div className="flex min-h-20 flex-col gap-3 border-b border-border bg-surface-elevated/35 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div className="min-w-0">
-          <p className="text-[0.64rem] font-bold uppercase tracking-[0.2em] text-primary">
-            {eyebrow}
-          </p>
-          <h3 className="mt-1.5 font-display text-base font-black uppercase tracking-[0.04em] text-foreground">
-            {title}
-          </h3>
-        </div>
+      <div className="flex min-h-16 flex-col gap-3 border-b border-border bg-surface-elevated/30 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <h3 className="font-display text-base font-black uppercase tracking-[0.04em] text-foreground">
+          {title}
+        </h3>
 
         {action ? <div className="shrink-0">{action}</div> : null}
       </div>
