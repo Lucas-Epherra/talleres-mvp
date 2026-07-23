@@ -326,10 +326,66 @@ function WorkOrderTechnicalSheet({
         </p>
       </header>
 
-      <div className="grid lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid lg:grid-cols-2">
+        <TechnicalSheetSection
+          title="Vehículo"
+          action={
+            <Link
+              href={`/vehicles/${vehicle.id}`}
+              className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
+            >
+              <CarFront className="size-3.5 shrink-0" aria-hidden="true" />
+              Abrir ficha
+            </Link>
+          }
+          className="border-b border-border lg:border-r"
+        >
+          <TechnicalSheetRow label="Patente" value={vehicle.licensePlate} />
+          <TechnicalSheetRow
+            label="Marca / modelo"
+            value={`${vehicle.brand} ${vehicle.model}`}
+          />
+          <TechnicalSheetRow
+            label="Año"
+            value={vehicle.year ? vehicle.year.toString() : "Sin cargar"}
+          />
+          <TechnicalSheetRow
+            label="Kilometraje"
+            value={formatMileage(vehicle.mileage)}
+            last
+          />
+        </TechnicalSheetSection>
+
+        <TechnicalSheetSection
+          title="Cliente asociado"
+          action={
+            <Link
+              href={`/customers/${customer.id}`}
+              className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
+            >
+              <UserRound className="size-3.5 shrink-0" aria-hidden="true" />
+              Ver cliente
+            </Link>
+          }
+          className="border-b border-border"
+        >
+          <TechnicalSheetRow label="Nombre" value={customer.fullName} />
+          <TechnicalSheetRow
+            label="Teléfono"
+            value={customer.phone ?? "Sin teléfono"}
+          />
+          <TechnicalSheetRow
+            label="Email"
+            value={
+              <BreakableDetailValue value={customer.email ?? "Sin email"} />
+            }
+            last
+          />
+        </TechnicalSheetSection>
+
         <TechnicalSheetSection
           title="Información del trabajo"
-          className="border-b border-border lg:border-r"
+          className="border-b border-border lg:col-span-2"
         >
           <TechnicalSheetRow
             label="Problema reportado"
@@ -370,35 +426,8 @@ function WorkOrderTechnicalSheet({
         </TechnicalSheetSection>
 
         <TechnicalSheetSection
-          title="Vehículo"
-          action={
-            <Link
-              href={`/vehicles/${vehicle.id}`}
-              className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
-            >
-              <CarFront className="size-3.5 shrink-0" aria-hidden="true" />
-              Abrir ficha
-            </Link>
-          }
-          className="border-b border-border"
-        >
-          <TechnicalSheetRow label="Patente" value={vehicle.licensePlate} />
-          <TechnicalSheetRow label="Marca" value={vehicle.brand} />
-          <TechnicalSheetRow label="Modelo" value={vehicle.model} />
-          <TechnicalSheetRow
-            label="Año"
-            value={vehicle.year ? vehicle.year.toString() : "Sin cargar"}
-          />
-          <TechnicalSheetRow
-            label="Kilometraje"
-            value={formatMileage(vehicle.mileage)}
-            last
-          />
-        </TechnicalSheetSection>
-
-        <TechnicalSheetSection
-          title="Fechas, kilometraje y costos"
-          className="border-b border-border lg:border-b-0 lg:border-r"
+          title="Fechas, kilometraje, repuestos y costos"
+          className="lg:col-span-2"
         >
           <TechnicalSheetRow
             label="Ingreso"
@@ -433,32 +462,6 @@ function WorkOrderTechnicalSheet({
             label="Total final"
             value={formatMoney(workOrder.finalTotal)}
             emphasis
-            last
-          />
-        </TechnicalSheetSection>
-
-        <TechnicalSheetSection
-          title="Cliente asociado"
-          action={
-            <Link
-              href={`/customers/${customer.id}`}
-              className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
-            >
-              <UserRound className="size-3.5 shrink-0" aria-hidden="true" />
-              Ver cliente
-            </Link>
-          }
-        >
-          <TechnicalSheetRow label="Nombre" value={customer.fullName} />
-          <TechnicalSheetRow
-            label="Teléfono"
-            value={customer.phone ?? "Sin teléfono"}
-          />
-          <TechnicalSheetRow
-            label="Email"
-            value={
-              <BreakableDetailValue value={customer.email ?? "Sin email"} />
-            }
             last
           />
         </TechnicalSheetSection>
