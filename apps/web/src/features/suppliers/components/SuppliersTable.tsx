@@ -1,8 +1,4 @@
-import {
-  Eye,
-  PackageSearch,
-  Pencil,
-} from "lucide-react";
+import { ArrowUpRight, PackageSearch, Pencil } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { formatMoney } from "../../../lib/format";
@@ -16,9 +12,9 @@ type SuppliersTableProps = {
 /**
  * Responsive supplier register.
  *
- * Desktop uses a compact planilla for fast comparison. Smaller screens keep
- * the card layout so financial data and actions remain legible without
- * horizontal scrolling.
+ * Desktop uses a restrained planilla for fast financial comparison. Smaller
+ * screens keep the card layout so actions remain usable without horizontal
+ * scrolling.
  */
 export function SuppliersTable({ suppliers }: SuppliersTableProps) {
   return (
@@ -39,10 +35,10 @@ export function SuppliersTable({ suppliers }: SuppliersTableProps) {
             Planilla comparativa de proveedores del taller
           </caption>
 
-          <thead className="bg-surface-muted/90">
+          <thead className="bg-surface-muted/75">
             <tr className="border-b border-border">
-              <TableHeading className="w-[24%]">Proveedor</TableHeading>
-              <TableHeading className="w-[17%]">Categorías</TableHeading>
+              <TableHeading className="w-[27%]">Proveedor</TableHeading>
+              <TableHeading className="w-[19%]">Categorías</TableHeading>
               <TableHeading align="right" className="w-[11%]">
                 Comprado
               </TableHeading>
@@ -55,15 +51,19 @@ export function SuppliersTable({ suppliers }: SuppliersTableProps) {
               <TableHeading align="right" className="w-[11%]">
                 Margen
               </TableHeading>
-              <TableHeading align="right" className="w-[16%]">
+              <TableHeading align="right" className="w-[11%]">
                 Acciones
               </TableHeading>
             </tr>
           </thead>
 
           <tbody className="divide-y divide-border">
-            {suppliers.map((supplier) => (
-              <SupplierTableRow key={supplier.id} supplier={supplier} />
+            {suppliers.map((supplier, index) => (
+              <SupplierTableRow
+                key={supplier.id}
+                supplier={supplier}
+                rowIndex={index}
+              />
             ))}
           </tbody>
         </table>
@@ -72,36 +72,44 @@ export function SuppliersTable({ suppliers }: SuppliersTableProps) {
   );
 }
 
-function SupplierTableRow({ supplier }: { supplier: SupplierListItem }) {
+function SupplierTableRow({
+  supplier,
+  rowIndex,
+}: {
+  supplier: SupplierListItem;
+  rowIndex: number;
+}) {
   const isArchived = Boolean(supplier.archivedAt);
   const pendingBalance = toNumber(supplier.metrics.pendingBalance);
   const hasDebt = pendingBalance > 0;
+  const workOrderLines = supplier._count.workOrderPartLines;
 
   return (
     <tr
       className={buildClassName(
-        "group align-top transition-colors hover:bg-surface-elevated/70",
-        isArchived ? "bg-surface-muted/35 text-muted-foreground" : "bg-surface",
+        "group align-middle transition-colors hover:bg-primary/[0.035]",
+        rowIndex % 2 === 0 ? "bg-surface" : "bg-surface-muted/18",
+        isArchived ? "text-muted-foreground opacity-80" : "",
       )}
     >
       <TableCell>
-        <div className="flex min-w-0 items-start gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <span
             aria-hidden="true"
             className={buildClassName(
-              "mt-1 h-10 w-1 shrink-0 rounded-full",
+              "h-11 w-1 shrink-0 rounded-full",
               isArchived
-                ? "bg-muted-foreground/45"
+                ? "bg-muted-foreground/35"
                 : hasDebt
-                  ? "bg-warning/75"
-                  : "bg-primary/50",
+                  ? "bg-warning/70"
+                  : "bg-primary/45",
             )}
           />
 
           <div className="min-w-0">
             <Link
               href={`/suppliers/${supplier.id}`}
-              className="wrap-anywhere font-display text-base font-black uppercase tracking-[0.03em] text-foreground transition group-hover:text-primary"
+              className="wrap-anywhere font-display text-[0.95rem] font-black uppercase tracking-wide text-foreground transition group-hover:text-primary"
             >
               {supplier.name}
             </Link>
@@ -110,9 +118,8 @@ function SupplierTableRow({ supplier }: { supplier: SupplierListItem }) {
               {supplier.contactName ?? supplier.phone ?? "Sin contacto cargado"}
             </p>
 
-            <p className="mt-2 text-[0.62rem] font-black uppercase tracking-[0.14em] text-muted-foreground">
-              {supplier._count.workOrderPartLines} línea
-              {supplier._count.workOrderPartLines === 1 ? "" : "s"} de orden
+            <p className="mt-1.5 text-[0.58rem] font-black uppercase tracking-[0.14em] text-muted-foreground">
+              {workOrderLines} línea{workOrderLines === 1 ? "" : "s"} de orden
               {isArchived ? " · Archivado" : ""}
             </p>
           </div>
@@ -126,14 +133,14 @@ function SupplierTableRow({ supplier }: { supplier: SupplierListItem }) {
               {supplier.categories.slice(0, 3).map((category) => (
                 <span
                   key={category.id}
-                  className="inline-flex max-w-full truncate rounded-full border border-border-strong bg-surface-muted px-2.5 py-1 text-[0.6rem] font-black uppercase tracking-[0.12em] text-muted-foreground"
+                  className="inline-flex max-w-full truncate rounded-full border border-border-strong bg-surface-muted/80 px-2.5 py-1 text-[0.57rem] font-black uppercase tracking-[0.11em] text-muted-foreground"
                 >
                   {category.name}
                 </span>
               ))}
 
               {supplier.categories.length > 3 ? (
-                <span className="inline-flex rounded-full border border-border bg-surface px-2.5 py-1 text-[0.6rem] font-black uppercase tracking-[0.12em] text-muted-foreground">
+                <span className="inline-flex rounded-full border border-border bg-surface px-2.5 py-1 text-[0.57rem] font-black uppercase tracking-[0.11em] text-muted-foreground">
                   +{supplier.categories.length - 3}
                 </span>
               ) : null}
@@ -154,38 +161,41 @@ function SupplierTableRow({ supplier }: { supplier: SupplierListItem }) {
       />
       <MoneyCell
         value={supplier.metrics.grossProfitTotal}
-        tone={toNumber(supplier.metrics.grossProfitTotal) > 0 ? "positive" : "neutral"}
+        tone={
+          toNumber(supplier.metrics.grossProfitTotal) > 0
+            ? "positive"
+            : "neutral"
+        }
       />
 
       <TableCell align="right">
-        <div className="ml-auto grid max-w-[11rem] gap-1.5">
+        <div className="ml-auto inline-flex items-center gap-1 rounded-xl border border-border bg-surface-muted/70 p-1">
           <Link
             href={`/suppliers/${supplier.id}`}
-            className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-bold text-white transition hover:bg-primary-hover"
+            aria-label={`Abrir ficha de ${supplier.name}`}
+            title="Abrir ficha"
+            className="inline-flex size-8 items-center justify-center rounded-lg bg-primary text-white transition hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
           >
-            <Eye className="size-3.5 shrink-0" aria-hidden="true" />
-            Ver ficha
+            <ArrowUpRight className="size-3.5" aria-hidden="true" />
           </Link>
 
-          <div className="grid grid-cols-2 gap-1.5">
-            <Link
-              href={`/suppliers/${supplier.id}/edit`}
-              aria-label={`Editar proveedor ${supplier.name}`}
-              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-border-strong bg-surface-muted px-2 text-xs font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
-            >
-              <Pencil className="size-3.5 shrink-0" aria-hidden="true" />
-              Editar
-            </Link>
+          <Link
+            href={`/suppliers/${supplier.id}/edit`}
+            aria-label={`Editar proveedor ${supplier.name}`}
+            title="Editar proveedor"
+            className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+          >
+            <Pencil className="size-3.5" aria-hidden="true" />
+          </Link>
 
-            <Link
-              href={`/suppliers/${supplier.id}#supplier-parts-heading`}
-              aria-label={`Ver repuestos de ${supplier.name}`}
-              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-border-strong bg-surface-muted px-2 text-xs font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
-            >
-              <PackageSearch className="size-3.5 shrink-0" aria-hidden="true" />
-              Catálogo
-            </Link>
-          </div>
+          <Link
+            href={`/suppliers/${supplier.id}#supplier-parts-heading`}
+            aria-label={`Ver catálogo de ${supplier.name}`}
+            title="Ver catálogo"
+            className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+          >
+            <PackageSearch className="size-3.5" aria-hidden="true" />
+          </Link>
         </div>
       </TableCell>
     </tr>
@@ -205,7 +215,7 @@ function TableHeading({
     <th
       scope="col"
       className={buildClassName(
-        "px-4 py-3 text-[0.62rem] font-black uppercase tracking-[0.16em] text-muted-foreground",
+        "px-4 py-3.5 text-[0.59rem] font-black uppercase tracking-[0.16em] text-muted-foreground",
         align === "right" ? "text-right" : "text-left",
         className,
       )}
@@ -225,7 +235,7 @@ function TableCell({
   return (
     <td
       className={buildClassName(
-        "px-4 py-4",
+        "px-4 py-3.5",
         align === "right" ? "text-right" : "text-left",
       )}
     >
@@ -260,10 +270,10 @@ function MoneyCell({
 }
 
 function toNumber(value: number | string | null | undefined): number {
-  const parsedValue = Number(value ?? 0);
+  const parsedValue = typeof value === "number" ? value : Number(value ?? 0);
   return Number.isFinite(parsedValue) ? parsedValue : 0;
 }
 
-function buildClassName(...classes: Array<string | false | null | undefined>): string {
+function buildClassName(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }

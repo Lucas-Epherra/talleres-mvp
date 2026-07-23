@@ -95,16 +95,10 @@ export function SupplierPartsCatalog({
           </p>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[26rem]">
+        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
           <CatalogMetric label="Disponibles" value={availablePartsCount.toString()} />
-          <CatalogMetric
-            label="Archivados"
-            value={archivedPartsCount.toString()}
-          />
-          <CatalogMetric
-            label="Mostrados"
-            value={initialMeta.totalItems.toString()}
-          />
+          <CatalogMetric label="Archivados" value={archivedPartsCount.toString()} />
+          <CatalogMetric label="Total" value={initialMeta.totalItems.toString()} />
         </div>
       </div>
 
@@ -192,13 +186,13 @@ type CatalogMetricProps = {
  */
 function CatalogMetric({ label, value }: CatalogMetricProps) {
   return (
-    <div className="rounded-2xl border border-border bg-surface-muted/85 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
-      <p className="text-[0.62rem] font-black uppercase tracking-[0.16em] text-primary">
+    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-muted/75 px-3 py-1.5">
+      <span className="text-[0.56rem] font-black uppercase tracking-[0.14em] text-muted-foreground">
         {label}
-      </p>
-      <p className="mt-1 font-display text-lg font-black text-foreground">
+      </span>
+      <span className="font-display text-sm font-black text-foreground">
         {value}
-      </p>
+      </span>
     </div>
   );
 }
@@ -570,8 +564,8 @@ type SupplierPartsResponsiveRegisterProps = {
 };
 
 /**
- * Uses a comparison-first table on desktop and operational cards on smaller
- * screens. Edit forms stay full width in both modes.
+ * Uses a compact comparison table when enough width is available and
+ * operational cards on smaller screens. Edit forms remain full-width.
  */
 function SupplierPartsResponsiveRegister({
   supplierId,
@@ -599,7 +593,7 @@ function SupplierPartsResponsiveRegister({
         </div>
       ) : null}
 
-      <div className="grid gap-3 lg:hidden">
+      <div className="grid gap-3 xl:hidden">
         {parts.map((part) => (
           <SupplierPartCard
             key={part.id}
@@ -611,38 +605,29 @@ function SupplierPartsResponsiveRegister({
         ))}
       </div>
 
-      <div className="hidden overflow-hidden rounded-2xl border border-border bg-surface lg:block">
+      <div className="hidden overflow-hidden rounded-2xl border border-border bg-surface xl:block">
         <table className="w-full table-fixed border-collapse text-left">
           <caption className="sr-only">
             Planilla de repuestos del proveedor
           </caption>
 
-          <thead className="bg-surface-muted/90">
+          <thead className="bg-surface-muted/75">
             <tr className="border-b border-border">
-              <CatalogTableHeading className="w-[25%]">Repuesto</CatalogTableHeading>
-              <CatalogTableHeading className="w-[16%]">Categoría / SKU</CatalogTableHeading>
-              <CatalogTableHeading align="right" className="w-[12%]">
-                Costo
-              </CatalogTableHeading>
-              <CatalogTableHeading align="right" className="w-[13%]">
-                Precio cliente
-              </CatalogTableHeading>
-              <CatalogTableHeading align="right" className="w-[12%]">
-                Margen
-              </CatalogTableHeading>
-              <CatalogTableHeading className="w-[10%]">Estado</CatalogTableHeading>
-              <CatalogTableHeading align="right" className="w-[12%]">
-                Acciones
-              </CatalogTableHeading>
+              <CatalogTableHeading className="w-[40%]">Repuesto</CatalogTableHeading>
+              <CatalogTableHeading align="right" className="w-[15%]">Costo</CatalogTableHeading>
+              <CatalogTableHeading align="right" className="w-[17%]">Precio cliente</CatalogTableHeading>
+              <CatalogTableHeading align="right" className="w-[14%]">Margen</CatalogTableHeading>
+              <CatalogTableHeading align="right" className="w-[14%]">Acciones</CatalogTableHeading>
             </tr>
           </thead>
 
           <tbody className="divide-y divide-border">
-            {parts.map((part) => (
+            {parts.map((part, index) => (
               <SupplierPartTableRow
                 key={part.id}
                 supplierId={supplierId}
                 part={part}
+                rowIndex={index}
                 isSupplierArchived={isSupplierArchived}
                 onEdit={() => onEdit(part.id)}
               />
@@ -657,61 +642,65 @@ function SupplierPartsResponsiveRegister({
 function SupplierPartTableRow({
   supplierId,
   part,
+  rowIndex,
   isSupplierArchived,
   onEdit,
-}: SupplierPartCardProps) {
+}: SupplierPartCardProps & { rowIndex: number }) {
   const isArchived = Boolean(part.archivedAt);
   const currentCost = toNumber(part.currentCost) ?? 0;
-  const customerPrice =
-    toNumber(part.suggestedCustomerPrice ?? part.currentCost) ?? currentCost;
+  const customerPrice = toNumber(part.suggestedCustomerPrice ?? part.currentCost) ?? currentCost;
   const grossProfit = customerPrice - currentCost;
 
   return (
     <tr
       className={buildClassName(
-        "group align-middle transition-colors hover:bg-surface-elevated/70",
-        isArchived ? "bg-surface-muted/35 opacity-80" : "bg-surface",
+        "group align-middle transition-colors hover:bg-primary/[0.035]",
+        rowIndex % 2 === 0 ? "bg-surface" : "bg-surface-muted/18",
+        isArchived ? "opacity-75" : "",
       )}
     >
       <CatalogTableCell>
-        <p className="wrap-anywhere font-display text-sm font-black uppercase tracking-[0.03em] text-foreground">
-          {part.name}
-        </p>
-        <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
-          {part.description ?? `Actualizado ${formatDateTime(part.updatedAt)}`}
-        </p>
-      </CatalogTableCell>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <p className="wrap-anywhere font-display text-sm font-black uppercase tracking-wide text-foreground">
+              {part.name}
+            </p>
+            {isArchived ? (
+              <span className="rounded-full border border-warning/35 bg-warning/10 px-2 py-0.5 text-[0.52rem] font-black uppercase tracking-[0.12em] text-warning">
+                Archivado
+              </span>
+            ) : null}
+          </div>
 
-      <CatalogTableCell>
-        <p className="text-xs font-bold text-foreground">
-          {part.category?.name ?? "Sin categoría"}
-        </p>
-        <p className="mt-1 truncate text-xs font-semibold text-muted-foreground">
-          {part.sku ? `SKU ${part.sku}` : "Sin SKU"}
-        </p>
+          <div className="mt-1.5 flex flex-wrap gap-x-2 gap-y-1 text-[0.66rem] font-semibold text-muted-foreground">
+            <span>{part.category?.name ?? "Sin categoría"}</span>
+            <span>{part.sku ? `SKU ${part.sku}` : "Sin SKU"}</span>
+            <span>Actualizado {formatDateTime(part.updatedAt)}</span>
+          </div>
+
+          {part.description ? (
+            <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-muted-foreground">
+              {part.description}
+            </p>
+          ) : null}
+        </div>
       </CatalogTableCell>
 
       <CatalogMoneyCell value={currentCost} />
       <CatalogMoneyCell value={customerPrice} />
-      <CatalogMoneyCell
-        value={grossProfit}
-        tone={grossProfit > 0 ? "positive" : "neutral"}
-      />
-
-      <CatalogTableCell>
-        <StatusPill part={part} />
-      </CatalogTableCell>
+      <CatalogMoneyCell value={grossProfit} tone={grossProfit > 0 ? "positive" : "neutral"} />
 
       <CatalogTableCell align="right">
-        <div className="ml-auto grid max-w-[8.5rem] gap-1.5">
+        <div className="ml-auto inline-flex items-center gap-1 rounded-xl border border-border bg-surface-muted/70 p-1">
           {!isSupplierArchived && !isArchived ? (
             <button
               type="button"
               onClick={onEdit}
-              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-border-strong bg-surface-muted px-3 text-xs font-bold text-foreground transition hover:border-primary/60 hover:bg-surface"
+              title="Editar repuesto"
+              aria-label={`Editar repuesto ${part.name}`}
+              className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
             >
-              <Pencil className="size-3.5 shrink-0" aria-hidden="true" />
-              Editar
+              <Pencil className="size-3.5" aria-hidden="true" />
             </button>
           ) : null}
 
@@ -721,6 +710,7 @@ function SupplierPartTableRow({
               part={part}
               isArchived={isArchived}
               compact
+              iconOnly
             />
           ) : null}
         </div>
@@ -742,7 +732,7 @@ function CatalogTableHeading({
     <th
       scope="col"
       className={buildClassName(
-        "px-3 py-3 text-[0.58rem] font-black uppercase tracking-[0.14em] text-muted-foreground",
+        "px-3 py-3.5 text-[0.56rem] font-black uppercase tracking-[0.14em] text-muted-foreground",
         align === "right" ? "text-right" : "text-left",
         className,
       )}
@@ -760,12 +750,7 @@ function CatalogTableCell({
   align?: "left" | "right";
 }) {
   return (
-    <td
-      className={buildClassName(
-        "px-3 py-3",
-        align === "right" ? "text-right" : "text-left",
-      )}
-    >
+    <td className={buildClassName("px-3 py-3.5", align === "right" ? "text-right" : "text-left")}>
       {children}
     </td>
   );
@@ -780,12 +765,7 @@ function CatalogMoneyCell({
 }) {
   return (
     <CatalogTableCell align="right">
-      <span
-        className={buildClassName(
-          "whitespace-nowrap text-sm font-black tabular-nums",
-          tone === "positive" ? "text-primary" : "text-foreground",
-        )}
-      >
+      <span className={buildClassName("whitespace-nowrap text-xs font-black tabular-nums", tone === "positive" ? "text-primary" : "text-foreground")}>
         {formatMoney(value)}
       </span>
     </CatalogTableCell>
@@ -849,7 +829,7 @@ function SupplierPartCard({
           ) : null}
         </div>
 
-        <div className="grid gap-3 xl:min-w-[33rem]">
+        <div className="grid gap-3 xl:min-w-132">
           <div className="grid gap-2 sm:grid-cols-3">
             <PriceDatum label="Costo proveedor" value={part.currentCost} />
             <PriceDatum
@@ -894,6 +874,7 @@ type SupplierPartArchiveButtonProps = {
   part: SupplierPart;
   isArchived: boolean;
   compact?: boolean;
+  iconOnly?: boolean;
 };
 
 /**
@@ -904,6 +885,7 @@ function SupplierPartArchiveButton({
   part,
   isArchived,
   compact = false,
+  iconOnly = false,
 }: SupplierPartArchiveButtonProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
@@ -948,13 +930,19 @@ function SupplierPartArchiveButton({
       <button
         type="button"
         onClick={() => setIsOpen(true)}
+        title={isArchived ? "Restaurar repuesto" : "Archivar repuesto"}
+        aria-label={`${isArchived ? "Restaurar" : "Archivar"} repuesto ${part.name}`}
         className={buildClassName(
-          compact
-            ? "inline-flex h-9 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-bold transition"
-            : "inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold transition",
+          iconOnly
+            ? "inline-flex size-8 items-center justify-center rounded-lg transition"
+            : compact
+              ? "inline-flex h-9 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-bold transition"
+              : "inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold transition",
           isArchived
-            ? "border border-border-strong bg-surface text-foreground hover:border-primary/60 hover:bg-surface-elevated"
-            : "border border-warning/45 bg-warning/10 text-foreground hover:border-warning",
+            ? "text-muted-foreground hover:bg-surface hover:text-foreground"
+            : iconOnly
+              ? "text-warning hover:bg-warning/10"
+              : "border border-warning/45 bg-warning/10 text-foreground hover:border-warning",
         )}
       >
         {isArchived ? (
@@ -962,61 +950,116 @@ function SupplierPartArchiveButton({
         ) : (
           <Archive className="size-4 shrink-0" aria-hidden="true" />
         )}
-        {isArchived ? "Restaurar" : "Archivar"}
+        {iconOnly ? (
+          <span className="sr-only">{isArchived ? "Restaurar" : "Archivar"}</span>
+        ) : isArchived ? (
+          "Restaurar"
+        ) : (
+          "Archivar"
+        )}
       </button>
     );
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className={buildClassName(
-        "rounded-2xl border border-border bg-surface p-3",
-        compact ? "w-full" : "sm:min-w-[22rem]",
-      )}
-      noValidate
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-black/45 p-4 backdrop-blur-[2px]"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          setIsOpen(false);
+          setReason("");
+          setErrorMessage(null);
+        }
+      }}
     >
-      <label className="block text-xs font-bold text-foreground">
-        Motivo para {isArchived ? "restaurar" : "archivar"}
-      </label>
-      <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-        <input
+      <form
+        onSubmit={handleSubmit}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="supplier-part-archive-dialog-title"
+        className="w-full max-w-lg rounded-[1.25rem] border border-border bg-surface p-5 shadow-2xl"
+        noValidate
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-border pb-4">
+          <div>
+            <p className="text-[0.6rem] font-black uppercase tracking-[0.16em] text-warning">
+              Acción de catálogo
+            </p>
+            <h3
+              id="supplier-part-archive-dialog-title"
+              className="mt-2 font-display text-lg font-black uppercase tracking-[0.03em] text-foreground"
+            >
+              {isArchived ? "Restaurar repuesto" : "Archivar repuesto"}
+            </h3>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              {part.name}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setIsOpen(false);
+              setReason("");
+              setErrorMessage(null);
+            }}
+            aria-label="Cerrar diálogo"
+            className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-border text-muted-foreground transition hover:bg-surface-muted hover:text-foreground"
+          >
+            <X className="size-4" aria-hidden="true" />
+          </button>
+        </div>
+
+        <label className="mt-4 block text-sm font-bold text-foreground">
+          Motivo para {isArchived ? "restaurar" : "archivar"}
+        </label>
+        <textarea
           value={reason}
           onChange={(event) => setReason(event.target.value)}
+          rows={3}
           placeholder={
             isArchived
               ? "Ej: Se volvió a comprar este repuesto."
               : "Ej: Ya no se trabaja este repuesto."
           }
-          className="h-10 min-w-0 flex-1 rounded-xl border border-border-strong bg-surface-muted px-3 text-sm text-foreground outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20"
+          className="mt-2 w-full resize-y rounded-xl border border-border-strong bg-surface-muted px-3 py-3 text-sm text-foreground outline-none transition placeholder:text-steel focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isSubmitting ? "Guardando..." : "Confirmar"}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setIsOpen(false);
-            setReason("");
-            setErrorMessage(null);
-          }}
-          className="inline-flex h-10 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-foreground transition hover:border-primary/60"
-        >
-          Cerrar
-        </button>
-      </div>
 
-      {errorMessage ? (
-        <p className="mt-2 text-xs font-semibold text-primary" role="alert">
-          {errorMessage}
-        </p>
-      ) : null}
-    </form>
+        {errorMessage ? (
+          <p className="mt-3 text-sm font-semibold text-primary" role="alert">
+            {errorMessage}
+          </p>
+        ) : null}
+
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={() => {
+              setIsOpen(false);
+              setReason("");
+              setErrorMessage(null);
+            }}
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-foreground transition hover:border-primary/60"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSubmitting
+              ? "Guardando..."
+              : isArchived
+                ? "Restaurar repuesto"
+                : "Archivar repuesto"}
+          </button>
+        </div>
+      </form>
+    </div>
   );
+
 }
 
 function EmptyCatalogState({ canCreate }: { canCreate: boolean }) {

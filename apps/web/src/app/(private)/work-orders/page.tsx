@@ -1,499 +1,902 @@
-import { ClipboardList, Plus } from "lucide-react";
-import type { Metadata } from "next";
-import Link from "next/link";
-import { Pagination } from "../../../components/ui/Pagination";
-import { SearchForm } from "../../../components/ui/SearchForm";
-import { WorkOrderCard } from "../../../features/work-orders/components/WorkOrderCard";
-import { getPaginatedWorkOrders } from "../../../features/work-orders/work-orders.server";
-import type { WorkOrder } from "../../../features/work-orders/types";
 import {
+  ArrowLeft,
+  Ban,
+  CarFront,
+  CheckCircle2,
+  ClipboardCheck,
+  Clock3,
+  FilePenLine,
+  History,
+  ListChecks,
+  Pencil,
+  RefreshCw,
+  UserRound,
+  ReceiptText,
+} from "lucide-react";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import { ApiError } from "../../../lib/api";
+import {
+  formatDate,
+  formatMileage,
   formatMoney,
   formatWorkOrderStatus,
-  type WorkOrderStatus,
 } from "../../../lib/format";
+import { UpdateWorkOrderStatusForm } from "../../../features/work-orders/components/UpdateWorkOrderStatusForm";
+import { getPaginatedAppointments } from "../../../features/appointments/appointments.server";
+import { IssueReceiptButton } from "../../../features/receipts/components/IssueReceiptButton";
+import { getReceipts } from "../../../features/receipts/receipts.server";
+import { WorkOrderAppointmentsPanel } from "../../../features/work-orders/components/WorkOrderAppointmentsPanel";
+import { WorkOrderStructuredPartsPanel } from "../../../features/work-orders/components/WorkOrderStructuredPartsPanel";
+import { ReopenWorkOrderForm } from "../../../features/work-orders/components/ReopenWorkOrderForm";
+import { CancelWorkOrderForm } from "../../../features/work-orders/components/CancelWorkOrderForm";
+import {
+  BreakableDetailValue,
+  WorkOrderNotesValue,
+  WorkOrderPartsValue,
+} from "../../../features/work-orders/components/WorkOrderDetailValues";
+import { getWorkOrder } from "../../../features/work-orders/work-orders.server";
+import type { WorkOrder } from "../../../features/work-orders/types";
+import {
+  DetailSheet,
+  DetailSheetRow,
+} from "../../../components/ui/DetailSheet";
 
-export const metadata: Metadata = {
-  title: "Órdenes",
-};
-
-const WORK_ORDERS_PAGE_LIMIT = 10;
-
-const WORK_ORDER_STATUSES = [
-  "PENDING",
-  "IN_PROGRESS",
-  "READY",
-  "DELIVERED",
-  "CANCELLED",
-] as const satisfies readonly WorkOrderStatus[];
-
-type WorkOrdersPageProps = {
-  searchParams: Promise<{
-    search?: string | string[];
-    page?: string | string[];
-    status?: string | string[];
+type WorkOrderDetailPageProps = {
+  params: Promise<{
+    id: string;
   }>;
 };
 
+export const metadata: Metadata = {
+  title: "Detalle de orden",
+};
+
 /**
- * Main work orders list page.
+ * Work order detail page.
  *
- * This screen keeps the operational list focused: search, status filter,
- * quick metrics for the current result set and paginated work order cards.
+ * This screen centralizes the operational information of one order and reuses
+ * the status mutation form already used from the vehicle profile.
  */
-export default async function WorkOrdersPage({
-  searchParams,
-}: WorkOrdersPageProps) {
-  const resolvedSearchParams = await searchParams;
-  const search = normalizeSearchParam(resolvedSearchParams.search);
-  const page = normalizePageParam(resolvedSearchParams.page);
-  const status = normalizeStatusParam(resolvedSearchParams.status);
+export default async function WorkOrderDetailPage({
+  params,
+}: WorkOrderDetailPageProps) {
+  const resolvedParams = await params;
+  const [workOrder, linkedAppointmentsPage, receiptsPage] = await Promise.all([
+    getWorkOrderOrNotFound(resolvedParams.id),
+    getPaginatedAppointments({
+      workOrderId: resolvedParams.id,
+      limit: 50,
+    }),
+    getReceipts({
+      workOrderId: resolvedParams.id,
+      limit: 1,
+    }),
+  ]);
 
-  const workOrdersPage = await getPaginatedWorkOrders({
-    search: search || undefined,
-    status,
-    page,
-    limit: WORK_ORDERS_PAGE_LIMIT,
-  });
-
-  const workOrders = workOrdersPage.data;
-  const { meta } = workOrdersPage;
-  const hasSearch = search.length > 0;
-  const hasFilters = hasSearch || Boolean(status);
+  const { vehicle } = workOrder;
+  const customer = vehicle.customer;
+  const isDelivered = workOrder.status === "DELIVERED";
+  const isCancelled = workOrder.status === "CANCELLED";
+  const isClosed = isDelivered || isCancelled;
+  const issuedReceipt = receiptsPage.data[0] ?? null;
+  const partLines = workOrder.partLines ?? [];
+  const hasStructuredPartLines = partLines.length > 0;
 
   return (
-    <section className="space-y-6 sm:space-y-8">
+    <section className="space-y-6">
       <header className="relative overflow-hidden rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:p-8">
-        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
-            <p className="inline-flex items-center gap-2 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
-              <ClipboardList className="size-4 shrink-0" aria-hidden="true" />
-              Órdenes
+            <Link
+              href="/work-orders"
+              className="inline-flex items-center gap-2 text-sm font-bold text-primary transition hover:text-primary-hover"
+            >
+              <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
+              Volver a órdenes
+            </Link>
+
+            <p className="mt-6 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+              Orden #{workOrder.orderNumber}
             </p>
 
-            <h1 className="mt-3 font-display text-2xl font-black uppercase tracking-[0.04em] text-foreground sm:text-3xl">
-              Órdenes del taller
+            <h1 className="mt-3 wrap-anywhere font-display text-2xl font-black uppercase tracking-[0.04em] text-foreground sm:text-3xl">
+              {workOrder.reportedIssue}
             </h1>
 
             <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Seguimiento operativo de trabajos pendientes, en progreso,
-              listos, entregados o anulados. Para crear una orden, primero
-              elegí el vehículo correspondiente.
+              Detalle operativo de la orden, vehículo asociado, cliente, costos,
+              kilometraje y estado actual.
             </p>
           </div>
 
+          <div className="shrink-0 lg:pt-10">
+            <StatusIndicator status={workOrder.status} />
+          </div>
+        </div>
+
+        <div className="relative mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          {!isClosed ? (
+            <Link
+              href={`/work-orders/${workOrder.id}/edit`}
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
+            >
+              <Pencil className="size-4 shrink-0" aria-hidden="true" />
+              Editar orden
+            </Link>
+          ) : null}
+
+          {issuedReceipt ? (
+            <Link
+              href={`/receipts/${issuedReceipt.id}`}
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
+            >
+              <ReceiptText className="size-4 shrink-0" aria-hidden="true" />
+              Ver recibo
+            </Link>
+          ) : !isCancelled ? (
+            <IssueReceiptButton workOrderId={workOrder.id} />
+          ) : null}
+
           <Link
-            href="/vehicles"
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
+            href={`/vehicles/${vehicle.id}`}
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
           >
-            <Plus className="size-4 shrink-0" aria-hidden="true" />
-            Nueva orden
+            <CarFront className="size-4 shrink-0" aria-hidden="true" />
+            Ver ficha del vehículo
+          </Link>
+
+          <Link
+            href="/work-orders"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated sm:w-auto"
+          >
+            <ListChecks className="size-4 shrink-0" aria-hidden="true" />
+            Ver todas las órdenes
           </Link>
         </div>
-
-        <SearchForm
-          id="work-orders-search"
-          label="Buscar"
-          defaultValue={search}
-          placeholder="Buscar por orden, cliente, vehículo, patente o problema..."
-          clearHref={buildWorkOrdersHref({ status })}
-          showClearAction={hasSearch}
-        />
-
-        <WorkOrderStatusFilters
-          currentStatus={status}
-          search={search || undefined}
-        />
       </header>
 
-      <WorkOrdersSummary workOrders={workOrders} totalItems={meta.totalItems} />
+      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_340px] 2xl:items-start">
+        <div className="min-w-0 space-y-6">
+          <DetailSheet
+            headingId="work-order-description-heading"
+            title="Información del trabajo"
+          >
+            <DetailSheetRow
+              label="Problema reportado"
+              value={workOrder.reportedIssue}
+            />
 
-      <section aria-labelledby="work-orders-results-heading" className="space-y-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-          <div>
-            <h2
-              id="work-orders-results-heading"
-              className="font-display text-lg font-black uppercase tracking-[0.04em] text-foreground"
-            >
-              {getResultsTitle(status, hasSearch)}
-            </h2>
+            <DetailSheetRow
+              label="Diagnóstico"
+              value={getReadableText(
+                workOrder.diagnosis,
+                "Diagnóstico pendiente",
+              )}
+            />
 
-            {meta.totalItems > 0 ? (
-              <p className="mt-1 text-sm text-muted-foreground">
-                Página {meta.page} de {meta.totalPages}
+            <DetailSheetRow
+              label="Trabajo realizado"
+              value={getReadableText(workOrder.workDone, "Trabajo pendiente")}
+            />
+
+            {!hasStructuredPartLines ? (
+              <DetailSheetRow
+                label="Repuestos usados"
+                value={
+                  <WorkOrderPartsValue
+                    value={workOrder.partsUsed}
+                    fallback="Sin repuestos cargados"
+                  />
+                }
+              />
+            ) : null}
+
+            <DetailSheetRow
+              label="Notas"
+              value={
+                <WorkOrderNotesValue
+                  value={workOrder.notes}
+                  fallback="Sin notas internas"
+                />
+              }
+            />
+          </DetailSheet>
+
+          {hasStructuredPartLines ? (
+            <WorkOrderStructuredPartsPanel partLines={partLines} />
+          ) : null}
+
+          <DetailSheet
+            headingId="work-order-costs-heading"
+            title="Fechas, kilometraje y costos"
+          >
+            <DetailSheetRow
+              label="Ingreso"
+              value={formatDate(workOrder.entryDate)}
+            />
+
+            <DetailSheetRow
+              label="Entrega"
+              value={formatDate(workOrder.deliveryDate)}
+            />
+
+            <DetailSheetRow
+              label="Km ingreso"
+              value={formatMileage(workOrder.entryMileage)}
+            />
+
+            <DetailSheetRow
+              label="Mano de obra"
+              value={formatMoney(workOrder.laborCost)}
+            />
+
+            <DetailSheetRow
+              label="Repuestos al cliente"
+              value={formatMoney(workOrder.partsCost)}
+            />
+
+            <DetailSheetRow
+              label="Total final"
+              value={formatMoney(workOrder.finalTotal)}
+            />
+          </DetailSheet>
+
+          <section
+            aria-labelledby="work-order-receipt-heading"
+            className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
+          >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-primary">
+                  <ReceiptText className="size-5" aria-hidden="true" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+                    Cobro
+                  </p>
+
+                  <h2
+                    id="work-order-receipt-heading"
+                    className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
+                  >
+                    Recibo interno
+                  </h2>
+
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                    Generá un comprobante interno tipo talonario con los datos actuales de
+                    la orden. No reemplaza factura ni documentación fiscal.
+                  </p>
+                </div>
+              </div>
+
+              <div className="shrink-0">
+                {issuedReceipt ? (
+                  <Link
+                    href={`/receipts/${issuedReceipt.id}`}
+                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover sm:w-auto"
+                  >
+                    <ReceiptText className="size-4 shrink-0" aria-hidden="true" />
+                    Ver recibo
+                  </Link>
+                ) : !isCancelled ? (
+                  <IssueReceiptButton workOrderId={workOrder.id} />
+                ) : (
+                  <p className="rounded-2xl border border-border-strong bg-surface-muted px-4 py-3 text-sm font-semibold text-muted-foreground">
+                    Las órdenes anuladas no pueden emitir recibo.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {issuedReceipt ? (
+              <p className="mt-5 rounded-2xl border border-border-strong bg-surface-muted px-4 py-3 text-sm font-semibold leading-6 text-foreground">
+                Esta orden ya tiene un recibo interno emitido. Para conservar trazabilidad,
+                el recibo queda como snapshot y no se modifica aunque la orden cambie.
               </p>
             ) : null}
-          </div>
+          </section>
 
-          <p className="shrink-0 text-sm font-semibold text-muted-foreground">
-            {meta.totalItems} orden{meta.totalItems === 1 ? "" : "es"} en total
-          </p>
+          <WorkOrderAppointmentsPanel
+            workOrder={workOrder}
+            appointments={linkedAppointmentsPage.data}
+          />
+
+          {!isClosed ? (
+            <section
+              aria-labelledby="work-order-status-heading"
+              className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
+            >
+              <div className="flex items-start gap-3">
+                <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-primary">
+                  <ListChecks className="size-5" aria-hidden="true" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+                    Flujo operativo
+                  </p>
+
+                  <h2
+                    id="work-order-status-heading"
+                    className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
+                  >
+                    Actualizar estado
+                  </h2>
+
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                    Cambiá el estado de la orden cuando el trabajo avance dentro
+                    del taller.
+                  </p>
+                </div>
+              </div>
+
+              <UpdateWorkOrderStatusForm
+                workOrderId={workOrder.id}
+                currentStatus={workOrder.status}
+              />
+            </section>
+          ) : null}
+
+          <WorkOrderTimeline events={workOrder.events ?? []} />
+
+          <WorkOrderCriticalZone
+            workOrderId={workOrder.id}
+            isClosed={isClosed}
+            isDelivered={isDelivered}
+            isCancelled={isCancelled}
+          />
         </div>
 
-        {workOrders.length > 0 ? (
-          <div className="grid gap-4">
-            {workOrders.map((workOrder, index) => (
-              <WorkOrderCard
-                key={workOrder.id}
-                workOrder={workOrder}
-                variant={index % 2 === 0 ? "accent" : "neutral"}
-              />
-            ))}
-          </div>
-        ) : (
-          <EmptyWorkOrdersState hasFilters={hasFilters} />
-        )}
+        <aside className="grid min-w-0 gap-6 sm:grid-cols-2 2xl:h-fit 2xl:self-start 2xl:grid-cols-1">
+          <DetailSheet
+            headingId="work-order-vehicle-heading"
+            title="Vehículo"
+            action={
+              <Link
+                href={`/vehicles/${vehicle.id}`}
+                className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
+              >
+                <CarFront className="size-3.5 shrink-0" aria-hidden="true" />
+                Abrir ficha
+              </Link>
+            }
+          >
+            <DetailSheetRow label="Patente" value={vehicle.licensePlate} />
+            <DetailSheetRow label="Marca" value={vehicle.brand} />
+            <DetailSheetRow label="Modelo" value={vehicle.model} />
+            <DetailSheetRow
+              label="Año"
+              value={vehicle.year ? vehicle.year.toString() : "Sin cargar"}
+            />
+            <DetailSheetRow
+              label="Kilometraje"
+              value={formatMileage(vehicle.mileage)}
+            />
+          </DetailSheet>
 
-        {meta.totalPages > 1 ? (
-          <Pagination
-            basePath="/work-orders"
-            currentPage={meta.page}
-            totalPages={meta.totalPages}
-            searchParams={{
-              search: search || undefined,
-              status,
-            }}
-            ariaLabel="Paginación de órdenes"
-          />
-        ) : null}
-      </section>
+          <DetailSheet
+            headingId="work-order-customer-heading"
+            title="Cliente"
+            action={
+              <Link
+                href={`/customers/${customer.id}`}
+                className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-primary transition hover:text-primary-hover"
+              >
+                <UserRound className="size-3.5 shrink-0" aria-hidden="true" />
+                Ver cliente
+              </Link>
+            }
+          >
+            <DetailSheetRow label="Nombre" value={customer.fullName} />
+
+            <DetailSheetRow
+              label="Teléfono"
+              value={customer.phone ?? "Sin teléfono"}
+            />
+
+            <DetailSheetRow
+              label="Email"
+              value={
+                <BreakableDetailValue value={customer.email ?? "Sin email"} />
+              }
+            />
+          </DetailSheet>
+        </aside>
+      </div>
     </section>
   );
 }
 
-type WorkOrdersSummaryProps = {
-  workOrders: WorkOrder[];
-  totalItems: number;
+type WorkOrderCriticalZoneProps = {
+  workOrderId: string;
+  isClosed: boolean;
+  isDelivered: boolean;
+  isCancelled: boolean;
 };
 
 /**
- * Compact summary for the current result set.
+ * Groups destructive or exceptional work order actions at the end of the page.
+ *
+ * Keeping cancellation and reopening away from the primary operational content
+ * makes the detail page easier to scan and avoids exposing critical actions as
+ * if they were part of the daily flow.
  */
-function WorkOrdersSummary({ workOrders, totalItems }: WorkOrdersSummaryProps) {
-  const activeCount = workOrders.filter(isActiveWorkOrder).length;
-  const readyCount = workOrders.filter(
-    (workOrder) => workOrder.status === "READY",
-  ).length;
-  const deliveredCount = workOrders.filter(
-    (workOrder) => workOrder.status === "DELIVERED",
-  ).length;
-  const visibleFinalTotal = workOrders.reduce((total, workOrder) => {
-    return total + moneyToNumber(workOrder.finalTotal ?? workOrder.estimatedTotal);
-  }, 0);
+function WorkOrderCriticalZone({
+  workOrderId,
+  isClosed,
+  isDelivered,
+  isCancelled,
+}: WorkOrderCriticalZoneProps) {
+  const badgeLabel = getCriticalZoneBadgeLabel({
+    isClosed,
+    isDelivered,
+    isCancelled,
+  });
 
   return (
     <section
-      aria-label="Resumen de órdenes"
-      className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+      aria-labelledby="work-order-critical-zone-heading"
+      className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
     >
-      <SummaryCard label="Total" value={`${totalItems}`} />
-      <SummaryCard label="Activas" value={`${activeCount}`} />
-      <SummaryCard label="Listas" value={`${readyCount}`} tone="warning" />
-      <SummaryCard label="Entregadas" value={`${deliveredCount}`} />
-      <SummaryCard
-        label="Valor visible"
-        value={formatMoney(visibleFinalTotal)}
-        className="sm:col-span-2 lg:col-span-4"
-      />
+      <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-warning/40 bg-warning/10 text-warning">
+            <Ban className="size-5" aria-hidden="true" />
+          </div>
+
+          <div className="min-w-0">
+            <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-warning">
+              Zona crítica
+            </p>
+
+            <h2
+              id="work-order-critical-zone-heading"
+              className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
+            >
+              Acciones sensibles
+            </h2>
+
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+              Usá esta zona solo para anular una orden, corregir un cierre o
+              revisar por qué quedó fuera del flujo operativo.
+            </p>
+          </div>
+        </div>
+
+        <p className="inline-flex w-fit shrink-0 items-center gap-2 rounded-full border border-border-strong bg-surface-muted px-4 py-2 text-sm font-bold text-foreground">
+          {badgeLabel}
+        </p>
+      </div>
+
+      {!isClosed ? (
+        <div className="mt-5">
+          <CriticalZoneIntro
+            icon="cancel"
+            eyebrow="Cierre administrativo"
+            title="Anular orden"
+            description="Usá esta acción cuando la orden fue cargada por error, el cliente no autorizó el trabajo o el servicio no continuará. La anulación exige motivo y queda registrada en el historial."
+          />
+
+          <CancelWorkOrderForm workOrderId={workOrderId} />
+        </div>
+      ) : null}
+
+      {isDelivered ? (
+        <div className="mt-5">
+          <CriticalZoneIntro
+            icon="reopen"
+            eyebrow="Orden entregada"
+            title="Corrección controlada"
+            description="Esta orden está cerrada como entregada. Si fue marcada por error, podés reabrirla dejando un motivo obligatorio en el historial operativo."
+          />
+
+          <ReopenWorkOrderForm workOrderId={workOrderId} />
+        </div>
+      ) : null}
+
+      {isCancelled ? (
+        <div className="mt-5">
+          <CriticalZoneIntro
+            icon="closed"
+            eyebrow="Orden anulada"
+            title="Flujo cerrado"
+            description="Esta orden fue anulada y quedó fuera del flujo operativo. No puede editarse, entregarse ni volver a estados anteriores. Revisá el historial para consultar el motivo registrado."
+          />
+        </div>
+      ) : null}
     </section>
   );
 }
 
-type SummaryCardProps = {
-  label: string;
-  value: string;
-  tone?: "neutral" | "warning";
-  className?: string;
+type CriticalZoneIntroProps = {
+  icon: "cancel" | "reopen" | "closed";
+  eyebrow: string;
+  title: string;
+  description: string;
 };
 
 /**
- * Small metric card used above the work order list.
+ * Intro block for one critical work order action.
  */
-function SummaryCard({
-  label,
-  value,
-  tone = "neutral",
-  className,
-}: SummaryCardProps) {
+function CriticalZoneIntro({
+  icon,
+  eyebrow,
+  title,
+  description,
+}: CriticalZoneIntroProps) {
   return (
-    <div
-      className={buildClassName(
-        tone === "warning"
-          ? "rounded-2xl border border-warning/45 bg-warning/10 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
-          : "rounded-2xl border border-border bg-surface-muted/85 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]",
-        className,
-      )}
-    >
-      <p
-        className={
-          tone === "warning"
-            ? "text-[0.68rem] font-bold uppercase tracking-[0.22em] text-warning"
-            : "text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary"
-        }
-      >
-        {label}
-      </p>
+    <div className="rounded-2xl border border-border bg-surface-muted/75 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+      <div className="flex items-start gap-3">
+        <div className={getCriticalZoneIconClassName(icon)}>
+          {renderCriticalZoneIcon(icon)}
+        </div>
 
-      <p className="mt-2 font-display text-xl font-black text-foreground">
-        {value}
-      </p>
+        <div className="min-w-0">
+          <p className={getCriticalZoneEyebrowClassName(icon)}>{eyebrow}</p>
+
+          <h3 className="mt-2 font-display text-lg font-black uppercase tracking-[0.04em] text-foreground">
+            {title}
+          </h3>
+
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            {description}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
 
-type WorkOrderStatusFiltersProps = {
-  currentStatus?: WorkOrderStatus;
-  search?: string;
-};
+/**
+ * Returns the compact badge displayed in the critical zone header.
+ */
+function getCriticalZoneBadgeLabel({
+  isClosed,
+  isDelivered,
+  isCancelled,
+}: Pick<WorkOrderCriticalZoneProps, "isClosed" | "isDelivered" | "isCancelled">): string {
+  if (isCancelled) {
+    return "Orden anulada";
+  }
+
+  if (isDelivered) {
+    return "Corrección disponible";
+  }
+
+  if (isClosed) {
+    return "Flujo cerrado";
+  }
+
+  return "Anulación";
+}
 
 /**
- * Server-rendered status filter navigation for work orders.
+ * Renders the critical zone icon without dynamic component references.
  */
-function WorkOrderStatusFilters({
-  currentStatus,
-  search,
-}: WorkOrderStatusFiltersProps) {
-  const filters: Array<{
-    label: string;
-    value?: WorkOrderStatus;
-  }> = [
-    { label: "Todos los estados" },
-    { label: "Pendientes", value: "PENDING" },
-    { label: "En progreso", value: "IN_PROGRESS" },
-    { label: "Listas", value: "READY" },
-    { label: "Entregadas", value: "DELIVERED" },
-    { label: "Anuladas", value: "CANCELLED" },
-  ];
+function renderCriticalZoneIcon(icon: CriticalZoneIntroProps["icon"]) {
+  const iconClassName = "size-5";
 
+  if (icon === "reopen") {
+    return <CheckCircle2 className={iconClassName} aria-hidden="true" />;
+  }
+
+  return <Ban className={iconClassName} aria-hidden="true" />;
+}
+
+/**
+ * Maps critical action type to icon container classes.
+ */
+function getCriticalZoneIconClassName(
+  icon: CriticalZoneIntroProps["icon"],
+): string {
+  const baseClassName =
+    "grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface";
+
+  if (icon === "reopen") {
+    return `${baseClassName} text-success`;
+  }
+
+  if (icon === "closed") {
+    return `${baseClassName} text-muted-foreground`;
+  }
+
+  return `${baseClassName} text-warning`;
+}
+
+/**
+ * Maps critical action type to eyebrow classes.
+ */
+function getCriticalZoneEyebrowClassName(
+  icon: CriticalZoneIntroProps["icon"],
+): string {
+  const baseClassName = "text-[0.68rem] font-bold uppercase tracking-[0.22em]";
+
+  if (icon === "reopen") {
+    return `${baseClassName} text-success`;
+  }
+
+  if (icon === "closed") {
+    return `${baseClassName} text-muted-foreground`;
+  }
+
+  return `${baseClassName} text-warning`;
+}
+
+type WorkOrderTimelineProps = {
+  events: NonNullable<WorkOrder["events"]>;
+};
+
+type WorkOrderTimelineItem = NonNullable<WorkOrder["events"]>[number];
+
+/**
+ * Renders the immutable operational history of a work order.
+ */
+function WorkOrderTimeline({ events }: WorkOrderTimelineProps) {
   return (
-    <section aria-labelledby="work-order-status-filter-heading" className="mt-5">
-      <div className="flex flex-col gap-1">
-        <h2
-          id="work-order-status-filter-heading"
-          className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary"
-        >
-          Estado de orden
-        </h2>
+    <section
+      aria-labelledby="work-order-timeline-heading"
+      className="rounded-[1.35rem] border border-border bg-linear-to-br from-surface via-surface to-surface-elevated p-6 shadow-(--shadow-industrial) ring-1 ring-white/3"
+    >
+      <div className="flex flex-col gap-3 border-b border-border pb-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-border-strong bg-surface-muted text-primary">
+            <History className="size-5" aria-hidden="true" />
+          </div>
 
-        <p className="text-xs leading-5 text-muted-foreground">
-          Filtrá por avance operativo de la orden.
+          <div className="min-w-0">
+            <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
+              Historial
+            </p>
+
+            <h2
+              id="work-order-timeline-heading"
+              className="mt-2 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground"
+            >
+              Historial operativo
+            </h2>
+
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+              Registro de creación, ediciones y cambios de estado realizados
+              sobre esta orden.
+            </p>
+          </div>
+        </div>
+
+        <p className="inline-flex w-fit items-center gap-2 rounded-full border border-border-strong bg-surface-muted px-4 py-2 text-sm font-bold text-foreground">
+          <History
+            className="size-4 shrink-0 text-primary"
+            aria-hidden="true"
+          />
+          {events.length} evento{events.length === 1 ? "" : "s"}
         </p>
       </div>
 
-      <form action="/work-orders" className="mt-2 grid gap-2 sm:hidden">
-        {search ? <input type="hidden" name="search" value={search} /> : null}
-
-        <select
-          name="status"
-          defaultValue={currentStatus ?? ""}
-          aria-label="Filtrar por estado de orden"
-          className="h-11 w-full rounded-xl border border-border-strong bg-surface-muted px-4 text-sm font-bold text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-        >
-          {filters.map((filter) => (
-            <option key={filter.value ?? "all"} value={filter.value ?? ""}>
-              {filter.label}
-            </option>
+      {events.length > 0 ? (
+        <ol className="mt-5 space-y-3">
+          {events.map((event) => (
+            <TimelineEvent key={event.id} event={event} />
           ))}
-        </select>
-
-        <button
-          type="submit"
-          className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white transition hover:bg-primary-hover"
-        >
-          Aplicar estado
-        </button>
-      </form>
-
-      <nav
-        aria-label="Filtro de estado de órdenes"
-        className="mt-2 hidden flex-wrap gap-2 sm:flex"
-      >
-        {filters.map((filter) => {
-          const isActive = currentStatus === filter.value;
-
-          return (
-            <Link
-              key={filter.value ?? "all"}
-              href={buildWorkOrdersHref({
-                search,
-                status: filter.value,
-              })}
-              aria-current={isActive ? "page" : undefined}
-              className={
-                isActive
-                  ? "inline-flex h-10 items-center justify-center rounded-xl border border-primary bg-primary px-4 text-sm font-bold text-white"
-                  : "inline-flex h-10 items-center justify-center rounded-xl border border-border-strong bg-surface px-4 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated"
-              }
-            >
-              {filter.value ? formatWorkOrderStatus(filter.value) : filter.label}
-            </Link>
-          );
-        })}
-      </nav>
+        </ol>
+      ) : (
+        <p className="mt-5 rounded-2xl border border-dashed border-border-strong bg-surface-muted/65 p-5 text-sm leading-6 text-muted-foreground">
+          Todavía no hay eventos registrados para esta orden.
+        </p>
+      )}
     </section>
   );
 }
 
-type EmptyWorkOrdersStateProps = {
-  hasFilters: boolean;
+/**
+ * Renders one audit event row inside the operational timeline.
+ */
+function TimelineEvent({ event }: { event: WorkOrderTimelineItem }) {
+  return (
+    <li className="rounded-2xl border border-border bg-surface-muted/75 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+      <div className="flex items-start gap-3">
+        <div className="grid size-9 shrink-0 place-items-center rounded-xl border border-border-strong bg-surface-elevated text-primary">
+          {renderWorkOrderEventIcon(event.type)}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm font-black text-foreground">
+                {getWorkOrderEventTitle(event.type)}
+              </p>
+
+              <p className="mt-1 wrap-anywhere text-sm leading-6 text-muted-foreground">
+                {event.description ?? getWorkOrderEventFallback(event.type)}
+              </p>
+            </div>
+
+            <p className="inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full border border-border-strong bg-surface px-3 py-1 text-xs font-bold text-muted-foreground">
+              <Clock3 className="size-3.5" aria-hidden="true" />
+              {formatWorkOrderEventDateTime(event.createdAt)}
+            </p>
+          </div>
+
+          {event.fromStatus && event.toStatus ? (
+            <p className="mt-3 w-fit rounded-full border border-border-strong bg-surface px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-foreground">
+              {formatWorkOrderStatus(event.fromStatus)} →{" "}
+              {formatWorkOrderStatus(event.toStatus)}
+            </p>
+          ) : null}
+
+          <p className="mt-3 text-xs font-semibold text-muted-foreground">
+            Usuario:{" "}
+            <span className="font-bold text-foreground">
+              {event.user?.name ?? "Usuario eliminado"}
+            </span>
+          </p>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+/**
+ * Renders the icon for a work order timeline event.
+ *
+ * This avoids creating a dynamic component reference during render, which is
+ * blocked by the React Compiler static-components rule.
+ */
+function renderWorkOrderEventIcon(type: WorkOrderTimelineItem["type"]) {
+  const iconClassName = "size-4";
+
+  switch (type) {
+    case "CREATED":
+      return <ClipboardCheck className={iconClassName} aria-hidden="true" />;
+
+    case "UPDATED":
+      return <FilePenLine className={iconClassName} aria-hidden="true" />;
+
+    case "STATUS_CHANGED":
+      return <RefreshCw className={iconClassName} aria-hidden="true" />;
+
+    case "DELIVERED":
+      return <CheckCircle2 className={iconClassName} aria-hidden="true" />;
+
+    case "REOPENED":
+      return <RefreshCw className={iconClassName} aria-hidden="true" />;
+
+    case "CANCELLED":
+      return <Ban className={iconClassName} aria-hidden="true" />;
+  }
+}
+
+/**
+ * Maps audit event types to readable titles.
+ */
+function getWorkOrderEventTitle(type: WorkOrderTimelineItem["type"]): string {
+  const titleMap: Record<WorkOrderTimelineItem["type"], string> = {
+    CREATED: "Orden creada",
+    UPDATED: "Información actualizada",
+    STATUS_CHANGED: "Cambio de estado",
+    DELIVERED: "Orden entregada",
+    REOPENED: "Orden reabierta",
+    CANCELLED: "Orden anulada",
+  };
+
+  return titleMap[type];
+}
+
+/**
+ * Returns a safe fallback when older events do not have a description.
+ */
+function getWorkOrderEventFallback(
+  type: WorkOrderTimelineItem["type"],
+): string {
+  const fallbackMap: Record<WorkOrderTimelineItem["type"], string> = {
+    CREATED: "Se creó la orden de trabajo.",
+    UPDATED: "Se actualizó la información operativa de la orden.",
+    STATUS_CHANGED: "Se modificó el estado operativo de la orden.",
+    DELIVERED: "La orden fue marcada como entregada.",
+    REOPENED: "La orden fue reabierta con trazabilidad operativa.",
+    CANCELLED: "La orden fue anulada con motivo registrado.",
+  };
+
+  return fallbackMap[type];
+}
+
+/**
+ * Formats audit timestamps with date and time for operational traceability.
+ */
+function formatWorkOrderEventDateTime(value: string): string {
+  return new Intl.DateTimeFormat("es-AR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+/**
+ * Fetches a work order and converts backend 404 responses into Next notFound.
+ */
+async function getWorkOrderOrNotFound(workOrderId: string): Promise<WorkOrder> {
+  try {
+    return await getWorkOrder(workOrderId);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      notFound();
+    }
+
+    throw error;
+  }
+}
+
+/**
+ * Converts nullable or empty API text into a readable fallback.
+ */
+function getReadableText(value: string | null, fallback: string): string {
+  if (!value || value.trim().length === 0) {
+    return fallback;
+  }
+
+  return value;
+}
+
+type StatusIndicatorProps = {
+  status: WorkOrder["status"];
 };
 
 /**
- * Empty state for work order lists.
+ * Renders a non-button visual status indicator for the work order header.
  */
-function EmptyWorkOrdersState({ hasFilters }: EmptyWorkOrdersStateProps) {
+function StatusIndicator({ status }: StatusIndicatorProps) {
+  const classes = getStatusIndicatorClasses(status);
+
   return (
-    <section className="rounded-[1.1rem] border border-dashed border-border-strong bg-surface p-6 shadow-(--shadow-industrial) ring-1 ring-white/3 sm:rounded-[1.35rem] sm:p-8">
-      <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-primary">
-        Sin órdenes
-      </p>
+    <div
+      className={`${classes.text} inline-flex w-fit items-center gap-2 text-[0.68rem] font-black uppercase tracking-[0.16em]`}
+      aria-label={`Estado: ${formatWorkOrderStatus(status)}`}
+    >
+      <span
+        aria-hidden="true"
+        className={`${classes.dot} size-2 rounded-full`}
+      />
 
-      <h2 className="mt-3 font-display text-xl font-black uppercase tracking-[0.04em] text-foreground">
-        {hasFilters
-          ? "No hay órdenes para esta búsqueda"
-          : "Todavía no hay órdenes cargadas"}
-      </h2>
-
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-        {hasFilters
-          ? "Probá limpiar la búsqueda o cambiar el estado para volver a ver el flujo completo del taller."
-          : "Para crear una orden, entrá a la ficha de un vehículo y cargá el trabajo desde ahí. Así la orden queda asociada al cliente y al historial correcto."}
-      </p>
-
-      <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-        {hasFilters ? (
-          <Link
-            href="/work-orders"
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary-hover"
-          >
-            Limpiar filtros
-          </Link>
-        ) : null}
-
-        <Link
-          href="/vehicles"
-          className="inline-flex h-11 items-center justify-center rounded-xl border border-border-strong bg-surface-muted px-5 text-sm font-bold text-foreground transition hover:border-primary/60 hover:bg-surface-elevated"
-        >
-          Ver vehículos
-        </Link>
-      </div>
-    </section>
+      <span>Estado: {formatWorkOrderStatus(status)}</span>
+    </div>
   );
 }
 
 /**
- * Builds a work orders href preserving only meaningful filters.
+ * Maps work order statuses to readable light-mode status indicator classes.
  */
-function buildWorkOrdersHref({
-  search,
-  status,
-}: {
-  search?: string;
-  status?: WorkOrderStatus;
-}): string {
-  const params = new URLSearchParams();
+function getStatusIndicatorClasses(status: WorkOrder["status"]): {
+  text: string;
+  dot: string;
+} {
+  const statusClassMap: Record<
+    WorkOrder["status"],
+    {
+      text: string;
+      dot: string;
+    }
+  > = {
+    PENDING: {
+      text: "text-muted-foreground",
+      dot: "bg-steel text-steel",
+    },
+    IN_PROGRESS: {
+      text: "text-primary",
+      dot: "bg-primary text-primary",
+    },
+    READY: {
+      text: "text-warning",
+      dot: "bg-warning text-warning",
+    },
+    DELIVERED: {
+      text: "text-success",
+      dot: "bg-success text-success",
+    },
+    CANCELLED: {
+      text: "text-muted-foreground",
+      dot: "bg-muted-foreground text-muted-foreground",
+    },
+  };
 
-  if (search) {
-    params.set("search", search);
-  }
-
-  if (status) {
-    params.set("status", status);
-  }
-
-  const queryString = params.toString();
-
-  return queryString ? `/work-orders?${queryString}` : "/work-orders";
-}
-
-/**
- * Returns true when the work order belongs to the active operational flow.
- */
-function isActiveWorkOrder(workOrder: WorkOrder): boolean {
-  return (
-    workOrder.status === "PENDING" ||
-    workOrder.status === "IN_PROGRESS" ||
-    workOrder.status === "READY"
-  );
-}
-
-/**
- * Normalizes a Next.js search param into a single trimmed string.
- */
-function normalizeSearchParam(value: string | string[] | undefined): string {
-  if (Array.isArray(value)) {
-    return (value[0] ?? "").trim();
-  }
-
-  return (value ?? "").trim();
-}
-
-/**
- * Normalizes a page search param into a safe positive integer.
- */
-function normalizePageParam(value: string | string[] | undefined): number {
-  const rawValue = Array.isArray(value) ? value[0] : value;
-  const parsedValue = rawValue ? Number(rawValue) : 1;
-
-  if (!Number.isInteger(parsedValue) || parsedValue < 1) {
-    return 1;
-  }
-
-  return parsedValue;
-}
-
-/**
- * Normalizes a work order status search param.
- */
-function normalizeStatusParam(
-  value: string | string[] | undefined,
-): WorkOrderStatus | undefined {
-  const rawValue = Array.isArray(value) ? value[0] : value;
-
-  if (WORK_ORDER_STATUSES.some((status) => status === rawValue)) {
-    return rawValue as WorkOrderStatus;
-  }
-
-  return undefined;
-}
-
-/**
- * Returns a title for the current list state.
- */
-function getResultsTitle(
-  status: WorkOrderStatus | undefined,
-  hasSearch: boolean,
-): string {
-  if (hasSearch) {
-    return "Resultados";
-  }
-
-  if (status) {
-    return `Órdenes ${formatWorkOrderStatus(status).toLowerCase()}`;
-  }
-
-  return "Últimas órdenes";
-}
-
-/**
- * Converts API money values into numbers for compact page summaries.
- */
-function moneyToNumber(value: number | string | null | undefined): number {
-  if (typeof value === "number") {
-    return value;
-  }
-
-  if (typeof value === "string") {
-    const numericValue = Number(value);
-
-    return Number.isFinite(numericValue) ? numericValue : 0;
-  }
-
-  return 0;
-}
-
-/**
- * Joins class names while ignoring empty values.
- */
-function buildClassName(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(" ");
+  return statusClassMap[status];
 }

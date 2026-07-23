@@ -21,8 +21,8 @@ type WorkOrderStructuredPartsPanelProps = {
 /**
  * Displays structured supplier purchases attached to one work order.
  *
- * Supplier cost remains clearly separated from the customer-facing price so
- * debt, sale value and gross margin can be audited without reading form data.
+ * A compact planilla is used when enough width is available. Smaller screens
+ * keep touch-friendly cards without forcing horizontal scrolling.
  */
 export function WorkOrderStructuredPartsPanel({
   partLines,
@@ -54,40 +54,40 @@ export function WorkOrderStructuredPartsPanel({
               </h2>
 
               <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                Detalle de proveedores, cantidades, costo interno, precio al
-                cliente y margen registrado para esta orden.
+                Costos internos, precio al cliente y margen de cada compra
+                vinculada a la orden.
               </p>
             </div>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-2 xl:min-w-[34rem] xl:grid-cols-4">
+          <div className="grid gap-2 sm:grid-cols-2 xl:min-w-lg xl:grid-cols-4">
             <SummaryMetric
               label="Líneas"
               value={partLines.length.toString()}
-              icon={<Boxes className="size-4" aria-hidden="true" />}
+              icon={<Boxes className="size-3.5" aria-hidden="true" />}
             />
             <SummaryMetric
               label="Costo proveedor"
               value={formatMoney(summary.supplierCost)}
-              icon={<Truck className="size-4" aria-hidden="true" />}
+              icon={<Truck className="size-3.5" aria-hidden="true" />}
             />
             <SummaryMetric
               label="Precio cliente"
               value={formatMoney(summary.customerPrice)}
-              icon={<BadgeDollarSign className="size-4" aria-hidden="true" />}
+              icon={<BadgeDollarSign className="size-3.5" aria-hidden="true" />}
             />
             <SummaryMetric
               label="Margen"
               value={formatMoney(summary.grossProfit)}
-              icon={<Scale className="size-4" aria-hidden="true" />}
+              icon={<Scale className="size-3.5" aria-hidden="true" />}
               tone={summary.grossProfit < 0 ? "warning" : "accent"}
             />
           </div>
         </div>
       </header>
 
-      <div className="border-t border-border bg-surface-muted/45 p-4 sm:p-5">
-        <div className="grid gap-3">
+      <div className="border-t border-border bg-surface-muted/35 p-4 sm:p-5">
+        <div className="grid gap-3 xl:hidden">
           {partLines.map((partLine, index) => (
             <StructuredPartLineCard
               key={partLine.id}
@@ -95,6 +95,47 @@ export function WorkOrderStructuredPartsPanel({
               position={index + 1}
             />
           ))}
+        </div>
+
+        <div className="hidden overflow-hidden rounded-2xl border border-border bg-surface xl:block">
+          <table className="w-full table-fixed border-collapse text-left">
+            <caption className="sr-only">
+              Planilla de repuestos estructurados de la orden
+            </caption>
+
+            <thead className="bg-surface-muted/75">
+              <tr className="border-b border-border">
+                <TableHeading className="w-[27%]">Repuesto</TableHeading>
+                <TableHeading className="w-[17%]">Proveedor</TableHeading>
+                <TableHeading align="right" className="w-[8%]">
+                  Cant.
+                </TableHeading>
+                <TableHeading align="right" className="w-[12%]">
+                  Costo unit.
+                </TableHeading>
+                <TableHeading align="right" className="w-[13%]">
+                  Costo total
+                </TableHeading>
+                <TableHeading align="right" className="w-[13%]">
+                  Cliente
+                </TableHeading>
+                <TableHeading align="right" className="w-[10%]">
+                  Margen
+                </TableHeading>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-border">
+              {partLines.map((partLine, index) => (
+                <StructuredPartLineRow
+                  key={partLine.id}
+                  partLine={partLine}
+                  position={index + 1}
+                  rowIndex={index}
+                />
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -108,9 +149,6 @@ type SummaryMetricProps = {
   tone?: "neutral" | "accent" | "warning";
 };
 
-/**
- * Compact financial metric used in the structured parts header.
- */
 function SummaryMetric({
   label,
   value,
@@ -120,17 +158,17 @@ function SummaryMetric({
   return (
     <div
       className={buildClassName(
-        "rounded-2xl border px-3 py-2.5",
+        "rounded-xl border px-3 py-2.5",
         tone === "warning"
-          ? "border-warning/45 bg-warning/10"
+          ? "border-warning/40 bg-warning/10"
           : tone === "accent"
-            ? "border-primary/25 bg-primary/6"
-            : "border-border bg-surface-muted/85",
+            ? "border-primary/20 bg-primary/4.5"
+            : "border-border bg-surface-muted/75",
       )}
     >
       <p
         className={buildClassName(
-          "flex items-center gap-1.5 text-[0.6rem] font-black uppercase tracking-[0.16em]",
+          "flex items-center gap-1.5 text-[0.57rem] font-black uppercase tracking-[0.15em]",
           tone === "warning" ? "text-warning" : "text-primary",
         )}
       >
@@ -138,10 +176,80 @@ function SummaryMetric({
         {label}
       </p>
 
-      <p className="mt-1.5 font-display text-base font-black text-foreground">
+      <p className="mt-1.5 whitespace-nowrap font-display text-[0.95rem] font-black text-foreground">
         {value}
       </p>
     </div>
+  );
+}
+
+function StructuredPartLineRow({
+  partLine,
+  position,
+  rowIndex,
+}: {
+  partLine: WorkOrderPartLine;
+  position: number;
+  rowIndex: number;
+}) {
+  const supplierName = getSupplierName(partLine);
+  const categoryName = partLine.supplierPart?.category?.name ?? null;
+  const sku = partLine.supplierPart?.sku ?? null;
+  const grossProfit = toNumber(partLine.grossProfit);
+
+  return (
+    <tr
+      className={buildClassName(
+        "align-middle transition-colors hover:bg-primary/[0.035]",
+        rowIndex % 2 === 0 ? "bg-surface" : "bg-surface-muted/18",
+      )}
+    >
+      <TableCell>
+        <div className="min-w-0">
+          <p className="text-[0.56rem] font-black uppercase tracking-[0.15em] text-primary">
+            Línea {position}
+          </p>
+          <p className="mt-1 wrap-anywhere text-sm font-black text-foreground">
+            {partLine.partNameSnapshot}
+          </p>
+          <div className="mt-1.5 flex flex-wrap gap-x-2 gap-y-1 text-[0.68rem] font-semibold text-muted-foreground">
+            {categoryName ? <span>{categoryName}</span> : null}
+            {sku ? <span>SKU {sku}</span> : null}
+            <span>{formatMarkup(partLine.markupType, partLine.markupValue)}</span>
+            <span>{formatPurchaseDate(partLine.purchasedAt)}</span>
+          </div>
+          {partLine.notes ? (
+            <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-muted-foreground">
+              {partLine.notes}
+            </p>
+          ) : null}
+        </div>
+      </TableCell>
+
+      <TableCell>
+        {partLine.supplier ? (
+          <Link
+            href={`/suppliers/${partLine.supplier.id}`}
+            className="wrap-anywhere text-xs font-black text-foreground underline decoration-transparent underline-offset-4 transition hover:text-primary hover:decoration-primary"
+          >
+            {supplierName}
+          </Link>
+        ) : (
+          <span className="text-xs font-bold text-muted-foreground">
+            {supplierName}
+          </span>
+        )}
+      </TableCell>
+
+      <NumericCell value={formatQuantity(partLine.quantity)} />
+      <MoneyCell value={partLine.supplierUnitCost} />
+      <MoneyCell value={partLine.supplierSubtotal} />
+      <MoneyCell value={partLine.customerSubtotal} />
+      <MoneyCell
+        value={partLine.grossProfit}
+        tone={grossProfit < 0 ? "warning" : grossProfit > 0 ? "positive" : "neutral"}
+      />
+    </tr>
   );
 }
 
@@ -150,51 +258,39 @@ type StructuredPartLineCardProps = {
   position: number;
 };
 
-/**
- * One structured supplier part purchase shown inside the order detail.
- */
 function StructuredPartLineCard({
   partLine,
   position,
 }: StructuredPartLineCardProps) {
-  const supplierName =
-    partLine.supplier?.name ??
-    partLine.supplierNameSnapshot ??
-    "Sin proveedor";
+  const supplierName = getSupplierName(partLine);
   const categoryName = partLine.supplierPart?.category?.name ?? null;
   const sku = partLine.supplierPart?.sku ?? null;
 
   return (
-    <article className="rounded-2xl border border-border bg-surface p-4 transition hover:border-primary/30 sm:p-5">
-      <div className="flex flex-col gap-4 border-b border-border pb-4 lg:flex-row lg:items-start lg:justify-between">
+    <article className="rounded-2xl border border-border bg-surface p-4 transition hover:border-primary/25">
+      <div className="flex flex-col gap-3 border-b border-border pb-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="text-[0.62rem] font-black uppercase tracking-[0.18em] text-primary">
+          <p className="text-[0.59rem] font-black uppercase tracking-[0.16em] text-primary">
             Repuesto {position}
           </p>
-
-          <h3 className="mt-2 wrap-anywhere font-display text-lg font-black uppercase tracking-[0.03em] text-foreground">
+          <h3 className="mt-1.5 wrap-anywhere font-display text-base font-black uppercase tracking-wide text-foreground">
             {partLine.partNameSnapshot}
           </h3>
-
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-muted-foreground">
-            <span>
-              Cantidad: {formatQuantity(partLine.quantity)}
-            </span>
-
+          <div className="mt-1.5 flex flex-wrap gap-x-2 gap-y-1 text-xs font-semibold text-muted-foreground">
+            <span>Cantidad {formatQuantity(partLine.quantity)}</span>
             {categoryName ? <span>{categoryName}</span> : null}
             {sku ? <span>SKU {sku}</span> : null}
           </div>
         </div>
 
-        <div className="shrink-0 lg:text-right">
-          <p className="text-[0.6rem] font-black uppercase tracking-[0.16em] text-muted-foreground">
+        <div className="shrink-0 sm:text-right">
+          <p className="text-[0.56rem] font-black uppercase tracking-[0.15em] text-muted-foreground">
             Proveedor
           </p>
-
           {partLine.supplier ? (
             <Link
               href={`/suppliers/${partLine.supplier.id}`}
-              className="mt-1 inline-flex wrap-anywhere text-sm font-black text-foreground underline decoration-transparent underline-offset-4 transition hover:text-primary hover:decoration-primary"
+              className="mt-1 inline-flex text-sm font-black text-foreground underline decoration-transparent underline-offset-4 transition hover:text-primary hover:decoration-primary"
             >
               {supplierName}
             </Link>
@@ -206,19 +302,10 @@ function StructuredPartLineCard({
         </div>
       </div>
 
-      <dl className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <PartMetric
-          label="Costo unitario"
-          value={formatMoney(partLine.supplierUnitCost)}
-        />
-        <PartMetric
-          label="Costo proveedor"
-          value={formatMoney(partLine.supplierSubtotal)}
-        />
-        <PartMetric
-          label="Precio cliente"
-          value={formatMoney(partLine.customerSubtotal)}
-        />
+      <dl className="mt-3 grid gap-2 sm:grid-cols-2">
+        <PartMetric label="Costo proveedor" value={formatMoney(partLine.supplierSubtotal)} />
+        <PartMetric label="Precio cliente" value={formatMoney(partLine.customerSubtotal)} />
+        <PartMetric label="Costo unitario" value={formatMoney(partLine.supplierUnitCost)} />
         <PartMetric
           label="Margen"
           value={formatMoney(partLine.grossProfit)}
@@ -226,17 +313,16 @@ function StructuredPartLineCard({
         />
       </dl>
 
-      <div className="mt-3 flex flex-col gap-2 rounded-xl border border-border bg-surface-muted/70 px-3 py-2.5 text-xs font-semibold text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+      <div className="mt-3 flex flex-col gap-1.5 rounded-xl border border-border bg-surface-muted/60 px-3 py-2 text-xs font-semibold text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
         <span>{formatMarkup(partLine.markupType, partLine.markupValue)}</span>
-
         <span className="inline-flex items-center gap-1.5">
           <CalendarClock className="size-3.5 text-primary" aria-hidden="true" />
-          Compra registrada: {formatPurchaseDate(partLine.purchasedAt)}
+          {formatPurchaseDate(partLine.purchasedAt)}
         </span>
       </div>
 
       {partLine.notes ? (
-        <p className="mt-3 rounded-xl border border-border bg-surface-muted/70 px-3 py-2.5 text-sm leading-6 text-muted-foreground">
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">
           <span className="font-bold text-foreground">Nota:</span>{" "}
           {partLine.notes}
         </p>
@@ -245,37 +331,27 @@ function StructuredPartLineCard({
   );
 }
 
-type PartMetricProps = {
-  label: string;
-  value: string;
-  tone?: "neutral" | "accent" | "warning";
-};
-
-/**
- * Read-only monetary value for one structured part line.
- */
 function PartMetric({
   label,
   value,
   tone = "neutral",
-}: PartMetricProps) {
+}: {
+  label: string;
+  value: string;
+  tone?: "neutral" | "accent" | "warning";
+}) {
   return (
     <div
       className={buildClassName(
         "rounded-xl border px-3 py-2.5",
         tone === "warning"
-          ? "border-warning/40 bg-warning/10"
+          ? "border-warning/35 bg-warning/10"
           : tone === "accent"
-            ? "border-primary/20 bg-primary/5"
-            : "border-border bg-surface-muted/80",
+            ? "border-primary/18 bg-primary/4"
+            : "border-border bg-surface-muted/65",
       )}
     >
-      <dt
-        className={buildClassName(
-          "text-[0.58rem] font-black uppercase tracking-[0.16em]",
-          tone === "warning" ? "text-warning" : "text-primary",
-        )}
-      >
+      <dt className="text-[0.56rem] font-black uppercase tracking-[0.15em] text-primary">
         {label}
       </dt>
       <dd className="mt-1.5 text-sm font-black text-foreground">{value}</dd>
@@ -283,9 +359,91 @@ function PartMetric({
   );
 }
 
-/**
- * Aggregates order part-line totals without trusting legacy summary fields.
- */
+function TableHeading({
+  children,
+  align = "left",
+  className,
+}: {
+  children: ReactNode;
+  align?: "left" | "right";
+  className?: string;
+}) {
+  return (
+    <th
+      scope="col"
+      className={buildClassName(
+        "px-3 py-3.5 text-[0.56rem] font-black uppercase tracking-[0.14em] text-muted-foreground",
+        align === "right" ? "text-right" : "text-left",
+        className,
+      )}
+    >
+      {children}
+    </th>
+  );
+}
+
+function TableCell({
+  children,
+  align = "left",
+}: {
+  children: ReactNode;
+  align?: "left" | "right";
+}) {
+  return (
+    <td
+      className={buildClassName(
+        "px-3 py-3.5",
+        align === "right" ? "text-right" : "text-left",
+      )}
+    >
+      {children}
+    </td>
+  );
+}
+
+function MoneyCell({
+  value,
+  tone = "neutral",
+}: {
+  value: number | string;
+  tone?: "neutral" | "positive" | "warning";
+}) {
+  return (
+    <TableCell align="right">
+      <span
+        className={buildClassName(
+          "whitespace-nowrap text-xs font-black tabular-nums",
+          tone === "warning"
+            ? "text-warning"
+            : tone === "positive"
+              ? "text-primary"
+              : "text-foreground",
+        )}
+      >
+        {formatMoney(value)}
+      </span>
+    </TableCell>
+  );
+}
+
+function NumericCell({ value }: { value: string }) {
+  return (
+    <TableCell align="right">
+      <span className="whitespace-nowrap text-xs font-black tabular-nums text-foreground">
+        {value}
+      </span>
+    </TableCell>
+  );
+}
+
+function getSupplierName(partLine: WorkOrderPartLine): string {
+  return (
+    partLine.supplier?.name ??
+    partLine.supplierNameSnapshot ??
+    "Sin proveedor"
+  );
+}
+
 function getStructuredPartsSummary(partLines: WorkOrderPartLine[]) {
   return partLines.reduce(
     (summary, partLine) => ({
@@ -302,9 +460,6 @@ function getStructuredPartsSummary(partLines: WorkOrderPartLine[]) {
   );
 }
 
-/**
- * Formats the markup saved with one historical part-line snapshot.
- */
 function formatMarkup(
   markupType: SupplierMarkupType,
   markupValue: number | string | null,
@@ -314,55 +469,39 @@ function formatMarkup(
   }
 
   if (markupType === "PERCENTAGE") {
-    return `Recargo: ${formatDecimal(markupValue)}%`;
+    return `${formatDecimal(markupValue)}% de recargo`;
   }
 
   if (markupType === "FIXED_AMOUNT") {
-    return `Recargo fijo: ${formatMoney(markupValue)}`;
+    return `Recargo ${formatMoney(markupValue)}`;
   }
 
-  return "Precio al cliente cargado manualmente";
+  return "Precio manual";
 }
 
-/**
- * Formats the quantity without unnecessary trailing zeroes.
- */
 function formatQuantity(value: number | string): string {
   return new Intl.NumberFormat("es-AR", {
     maximumFractionDigits: 2,
   }).format(toNumber(value));
 }
 
-/**
- * Formats a general decimal without currency symbols.
- */
 function formatDecimal(value: number | string | null): string {
   return new Intl.NumberFormat("es-AR", {
     maximumFractionDigits: 2,
   }).format(toNumber(value));
 }
 
-/**
- * Formats the historical purchase timestamp in the workshop locale.
- */
 function formatPurchaseDate(value: string): string {
   return new Intl.DateTimeFormat("es-AR", {
     dateStyle: "short",
   }).format(new Date(value));
 }
 
-/**
- * Converts Prisma decimal JSON values into safe numbers for display totals.
- */
 function toNumber(value: number | string | null | undefined): number {
   const parsedValue = typeof value === "number" ? value : Number(value ?? 0);
-
   return Number.isFinite(parsedValue) ? parsedValue : 0;
 }
 
-/**
- * Joins class names while ignoring empty values.
- */
 function buildClassName(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
