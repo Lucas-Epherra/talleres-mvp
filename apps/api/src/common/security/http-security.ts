@@ -21,6 +21,44 @@ export function getAllowedOrigins(): string[] {
 }
 
 /**
+ * Reads an optional regular expression for origins that cannot be listed
+ * one by one, such as Vercel preview deployments in staging.
+ *
+ * The pattern must be anchored with ^ and $ so it cannot match a prefix or
+ * suffix of an attacker-controlled domain. Leave it unset in production.
+ */
+export function getAllowedOriginPattern(): RegExp | undefined {
+  const rawPattern = process.env.CORS_ALLOWED_ORIGIN_PATTERN?.trim();
+
+  if (!rawPattern) {
+    return undefined;
+  }
+
+  if (!rawPattern.startsWith('^') || !rawPattern.endsWith('$')) {
+    throw new Error(
+      'CORS_ALLOWED_ORIGIN_PATTERN must be anchored with ^ and $.',
+    );
+  }
+
+  return new RegExp(rawPattern);
+}
+
+/**
+ * Checks an Origin header against the exact allowlist and the optional
+ * pattern.
+ */
+export function matchesAllowedOrigin(
+  origin: string,
+  allowedOrigins: string[],
+  allowedOriginPattern?: RegExp,
+): boolean {
+  return (
+    allowedOrigins.includes(origin) ||
+    (allowedOriginPattern?.test(origin) ?? false)
+  );
+}
+
+/**
  * Allows browser requests only from configured origins.
  *
  * Requests without Origin are allowed because they usually come from curl,
@@ -29,12 +67,17 @@ export function getAllowedOrigins(): string[] {
 export function isOriginAllowed(
   requestOrigin: string | undefined,
   allowedOrigins: string[],
+  allowedOriginPattern?: RegExp,
 ): boolean {
   if (!requestOrigin) {
     return true;
   }
 
-  return allowedOrigins.includes(requestOrigin);
+  return matchesAllowedOrigin(
+    requestOrigin,
+    allowedOrigins,
+    allowedOriginPattern,
+  );
 }
 
 /**
@@ -70,6 +113,7 @@ export function getTrustProxyHops(): number {
  */
 export function createOriginCheckMiddleware(
   allowedOrigins: string[],
+  allowedOriginPattern?: RegExp,
 ): RequestHandler {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (SAFE_METHODS.has(req.method.toUpperCase())) {
@@ -79,7 +123,7 @@ export function createOriginCheckMiddleware(
 
     const origin = req.headers.origin;
     const isAllowed = origin
-      ? allowedOrigins.includes(origin)
+      ? matchesAllowedOrigin(origin, allowedOrigins, allowedOriginPattern)
       : req.headers['sec-fetch-site'] !== 'cross-site';
 
     if (isAllowed) {

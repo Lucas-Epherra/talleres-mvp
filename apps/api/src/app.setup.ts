@@ -4,6 +4,7 @@ import type { Express } from 'express';
 import helmet from 'helmet';
 import {
   createOriginCheckMiddleware,
+  getAllowedOriginPattern,
   getAllowedOrigins,
   getTrustProxyHops,
   isOriginAllowed,
@@ -20,6 +21,7 @@ type CorsOriginCallback = (error: Error | null, allow?: boolean) => void;
  */
 export function configureApp(app: INestApplication): void {
   const allowedOrigins = getAllowedOrigins();
+  const allowedOriginPattern = getAllowedOriginPattern();
   const expressApp = app.getHttpAdapter().getInstance() as Express;
 
   expressApp.disable('x-powered-by');
@@ -36,14 +38,17 @@ export function configureApp(app: INestApplication): void {
       callback: CorsOriginCallback,
     ): void => {
       // Disallowed origins get no CORS headers; the Origin check returns 403.
-      callback(null, isOriginAllowed(origin, allowedOrigins));
+      callback(
+        null,
+        isOriginAllowed(origin, allowedOrigins, allowedOriginPattern),
+      );
     },
     credentials: true,
     methods: ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
-  app.use(createOriginCheckMiddleware(allowedOrigins));
+  app.use(createOriginCheckMiddleware(allowedOrigins, allowedOriginPattern));
   app.use(cookieParser());
 
   app.useGlobalPipes(

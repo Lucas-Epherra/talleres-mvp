@@ -1,3 +1,5 @@
+// Sentry must load before every other module.
+import './instrument';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { configureApp } from './app.setup';
