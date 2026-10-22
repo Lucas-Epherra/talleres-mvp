@@ -11,6 +11,8 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getCurrentUser } from "../../../../features/auth/auth.server";
+import { canManageWorkshop } from "../../../../features/auth/permissions";
 import { SupplierArchiveActions } from "../../../../features/suppliers/components/SupplierArchiveActions";
 import { SupplierPartsCatalog } from "../../../../features/suppliers/components/SupplierPartsCatalog";
 import { SupplierPaymentsPanel } from "../../../../features/suppliers/components/SupplierPaymentsPanel";
@@ -50,7 +52,7 @@ export const metadata: Metadata = {
 export default async function SupplierDetailPage({ params }: SupplierDetailPageProps) {
   const { id } = await params;
   const supplier = await resolveSupplier(id);
-  const [partsResponse, paymentsResponse, categoriesResponse] = await Promise.all([
+  const [partsResponse, paymentsResponse, categoriesResponse, currentUser] = await Promise.all([
     getSupplierParts(supplier.id, {
       limit: 50,
       archiveStatus: "all",
@@ -64,6 +66,7 @@ export default async function SupplierDetailPage({ params }: SupplierDetailPageP
       limit: 50,
       archiveStatus: "active",
     }),
+    getCurrentUser(),
   ]);
   const isArchived = Boolean(supplier.archivedAt);
 
@@ -145,6 +148,7 @@ export default async function SupplierDetailPage({ params }: SupplierDetailPageP
         paidTotal={supplier.metrics.paidTotal}
         pendingBalance={supplier.metrics.pendingBalance}
         isSupplierArchived={isArchived}
+        canManagePayments={canManageWorkshop(currentUser)}
       />
 
       <SupplierArchiveActions

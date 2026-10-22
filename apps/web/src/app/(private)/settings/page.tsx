@@ -11,6 +11,8 @@ import {
 import { formatDateTime } from "@/lib/format";
 import { WorkshopSettingsForm } from "@/features/workshop-settings/components/WorkshopSettingsForm";
 import { getWorkshopSettings } from "@/features/workshop-settings/workshop-settings.server";
+import { getCurrentUser } from "@/features/auth/auth.server";
+import { canManageWorkshop } from "@/features/auth/permissions";
 
 export const metadata: Metadata = {
   title: "Configuración del taller",
@@ -23,7 +25,10 @@ export const metadata: Metadata = {
  * the interactive mutation state to WorkshopSettingsForm.
  */
 export default async function SettingsPage() {
-  const response = await getWorkshopSettings();
+  const [response, currentUser] = await Promise.all([
+    getWorkshopSettings(),
+    getCurrentUser(),
+  ]);
   const settings = response.data;
 
   return (
@@ -101,7 +106,10 @@ export default async function SettingsPage() {
         />
       </section>
 
-      <WorkshopSettingsForm settings={settings} />
+      <WorkshopSettingsForm
+        settings={settings}
+        canEdit={canManageWorkshop(currentUser)}
+      />
     </section>
   );
 }
