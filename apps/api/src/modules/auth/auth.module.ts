@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthGuard } from './guards/auth.guard';
+import { RolesGuard } from './guards/roles.guard';
 
 const DEFAULT_ACCESS_TOKEN_EXPIRES_IN_SECONDS = 60 * 60 * 24 * 7;
 const MAX_ACCESS_TOKEN_EXPIRES_IN_SECONDS = 60 * 60 * 24 * 7;
@@ -59,8 +60,8 @@ function getJwtAccessExpiresInSeconds(): number {
 /**
  * Authentication feature module.
  *
- * Exports AuthService and AuthGuard so protected feature modules can resolve
- * authentication dependencies correctly.
+ * Exports AuthService, AuthGuard and RolesGuard so protected feature modules
+ * can resolve authentication and authorization dependencies correctly.
  */
 @Module({
   imports: [
@@ -72,7 +73,7 @@ function getJwtAccessExpiresInSeconds(): number {
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthGuard],
-  exports: [AuthService, AuthGuard],
+  providers: [AuthService, AuthGuard, RolesGuard],
+  exports: [AuthService, AuthGuard, RolesGuard],
 })
 export class AuthModule {}

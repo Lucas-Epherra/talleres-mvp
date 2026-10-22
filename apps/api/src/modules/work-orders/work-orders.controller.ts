@@ -8,8 +8,11 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { WorkshopRole } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { AuthGuard } from '../auth/guards/auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { FindWorkOrdersQueryDto } from './dto/find-work-orders-query.dto';
@@ -24,7 +27,7 @@ import { WorkOrdersService } from './work-orders.service';
  *
  * All routes are authenticated and scoped by the authenticated user's workshop.
  */
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, RolesGuard)
 @Controller('work-orders')
 export class WorkOrdersController {
   constructor(private readonly workOrdersService: WorkOrdersService) {}
@@ -89,6 +92,7 @@ export class WorkOrdersController {
    * Reopens a delivered work order with an auditable required reason.
    */
   @Patch(':id/reopen')
+  @Roles(WorkshopRole.OWNER, WorkshopRole.ADMIN)
   reopen(
     @CurrentUser() user: AuthUser,
     @Param('id') id: string,
@@ -101,6 +105,7 @@ export class WorkOrdersController {
    * Cancels an open work order with an auditable required reason.
    */
   @Patch(':id/cancel')
+  @Roles(WorkshopRole.OWNER, WorkshopRole.ADMIN)
   cancel(
     @CurrentUser() user: AuthUser,
     @Param('id') id: string,
