@@ -7,7 +7,6 @@ const STALE_IN_PROGRESS_DAYS = 7;
 const PENDING_ATTENTION_DAYS = 3;
 const UPCOMING_APPOINTMENTS_DAYS = 7;
 
-
 const dashboardWorkOrderSelect = {
   id: true,
   orderNumber: true,
@@ -710,7 +709,9 @@ export class DashboardService {
    */
   private getArgentinaMonthRange(date: Date): DateRange {
     const parts = this.getArgentinaDateParts(date);
-    const start = new Date(Date.UTC(parts.year, parts.month - 1, 1, 3, 0, 0, 0));
+    const start = new Date(
+      Date.UTC(parts.year, parts.month - 1, 1, 3, 0, 0, 0),
+    );
     const end = new Date(Date.UTC(parts.year, parts.month, 1, 3, 0, 0, 0));
 
     return {

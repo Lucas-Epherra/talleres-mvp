@@ -979,7 +979,10 @@ export class ReceiptsService {
       .fillColor('#991b1b')
       .text(title.toUpperCase(), x, y);
 
-    doc.moveTo(x, y + 16).lineTo(520, y + 16).stroke('#e5e7eb');
+    doc
+      .moveTo(x, y + 16)
+      .lineTo(520, y + 16)
+      .stroke('#e5e7eb');
   }
 
   /**
@@ -993,7 +996,11 @@ export class ReceiptsService {
     y: number,
     width: number,
   ): void {
-    doc.font('Helvetica-Bold').fontSize(8).fillColor('#6b7280').text(label, x, y);
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(8)
+      .fillColor('#6b7280')
+      .text(label, x, y);
     doc
       .font('Helvetica')
       .fontSize(10)
@@ -1023,10 +1030,7 @@ export class ReceiptsService {
 
     doc.roundedRect(x, y, width, tableHeight, 8).stroke('#d1d5db');
 
-    doc
-      .rect(x, y, width, headerHeight)
-      .fill('#f9fafb')
-      .stroke('#d1d5db');
+    doc.rect(x, y, width, headerHeight).fill('#f9fafb').stroke('#d1d5db');
 
     doc
       .font('Helvetica-Bold')
@@ -1039,7 +1043,10 @@ export class ReceiptsService {
     rows.forEach((row, index) => {
       const rowY = y + headerHeight + index * rowHeight;
 
-      doc.moveTo(x, rowY).lineTo(x + width, rowY).stroke('#e5e7eb');
+      doc
+        .moveTo(x, rowY)
+        .lineTo(x + width, rowY)
+        .stroke('#e5e7eb');
 
       doc
         .font('Helvetica-Bold')
@@ -1123,11 +1130,7 @@ export class ReceiptsService {
     y: number,
     width: number,
   ): void {
-    doc
-      .font('Helvetica')
-      .fontSize(8.5)
-      .fillColor('#374151')
-      .text(label, x, y);
+    doc.font('Helvetica').fontSize(8.5).fillColor('#374151').text(label, x, y);
 
     doc
       .font('Helvetica-Bold')
@@ -1149,7 +1152,10 @@ export class ReceiptsService {
     y: number,
     width: number,
   ): void {
-    doc.moveTo(x, y).lineTo(x + width, y).stroke('#6b7280');
+    doc
+      .moveTo(x, y)
+      .lineTo(x + width, y)
+      .stroke('#6b7280');
 
     doc
       .font('Helvetica-Bold')
@@ -1218,7 +1224,9 @@ export class ReceiptsService {
    * Receipt generation must never fail just because the public asset is
    * temporarily unavailable, so logo loading is treated as best-effort.
    */
-  private async fetchReceiptLogoPng(logoUrl: string | null): Promise<Buffer | null> {
+  private async fetchReceiptLogoPng(
+    logoUrl: string | null,
+  ): Promise<Buffer | null> {
     if (!logoUrl) {
       return null;
     }

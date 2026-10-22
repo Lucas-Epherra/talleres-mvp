@@ -392,7 +392,10 @@ export class WorkOrdersService {
 
     try {
       return await this.prisma.$transaction(async (tx) => {
-        const nextLaborCost = this.normalizeMoney(dto.laborCost, 'Mano de obra');
+        const nextLaborCost = this.normalizeMoney(
+          dto.laborCost,
+          'Mano de obra',
+        );
         const partLines =
           dto.partLines !== undefined
             ? await this.normalizeWorkOrderPartLines(
@@ -1186,7 +1189,8 @@ export class WorkOrdersService {
             prisma,
           )
         : null;
-      const supplierId = supplierPart?.supplierId ?? partLine.supplierId ?? null;
+      const supplierId =
+        supplierPart?.supplierId ?? partLine.supplierId ?? null;
       const supplier =
         supplierPart?.supplier ??
         (supplierId
@@ -1208,7 +1212,8 @@ export class WorkOrdersService {
         lineNumber,
       );
       const supplierUnitCost = this.normalizeRequiredMoney(
-        partLine.supplierUnitCost ?? this.decimalToNumber(supplierPart?.currentCost),
+        partLine.supplierUnitCost ??
+          this.decimalToNumber(supplierPart?.currentCost),
         `Costo proveedor de la línea ${lineNumber}`,
       );
       const markupType =
@@ -1231,10 +1236,19 @@ export class WorkOrdersService {
         markupValue,
         lineNumber,
       });
-      const quantity = this.normalizePartLineQuantity(partLine.quantity, lineNumber);
-      const supplierSubtotal = supplierUnitCost.times(quantity).toDecimalPlaces(2);
-      const customerSubtotal = customerUnitPrice.times(quantity).toDecimalPlaces(2);
-      const grossProfit = customerSubtotal.minus(supplierSubtotal).toDecimalPlaces(2);
+      const quantity = this.normalizePartLineQuantity(
+        partLine.quantity,
+        lineNumber,
+      );
+      const supplierSubtotal = supplierUnitCost
+        .times(quantity)
+        .toDecimalPlaces(2);
+      const customerSubtotal = customerUnitPrice
+        .times(quantity)
+        .toDecimalPlaces(2);
+      const grossProfit = customerSubtotal
+        .minus(supplierSubtotal)
+        .toDecimalPlaces(2);
 
       normalizedPartLines.push({
         supplierId,
@@ -1288,7 +1302,9 @@ export class WorkOrdersService {
     });
 
     if (!supplierPart || supplierPart.archivedAt || !supplierPart.isActive) {
-      throw new NotFoundException('Repuesto de proveedor no encontrado o inactivo.');
+      throw new NotFoundException(
+        'Repuesto de proveedor no encontrado o inactivo.',
+      );
     }
 
     if (supplierPart.supplier.archivedAt) {

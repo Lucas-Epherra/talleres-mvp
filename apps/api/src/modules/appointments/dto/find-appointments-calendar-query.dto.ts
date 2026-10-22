@@ -1,5 +1,12 @@
 import { AppointmentStatus } from '@prisma/client';
-import { IsEnum, IsISO8601, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import {
+  IsEnum,
+  IsISO8601,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
 
 /**
  * Query params accepted by the calendar agenda endpoint.

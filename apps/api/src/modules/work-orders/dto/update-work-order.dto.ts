@@ -126,4 +126,3 @@ export class UpdateWorkOrderDto {
   @Type(() => WorkOrderPartLineDto)
   partLines?: WorkOrderPartLineDto[];
 }
-

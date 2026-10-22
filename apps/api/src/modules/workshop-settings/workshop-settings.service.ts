@@ -136,7 +136,9 @@ export class WorkshopSettingsService {
       workshop.logoObjectKey &&
       workshop.logoObjectKey !== uploadedLogo.objectKey
     ) {
-      await this.logoStorage.deleteObject(workshop.logoObjectKey).catch(() => undefined);
+      await this.logoStorage
+        .deleteObject(workshop.logoObjectKey)
+        .catch(() => undefined);
     }
 
     return {

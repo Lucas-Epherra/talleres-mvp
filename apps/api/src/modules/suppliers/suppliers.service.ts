@@ -123,7 +123,6 @@ type NormalizedSupplierPartUpdateData = {
   isActive?: boolean;
 };
 
-
 type NormalizedSupplierPaymentCreateData = {
   amount: number;
   paidAt: Date;
@@ -139,7 +138,6 @@ type NormalizedSupplierPaymentUpdateData = {
   reference?: string | null;
   notes?: string | null;
 };
-
 
 /**
  * Handles supplier persistence, financial summaries and audit events.
@@ -946,7 +944,6 @@ export class SuppliersService {
     return mapSupplierPartForResponse(part);
   }
 
-
   /**
    * Lists payments registered for one supplier.
    */
@@ -1156,7 +1153,10 @@ export class SuppliersService {
       throw new BadRequestException('El pago ya está anulado.');
     }
 
-    const reason = normalizeRequiredMultilineText(dto.reason, 'Motivo de anulación');
+    const reason = normalizeRequiredMultilineText(
+      dto.reason,
+      'Motivo de anulación',
+    );
     const voidedAt = new Date();
 
     const payment = await this.prisma.$transaction(async (tx) => {
@@ -1194,7 +1194,10 @@ export class SuppliersService {
   /**
    * Ensures a supplier belongs to the workshop and returns minimal state.
    */
-  private async ensureSupplierBelongsToWorkshop(workshopId: string, id: string) {
+  private async ensureSupplierBelongsToWorkshop(
+    workshopId: string,
+    id: string,
+  ) {
     const supplier = await this.prisma.supplier.findFirst({
       where: {
         id,
@@ -1279,7 +1282,6 @@ export class SuppliersService {
 
     return part;
   }
-
 
   /**
    * Ensures one payment belongs to the supplier and workshop.
@@ -1418,48 +1420,52 @@ export class SuppliersService {
       return metricsBySupplierId;
     }
 
-    const [purchaseAggregates, paymentAggregates] = await this.prisma.$transaction([
-      this.prisma.workOrderPartLine.groupBy({
-        by: ['supplierId'],
-        orderBy: {
-          supplierId: 'asc',
-        },
-        where: {
-          workshopId,
-          supplierId: {
-            in: supplierIds,
+    const [purchaseAggregates, paymentAggregates] =
+      await this.prisma.$transaction([
+        this.prisma.workOrderPartLine.groupBy({
+          by: ['supplierId'],
+          orderBy: {
+            supplierId: 'asc',
           },
-        },
-        _sum: {
-          supplierSubtotal: true,
-          customerSubtotal: true,
-          grossProfit: true,
-        },
-      }),
-      this.prisma.supplierPayment.groupBy({
-        by: ['supplierId'],
-        orderBy: {
-          supplierId: 'asc',
-        },
-        where: {
-          workshopId,
-          supplierId: {
-            in: supplierIds,
+          where: {
+            workshopId,
+            supplierId: {
+              in: supplierIds,
+            },
           },
-          voidedAt: null,
-        },
-        _sum: {
-          amount: true,
-        },
-      }),
-    ]);
+          _sum: {
+            supplierSubtotal: true,
+            customerSubtotal: true,
+            grossProfit: true,
+          },
+        }),
+        this.prisma.supplierPayment.groupBy({
+          by: ['supplierId'],
+          orderBy: {
+            supplierId: 'asc',
+          },
+          where: {
+            workshopId,
+            supplierId: {
+              in: supplierIds,
+            },
+            voidedAt: null,
+          },
+          _sum: {
+            amount: true,
+          },
+        }),
+      ]);
 
     for (const aggregate of purchaseAggregates) {
       if (!aggregate.supplierId) {
         continue;
       }
 
-      const metrics = getSupplierMetrics(metricsBySupplierId, aggregate.supplierId);
+      const metrics = getSupplierMetrics(
+        metricsBySupplierId,
+        aggregate.supplierId,
+      );
       metrics.purchasedTotal = decimalToNumber(
         aggregate._sum?.supplierSubtotal,
       );
@@ -1470,18 +1476,22 @@ export class SuppliersService {
     }
 
     for (const aggregate of paymentAggregates) {
-      const metrics = getSupplierMetrics(metricsBySupplierId, aggregate.supplierId);
+      const metrics = getSupplierMetrics(
+        metricsBySupplierId,
+        aggregate.supplierId,
+      );
       metrics.paidTotal = decimalToNumber(aggregate._sum?.amount);
     }
 
     for (const [supplierId, metrics] of metricsBySupplierId) {
-      metrics.pendingBalance = roundMoney(metrics.purchasedTotal - metrics.paidTotal);
+      metrics.pendingBalance = roundMoney(
+        metrics.purchasedTotal - metrics.paidTotal,
+      );
       metricsBySupplierId.set(supplierId, metrics);
     }
 
     return metricsBySupplierId;
   }
-
 
   /**
    * Include used by supplier payment lists and mutations.
@@ -1631,7 +1641,6 @@ export class SuppliersService {
   }
 }
 
-
 /**
  * Builds status filter for supplier payment lists.
  */
@@ -1719,7 +1728,6 @@ function buildSupplierCategoryArchiveFilter(
     archivedAt: null,
   };
 }
-
 
 /**
  * Normalizes supplier payment create payload.
@@ -2028,7 +2036,9 @@ function resolveSupplierPartPricing({
       currentCost,
       suggestedMarkupType,
       suggestedMarkupValue: safeMarkupValue,
-      suggestedCustomerPrice: roundMoney(currentCost * (1 + safeMarkupValue / 100)),
+      suggestedCustomerPrice: roundMoney(
+        currentCost * (1 + safeMarkupValue / 100),
+      ),
     };
   }
 
@@ -2051,13 +2061,13 @@ function resolveSupplierPartPricing({
     currentCost,
     suggestedMarkupType: SupplierMarkupType.MANUAL_PRICE,
     suggestedMarkupValue: null,
-    suggestedCustomerPrice: normalizeNullableMoney(
-      suggestedCustomerPrice,
-      'Precio sugerido al cliente',
-    ) ?? currentCost,
+    suggestedCustomerPrice:
+      normalizeNullableMoney(
+        suggestedCustomerPrice,
+        'Precio sugerido al cliente',
+      ) ?? currentCost,
   };
 }
-
 
 /**
  * Normalizes required positive money values.
@@ -2109,7 +2119,6 @@ function normalizeNullableMoney(value: unknown, label: string): number | null {
 
   return roundMoney(numericValue);
 }
-
 
 /**
  * Maps a supplier payment to an API-friendly response with numeric money values.
@@ -2185,13 +2194,17 @@ function mapSupplierForResponse<
       : {}),
     categories: categoryAssignments
       .map((assignment) =>
-        typeof assignment === 'object' && assignment !== null && 'category' in assignment
+        typeof assignment === 'object' &&
+        assignment !== null &&
+        'category' in assignment
           ? (assignment as { category?: unknown }).category
           : null,
       )
       .filter(Boolean)
       .sort((firstCategory, secondCategory) =>
-        getCategoryName(firstCategory).localeCompare(getCategoryName(secondCategory)),
+        getCategoryName(firstCategory).localeCompare(
+          getCategoryName(secondCategory),
+        ),
       ),
     metrics,
   };
@@ -2217,7 +2230,8 @@ function getSupplierMetrics(
   metricsBySupplierId: Map<string, SupplierMetrics>,
   supplierId: string,
 ): SupplierMetrics {
-  const metrics = metricsBySupplierId.get(supplierId) ?? createEmptySupplierMetrics();
+  const metrics =
+    metricsBySupplierId.get(supplierId) ?? createEmptySupplierMetrics();
 
   if (!metricsBySupplierId.has(supplierId)) {
     metricsBySupplierId.set(supplierId, metrics);
@@ -2229,7 +2243,10 @@ function getSupplierMetrics(
 /**
  * Normalizes search text while protecting the database from oversized queries.
  */
-function normalizeSearch(search?: string, maxLength = MAX_SEARCH_LENGTH): string | undefined {
+function normalizeSearch(
+  search?: string,
+  maxLength = MAX_SEARCH_LENGTH,
+): string | undefined {
   const normalizedSearch = search?.trim();
 
   if (!normalizedSearch) {
@@ -2255,7 +2272,9 @@ function normalizeRequiredText(value: string, label: string): string {
 /**
  * Normalizes optional short text fields.
  */
-function normalizeOptionalText(value: string | null | undefined): string | null {
+function normalizeOptionalText(
+  value: string | null | undefined,
+): string | null {
   if (value === undefined || value === null) {
     return null;
   }
@@ -2300,7 +2319,9 @@ function normalizeRequiredMultilineText(value: string, label: string): string {
 /**
  * Normalizes optional phone values without forcing an Argentinian format.
  */
-function normalizeOptionalPhone(value: string | null | undefined): string | null {
+function normalizeOptionalPhone(
+  value: string | null | undefined,
+): string | null {
   if (value === undefined || value === null) {
     return null;
   }
@@ -2323,7 +2344,9 @@ function normalizeOptionalPhone(value: string | null | undefined): string | null
 /**
  * Normalizes optional email values.
  */
-function normalizeOptionalEmail(value: string | null | undefined): string | null {
+function normalizeOptionalEmail(
+  value: string | null | undefined,
+): string | null {
   if (value === undefined || value === null) {
     return null;
   }
@@ -2343,7 +2366,10 @@ function normalizeCategoryNames(categoryNames: string[]): string[] {
     const normalizedCategoryName = normalizeCategoryName(categoryName);
 
     if (normalizedCategoryName) {
-      normalizedNames.set(normalizedCategoryName.toLowerCase(), normalizedCategoryName);
+      normalizedNames.set(
+        normalizedCategoryName.toLowerCase(),
+        normalizedCategoryName,
+      );
     }
   }
 
