@@ -2429,7 +2429,9 @@ function roundMoney(value: number): number {
  */
 function getCategoryName(category: unknown): string {
   if (typeof category === 'object' && category !== null && 'name' in category) {
-    return String((category as { name?: unknown }).name ?? '');
+    const { name } = category as { name?: unknown };
+
+    return typeof name === 'string' ? name : '';
   }
 
   return '';

@@ -5,8 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, WorkOrderStatus } from '@prisma/client';
-import PDFDocument = require('pdfkit');
-import sharp = require('sharp');
+import PDFDocument from 'pdfkit';
+import sharp from 'sharp';
 import { Resend } from 'resend';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FindReceiptsQueryDto } from './dto/find-receipts-query.dto';

@@ -9,7 +9,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import type { UploadedLogoFile } from './types/uploaded-logo-file.type';
-import sharp = require('sharp');
+import sharp from 'sharp';
 
 const MAX_LOGO_UPLOAD_BYTES = 1024 * 1024;
 const LOGO_OUTPUT_MAX_SIZE = 512;
