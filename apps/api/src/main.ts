@@ -2,45 +2,16 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
 import type { Express } from 'express';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
-
-const DEFAULT_ALLOWED_ORIGINS = ['http://localhost:3000'];
+import {
+  createOriginCheckMiddleware,
+  getAllowedOrigins,
+  getTrustProxyHops,
+  isOriginAllowed,
+} from './common/security/http-security';
 
 type CorsOriginCallback = (error: Error | null, allow?: boolean) => void;
-
-/**
- * Reads allowed frontend origins from environment variables.
- *
- * CORS must never use wildcard origin when credentials/cookies are enabled.
- */
-function getAllowedOrigins(): string[] {
-  const rawOrigins =
-    process.env.CORS_ALLOWED_ORIGINS ?? process.env.FRONTEND_URL ?? '';
-
-  const origins = rawOrigins
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
-
-  return origins.length > 0 ? origins : DEFAULT_ALLOWED_ORIGINS;
-}
-
-/**
- * Allows browser requests only from configured origins.
- *
- * Requests without Origin are allowed because they usually come from curl,
- * Postman, health checks or server-to-server calls.
- */
-function isOriginAllowed(
-  requestOrigin: string | undefined,
-  allowedOrigins: string[],
-): boolean {
-  if (!requestOrigin) {
-    return true;
-  }
-
-  return allowedOrigins.includes(requestOrigin);
-}
 
 /**
  * Bootstraps the NestJS API application.
@@ -51,6 +22,10 @@ async function bootstrap(): Promise<void> {
   const expressApp = app.getHttpAdapter().getInstance() as Express;
 
   expressApp.disable('x-powered-by');
+  expressApp.set('trust proxy', getTrustProxyHops());
+
+  // Same-site lets the web (www.) load API resources such as receipt PDFs.
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'same-site' } }));
 
   app.setGlobalPrefix('api/v1');
 
@@ -59,18 +34,15 @@ async function bootstrap(): Promise<void> {
       origin: string | undefined,
       callback: CorsOriginCallback,
     ): void => {
-      if (isOriginAllowed(origin, allowedOrigins)) {
-        callback(null, true);
-        return;
-      }
-
-      callback(new Error('Not allowed by CORS'), false);
+      // Disallowed origins get no CORS headers; the Origin check returns 403.
+      callback(null, isOriginAllowed(origin, allowedOrigins));
     },
     credentials: true,
     methods: ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
+  app.use(createOriginCheckMiddleware(allowedOrigins));
   app.use(cookieParser());
 
   app.useGlobalPipes(

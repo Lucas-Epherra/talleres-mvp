@@ -8,6 +8,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import type { CookieOptions, Response } from 'express';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -41,6 +42,11 @@ function getAccessTokenMaxAgeMs(): number {
 
 /**
  * Reads the cookie SameSite mode.
+ *
+ * Defaults to lax: web and API live on subdomains of the same site, so the
+ * cookie is still sent on API calls while cross-site POSTs carry no session.
+ * Use none only when the frontend runs on a different site (e.g. preview
+ * domains); the Origin check middleware is then the CSRF protection.
  */
 function getCookieSameSite(): CookieSameSite {
   const rawSameSite = process.env.AUTH_COOKIE_SAME_SITE?.toLowerCase();
@@ -52,7 +58,7 @@ function getCookieSameSite(): CookieSameSite {
     return rawSameSite as CookieSameSite;
   }
 
-  return process.env.NODE_ENV === 'production' ? 'none' : 'lax';
+  return 'lax';
 }
 
 /**
@@ -119,9 +125,12 @@ export class AuthController {
 
   /**
    * Authenticates a user and stores the access token in an httpOnly cookie.
+   *
+   * Rate limited per IP and per email to slow down credential brute force.
    */
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(ThrottlerGuard)
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
