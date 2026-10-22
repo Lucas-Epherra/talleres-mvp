@@ -31,3 +31,7 @@ Thumbs.db
 
 # Coverage
 coverage/
+
+# Local HTTP tooling (curl cookie jars may contain session tokens)
+cookies.txt
+*.cookies

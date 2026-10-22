@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { LOGIN_THROTTLER_OPTIONS } from './login-throttle.config';
 import { AuthGuard } from './guards/auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 
@@ -71,6 +73,7 @@ function getJwtAccessExpiresInSeconds(): number {
         expiresIn: getJwtAccessExpiresInSeconds(),
       },
     }),
+    ThrottlerModule.forRoot(LOGIN_THROTTLER_OPTIONS),
   ],
   controllers: [AuthController],
   providers: [AuthService, AuthGuard, RolesGuard],
