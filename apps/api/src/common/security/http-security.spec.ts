@@ -2,7 +2,9 @@ import express from 'express';
 import request from 'supertest';
 import {
   createOriginCheckMiddleware,
+  getAllowedOriginPattern,
   getTrustProxyHops,
+  isOriginAllowed,
 } from './http-security';
 
 const ALLOWED_ORIGIN = 'https://www.mitaller360.com';
@@ -86,5 +88,74 @@ describe('getTrustProxyHops', () => {
     process.env.TRUST_PROXY_HOPS = 'true';
 
     expect(() => getTrustProxyHops()).toThrow();
+  });
+});
+
+describe('allowed origin pattern', () => {
+  const originalValue = process.env.CORS_ALLOWED_ORIGIN_PATTERN;
+  const PREVIEW_PATTERN =
+    '^https://talleres-mvp-[a-z0-9-]+-lucas\\.vercel\\.app$';
+
+  afterEach(() => {
+    if (originalValue === undefined) {
+      delete process.env.CORS_ALLOWED_ORIGIN_PATTERN;
+    } else {
+      process.env.CORS_ALLOWED_ORIGIN_PATTERN = originalValue;
+    }
+  });
+
+  it('is disabled when unset', () => {
+    delete process.env.CORS_ALLOWED_ORIGIN_PATTERN;
+
+    expect(getAllowedOriginPattern()).toBeUndefined();
+  });
+
+  it('rejects unanchored patterns', () => {
+    process.env.CORS_ALLOWED_ORIGIN_PATTERN = 'vercel\\.app';
+
+    expect(() => getAllowedOriginPattern()).toThrow();
+  });
+
+  it('matches preview origins and nothing else', () => {
+    process.env.CORS_ALLOWED_ORIGIN_PATTERN = PREVIEW_PATTERN;
+    const pattern = getAllowedOriginPattern();
+
+    expect(
+      isOriginAllowed(
+        'https://talleres-mvp-git-feat-x-lucas.vercel.app',
+        [],
+        pattern,
+      ),
+    ).toBe(true);
+    expect(
+      isOriginAllowed(
+        'https://talleres-mvp-git-feat-x-lucas.vercel.app.evil.example',
+        [],
+        pattern,
+      ),
+    ).toBe(false);
+    expect(isOriginAllowed('https://evil.vercel.app', [], pattern)).toBe(false);
+  });
+
+  it('lets the Origin check accept matching origins', async () => {
+    const app = express();
+    app.use(
+      createOriginCheckMiddleware(
+        [ALLOWED_ORIGIN],
+        new RegExp(PREVIEW_PATTERN),
+      ),
+    );
+    app.post('/resource', (_req, res) => {
+      res.json({ ok: true });
+    });
+
+    await request(app)
+      .post('/resource')
+      .set('Origin', 'https://talleres-mvp-abc123-lucas.vercel.app')
+      .expect(200);
+    await request(app)
+      .post('/resource')
+      .set('Origin', 'https://evil.vercel.app')
+      .expect(403);
   });
 });
