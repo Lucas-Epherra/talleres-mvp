@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_FILTER } from '@nestjs/core';
+import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
@@ -20,6 +22,7 @@ import { PrismaModule } from './prisma/prisma.module';
  */
 @Module({
   imports: [
+    SentryModule.forRoot(),
     PrismaModule,
     AuthModule,
     CustomersModule,
@@ -33,6 +36,10 @@ import { PrismaModule } from './prisma/prisma.module';
     SuppliersModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    // Reports unexpected errors to Sentry; a no-op when Sentry is disabled.
+    { provide: APP_FILTER, useClass: SentryGlobalFilter },
+    AppService,
+  ],
 })
 export class AppModule {}
