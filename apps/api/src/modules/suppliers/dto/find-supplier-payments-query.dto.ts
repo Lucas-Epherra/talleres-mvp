@@ -14,8 +14,7 @@ import { SupplierPaymentMethod } from '@prisma/client';
 
 export const SUPPLIER_PAYMENT_STATUSES = ['active', 'voided', 'all'] as const;
 
-export type SupplierPaymentStatus =
-  (typeof SUPPLIER_PAYMENT_STATUSES)[number];
+export type SupplierPaymentStatus = (typeof SUPPLIER_PAYMENT_STATUSES)[number];
 
 /**
  * Query params accepted by the supplier payments endpoint.

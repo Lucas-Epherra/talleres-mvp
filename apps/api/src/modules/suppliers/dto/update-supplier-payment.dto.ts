@@ -49,7 +49,9 @@ export class UpdateSupplierPaymentDto {
   amount?: number | null;
 
   @IsOptional()
-  @Transform(({ value }) => (value === '' ? undefined : value))
+  @Transform(({ value }: { value: unknown }) =>
+    value === '' ? undefined : value,
+  )
   @IsDateString()
   paidAt?: string;
 

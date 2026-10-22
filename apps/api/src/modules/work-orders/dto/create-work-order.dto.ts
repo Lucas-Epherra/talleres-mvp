@@ -96,4 +96,3 @@ export class CreateWorkOrderDto {
   @Type(() => WorkOrderPartLineDto)
   partLines?: WorkOrderPartLineDto[];
 }
-

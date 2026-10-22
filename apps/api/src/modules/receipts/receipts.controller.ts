@@ -32,10 +32,7 @@ export class ReceiptsController {
    * Lists issued receipts for the authenticated workshop.
    */
   @Get()
-  findAll(
-    @CurrentUser() user: AuthUser,
-    @Query() query: FindReceiptsQueryDto,
-  ) {
+  findAll(@CurrentUser() user: AuthUser, @Query() query: FindReceiptsQueryDto) {
     return this.receiptsService.findAll(user.workshopId, query);
   }
 

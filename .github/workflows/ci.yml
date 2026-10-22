@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Lint, typecheck y build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Placeholder: the web build only needs a syntactically valid URL.
+      NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # pnpm skips Prisma's postinstall, so the client is generated explicitly.
+      - run: pnpm --filter api db:generate
+
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm build
+
+  api-tests:
+    name: Tests de la API
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: talleres_test
+          POSTGRES_PASSWORD: talleres_test
+          POSTGRES_DB: talleres_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U talleres_test -d talleres_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Disposable CI database. No real credentials are used in this job.
+      DATABASE_URL: postgresql://talleres_test:talleres_test@localhost:5432/talleres_test?schema=public
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter api db:generate
+      - run: pnpm --filter api exec prisma migrate deploy
+
+      - name: Unit tests
+        run: pnpm --filter api test
+
+      - name: E2E tests (aislamiento multi-tenant)
+        run: pnpm --filter api test:e2e
