@@ -32,6 +32,9 @@ import { WorkOrderAppointmentsPanel } from "../../../../features/work-orders/com
 import { WorkOrderStructuredPartsPanel } from "../../../../features/work-orders/components/WorkOrderStructuredPartsPanel";
 import { ReopenWorkOrderForm } from "../../../../features/work-orders/components/ReopenWorkOrderForm";
 import { CancelWorkOrderForm } from "../../../../features/work-orders/components/CancelWorkOrderForm";
+import { getCurrentUser } from "../../../../features/auth/auth.server";
+import { RoleRestrictedNotice } from "../../../../features/auth/components/RoleRestrictedNotice";
+import { canManageWorkshop } from "../../../../features/auth/permissions";
 import {
   BreakableDetailValue,
   WorkOrderNotesValue,
@@ -60,7 +63,7 @@ export default async function WorkOrderDetailPage({
   params,
 }: WorkOrderDetailPageProps) {
   const resolvedParams = await params;
-  const [workOrder, linkedAppointmentsPage, receiptsPage] = await Promise.all([
+  const [workOrder, linkedAppointmentsPage, receiptsPage, currentUser] = await Promise.all([
     getWorkOrderOrNotFound(resolvedParams.id),
     getPaginatedAppointments({
       workOrderId: resolvedParams.id,
@@ -70,6 +73,7 @@ export default async function WorkOrderDetailPage({
       workOrderId: resolvedParams.id,
       limit: 1,
     }),
+    getCurrentUser(),
   ]);
 
   const { vehicle } = workOrder;
@@ -269,6 +273,7 @@ export default async function WorkOrderDetailPage({
         isClosed={isClosed}
         isDelivered={isDelivered}
         isCancelled={isCancelled}
+        canManage={canManageWorkshop(currentUser)}
       />
     </section>
   );
@@ -614,6 +619,11 @@ type WorkOrderCriticalZoneProps = {
   isClosed: boolean;
   isDelivered: boolean;
   isCancelled: boolean;
+  /**
+   * Whether the current workshop role can cancel or reopen orders. The API
+   * enforces the same rule; this only avoids showing actions that would fail.
+   */
+  canManage: boolean;
 };
 
 /**
@@ -628,6 +638,7 @@ function WorkOrderCriticalZone({
   isClosed,
   isDelivered,
   isCancelled,
+  canManage,
 }: WorkOrderCriticalZoneProps) {
   const badgeLabel = getCriticalZoneBadgeLabel({
     isClosed,
@@ -679,7 +690,11 @@ function WorkOrderCriticalZone({
             description="Usá esta acción cuando la orden fue cargada por error, el cliente no autorizó el trabajo o el servicio no continuará. La anulación exige motivo y queda registrada en el historial."
           />
 
-          <CancelWorkOrderForm workOrderId={workOrderId} />
+          {canManage ? (
+            <CancelWorkOrderForm workOrderId={workOrderId} />
+          ) : (
+            <RoleRestrictedNotice action="anular órdenes" className="mt-4" />
+          )}
         </div>
       ) : null}
 
@@ -692,7 +707,11 @@ function WorkOrderCriticalZone({
             description="Esta orden está cerrada como entregada. Si fue marcada por error, podés reabrirla dejando un motivo obligatorio en el historial operativo."
           />
 
-          <ReopenWorkOrderForm workOrderId={workOrderId} />
+          {canManage ? (
+            <ReopenWorkOrderForm workOrderId={workOrderId} />
+          ) : (
+            <RoleRestrictedNotice action="reabrir órdenes" className="mt-4" />
+          )}
         </div>
       ) : null}
 

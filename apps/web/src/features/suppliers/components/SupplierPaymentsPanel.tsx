@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, type ReactNode, useState } from "react";
 import { getApiErrorMessage } from "../../../lib/api";
 import { formatDate, formatDateTime, formatMoney } from "../../../lib/format";
+import { RoleRestrictedNotice } from "../../auth/components/RoleRestrictedNotice";
 import {
   createSupplierPayment,
   updateSupplierPayment,
@@ -39,6 +40,11 @@ type SupplierPaymentsPanelProps = {
   paidTotal: number | string;
   pendingBalance: number | string;
   isSupplierArchived: boolean;
+  /**
+   * Whether the current workshop role can create, correct or void payments.
+   * The API enforces the same rule; this only hides actions that would fail.
+   */
+  canManagePayments: boolean;
 };
 
 type PaymentMode = "list" | "create";
@@ -58,7 +64,10 @@ export function SupplierPaymentsPanel({
   paidTotal,
   pendingBalance,
   isSupplierArchived,
+  canManagePayments,
 }: SupplierPaymentsPanelProps) {
+  const canMutate = canManagePayments && !isSupplierArchived;
+  const hasNotice = isSupplierArchived || !canManagePayments;
   const [mode, setMode] = useState<PaymentMode>("list");
   const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
   const editingPayment =
@@ -102,7 +111,7 @@ export function SupplierPaymentsPanel({
           </div>
         </div>
 
-        {!isSupplierArchived ? (
+        {canMutate ? (
           <button
             type="button"
             onClick={() => {
@@ -151,10 +160,14 @@ export function SupplierPaymentsPanel({
             Este proveedor está archivado. Restauralo antes de registrar o
             corregir pagos.
           </p>
+        ) : !canManagePayments ? (
+          <RoleRestrictedNotice
+            action="registrar, corregir o anular pagos a proveedores"
+          />
         ) : null}
 
-        {mode === "create" ? (
-          <div className={isSupplierArchived ? "mt-5" : ""}>
+        {canMutate && mode === "create" ? (
+          <div className={hasNotice ? "mt-5" : ""}>
             <SupplierPaymentForm
               supplierId={supplierId}
               mode="create"
@@ -164,8 +177,8 @@ export function SupplierPaymentsPanel({
           </div>
         ) : null}
 
-        {editingPayment ? (
-          <div className={mode === "create" || isSupplierArchived ? "mt-5" : ""}>
+        {canMutate && editingPayment ? (
+          <div className={mode === "create" || hasNotice ? "mt-5" : ""}>
             <SupplierPaymentForm
               supplierId={supplierId}
               mode="edit"
@@ -179,7 +192,7 @@ export function SupplierPaymentsPanel({
         {initialPayments.length > 0 ? (
           <div
             className={
-              mode === "create" || editingPayment || isSupplierArchived
+              mode === "create" || editingPayment || hasNotice
                 ? "mt-5"
                 : ""
             }
@@ -190,7 +203,7 @@ export function SupplierPaymentsPanel({
                   key={payment.id}
                   supplierId={supplierId}
                   payment={payment}
-                  isSupplierArchived={isSupplierArchived}
+                  canMutate={canMutate}
                   onEdit={() => {
                     setMode("list");
                     setEditingPaymentId(payment.id);
@@ -234,7 +247,7 @@ export function SupplierPaymentsPanel({
                       key={payment.id}
                       supplierId={supplierId}
                       payment={payment}
-                      isSupplierArchived={isSupplierArchived}
+                      canMutate={canMutate}
                       onEdit={() => {
                         setMode("list");
                         setEditingPaymentId(payment.id);
@@ -246,7 +259,10 @@ export function SupplierPaymentsPanel({
             </div>
           </div>
         ) : mode !== "create" ? (
-          <EmptyPaymentsState canCreate={!isSupplierArchived} />
+          <EmptyPaymentsState
+            canCreate={canMutate}
+            isSupplierArchived={isSupplierArchived}
+          />
         ) : null}
 
         {initialMeta.totalItems > initialPayments.length ? (
@@ -297,7 +313,7 @@ function PaymentSummaryMetric({
 function SupplierPaymentRow({
   supplierId,
   payment,
-  isSupplierArchived,
+  canMutate,
   onEdit,
 }: SupplierPaymentCardProps) {
   const isVoided = Boolean(payment.voidedAt);
@@ -352,7 +368,7 @@ function SupplierPaymentRow({
       </PaymentTableCell>
 
       <PaymentTableCell align="right">
-        {!isSupplierArchived && !isVoided ? (
+        {canMutate && !isVoided ? (
           <div className="inline-flex items-center justify-end gap-1.5">
             <button
               type="button"
@@ -652,7 +668,10 @@ function SupplierPaymentForm({
 type SupplierPaymentCardProps = {
   supplierId: string;
   payment: SupplierPayment;
-  isSupplierArchived: boolean;
+  /**
+   * False when the supplier is archived or the role cannot manage payments.
+   */
+  canMutate: boolean;
   onEdit: () => void;
 };
 
@@ -662,7 +681,7 @@ type SupplierPaymentCardProps = {
 function SupplierPaymentCard({
   supplierId,
   payment,
-  isSupplierArchived,
+  canMutate,
   onEdit,
 }: SupplierPaymentCardProps) {
   const isVoided = Boolean(payment.voidedAt);
@@ -692,7 +711,7 @@ function SupplierPaymentCard({
           </p>
         </div>
 
-        {!isSupplierArchived && !isVoided ? (
+        {canMutate && !isVoided ? (
           <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
@@ -918,7 +937,13 @@ function VoidSupplierPaymentButton({
   );
 }
 
-function EmptyPaymentsState({ canCreate }: { canCreate: boolean }) {
+function EmptyPaymentsState({
+  canCreate,
+  isSupplierArchived,
+}: {
+  canCreate: boolean;
+  isSupplierArchived: boolean;
+}) {
   return (
     <div className="mt-5 rounded-2xl border border-dashed border-border bg-surface-muted/55 p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
@@ -936,7 +961,9 @@ function EmptyPaymentsState({ canCreate }: { canCreate: boolean }) {
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
             {canCreate
               ? "Registrá pagos parciales o totales para calcular deuda real por proveedor."
-              : "Restaurá el proveedor para volver a registrar pagos."}
+              : isSupplierArchived
+                ? "Restaurá el proveedor para volver a registrar pagos."
+                : "Los pagos los registra el responsable del taller o administración."}
           </p>
         </div>
       </div>

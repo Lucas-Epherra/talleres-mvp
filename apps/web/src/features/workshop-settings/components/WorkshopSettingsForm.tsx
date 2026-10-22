@@ -20,9 +20,15 @@ import type {
   UpdateWorkshopSettingsInput,
   WorkshopSettings,
 } from "../types";
+import { RoleRestrictedNotice } from "../../auth/components/RoleRestrictedNotice";
 
 type WorkshopSettingsFormProps = {
   settings: WorkshopSettings;
+  /**
+   * Whether the current workshop role can edit settings and the logo. When
+   * false the form stays visible as read-only. The API enforces the same rule.
+   */
+  canEdit: boolean;
 };
 
 type FormDraft = {
@@ -92,7 +98,10 @@ const ALLOWED_LOGO_MIME_TYPES = new Set([
  * This is a leaf Client Component because it owns submit state, logo upload
  * state, client-side validation, accessible feedback and the live preview.
  */
-export function WorkshopSettingsForm({ settings }: WorkshopSettingsFormProps) {
+export function WorkshopSettingsForm({
+  settings,
+  canEdit,
+}: WorkshopSettingsFormProps) {
   const router = useRouter();
   const formId = useId();
   const feedbackId = useId();
@@ -144,7 +153,7 @@ export function WorkshopSettingsForm({ settings }: WorkshopSettingsFormProps) {
   }
 
   async function handleUploadLogo() {
-    if (isLogoLoading) {
+    if (!canEdit || isLogoLoading) {
       return;
     }
 
@@ -194,7 +203,7 @@ export function WorkshopSettingsForm({ settings }: WorkshopSettingsFormProps) {
   }
 
   async function handleDeleteLogo() {
-    if (isLogoLoading || !logoUrl) {
+    if (!canEdit || isLogoLoading || !logoUrl) {
       return;
     }
 
@@ -230,7 +239,7 @@ export function WorkshopSettingsForm({ settings }: WorkshopSettingsFormProps) {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (isLoading) {
+    if (!canEdit || isLoading) {
       return;
     }
 
@@ -279,200 +288,210 @@ export function WorkshopSettingsForm({ settings }: WorkshopSettingsFormProps) {
         noValidate
         aria-describedby={state.message ? feedbackId : undefined}
       >
-        <section
-          aria-labelledby={`${formId}-identity-heading`}
-          className="rounded-[1.35rem] border border-border bg-white/96 p-5 shadow-(--shadow-industrial) ring-1 ring-white/70 sm:p-6"
-        >
-          <div className="border-b border-border pb-5">
-            <p className="text-[0.66rem] font-black uppercase tracking-[0.2em] text-primary">
-              Identidad
-            </p>
+        {!canEdit ? (
+          <RoleRestrictedNotice
+            action="modificar los datos y el logo del taller"
+          />
+        ) : null}
 
-            <h2
-              id={`${formId}-identity-heading`}
-              className="mt-1.5 font-display text-lg font-black uppercase tracking-[0.035em] text-foreground"
-            >
-              Datos principales
-            </h2>
+        <fieldset disabled={!canEdit} className="min-w-0 space-y-6">
+          <section
+            aria-labelledby={`${formId}-identity-heading`}
+            className="rounded-[1.35rem] border border-border bg-white/96 p-5 shadow-(--shadow-industrial) ring-1 ring-white/70 sm:p-6"
+          >
+            <div className="border-b border-border pb-5">
+              <p className="text-[0.66rem] font-black uppercase tracking-[0.2em] text-primary">
+                Identidad
+              </p>
 
-            <p className="mt-1 text-sm leading-5 text-muted-foreground">
-              Estos datos identifican al taller dentro del sistema y se van a
-              reutilizar en recibos, emails y futuras plantillas.
-            </p>
-          </div>
+              <h2
+                id={`${formId}-identity-heading`}
+                className="mt-1.5 font-display text-lg font-black uppercase tracking-[0.035em] text-foreground"
+              >
+                Datos principales
+              </h2>
 
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <TextField
-              id={`${formId}-name`}
-              name="name"
-              label="Nombre del taller"
-              value={draft.name}
-              required
-              autoComplete="organization"
-              maxLength={FIELD_LIMITS.name}
-              helper="Ejemplo: Mi Taller 360"
-              onChange={handleFieldChange}
-            />
+              <p className="mt-1 text-sm leading-5 text-muted-foreground">
+                Estos datos identifican al taller dentro del sistema y se van a
+                reutilizar en recibos, emails y futuras plantillas.
+              </p>
+            </div>
 
-            <TextField
-              id={`${formId}-phone`}
-              name="phone"
-              label="Teléfono"
-              value={draft.phone}
-              autoComplete="tel"
-              maxLength={FIELD_LIMITS.phone}
-              helper="Número visible para contacto del taller."
-              onChange={handleFieldChange}
-            />
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <TextField
+                id={`${formId}-name`}
+                name="name"
+                label="Nombre del taller"
+                value={draft.name}
+                required
+                autoComplete="organization"
+                maxLength={FIELD_LIMITS.name}
+                helper="Ejemplo: Mi Taller 360"
+                onChange={handleFieldChange}
+              />
 
-            <TextField
-              id={`${formId}-email`}
-              name="email"
-              label="Email de contacto"
-              value={draft.email}
-              type="email"
-              autoComplete="email"
-              maxLength={FIELD_LIMITS.email}
-              helper="Se usará como referencia de contacto."
-              onChange={handleFieldChange}
-            />
+              <TextField
+                id={`${formId}-phone`}
+                name="phone"
+                label="Teléfono"
+                value={draft.phone}
+                autoComplete="tel"
+                maxLength={FIELD_LIMITS.phone}
+                helper="Número visible para contacto del taller."
+                onChange={handleFieldChange}
+              />
 
-            <TextField
-              id={`${formId}-address`}
-              name="address"
-              label="Dirección"
-              value={draft.address}
-              autoComplete="street-address"
-              maxLength={FIELD_LIMITS.address}
-              helper="Dirección física del taller."
-              onChange={handleFieldChange}
-            />
-          </div>
-        </section>
+              <TextField
+                id={`${formId}-email`}
+                name="email"
+                label="Email de contacto"
+                value={draft.email}
+                type="email"
+                autoComplete="email"
+                maxLength={FIELD_LIMITS.email}
+                helper="Se usará como referencia de contacto."
+                onChange={handleFieldChange}
+              />
 
-        <section
-          aria-labelledby={`${formId}-details-heading`}
-          className="rounded-[1.35rem] border border-border bg-white/96 p-5 shadow-(--shadow-industrial) ring-1 ring-white/70 sm:p-6"
-        >
-          <div className="border-b border-border pb-5">
-            <p className="text-[0.66rem] font-black uppercase tracking-[0.2em] text-primary">
-              Presentación
-            </p>
+              <TextField
+                id={`${formId}-address`}
+                name="address"
+                label="Dirección"
+                value={draft.address}
+                autoComplete="street-address"
+                maxLength={FIELD_LIMITS.address}
+                helper="Dirección física del taller."
+                onChange={handleFieldChange}
+              />
+            </div>
+          </section>
 
-            <h2
-              id={`${formId}-details-heading`}
-              className="mt-1.5 font-display text-lg font-black uppercase tracking-[0.035em] text-foreground"
-            >
-              Información visible
-            </h2>
+          <section
+            aria-labelledby={`${formId}-details-heading`}
+            className="rounded-[1.35rem] border border-border bg-white/96 p-5 shadow-(--shadow-industrial) ring-1 ring-white/70 sm:p-6"
+          >
+            <div className="border-b border-border pb-5">
+              <p className="text-[0.66rem] font-black uppercase tracking-[0.2em] text-primary">
+                Presentación
+              </p>
 
-            <p className="mt-1 text-sm leading-5 text-muted-foreground">
-              Mantenelo simple. La prioridad es que el taller tenga datos claros
-              y útiles, no una ficha comercial compleja.
-            </p>
-          </div>
+              <h2
+                id={`${formId}-details-heading`}
+                className="mt-1.5 font-display text-lg font-black uppercase tracking-[0.035em] text-foreground"
+              >
+                Información visible
+              </h2>
 
-          <div className="mt-5 space-y-5">
-            <div
-              aria-describedby={logoState.message ? logoFeedbackId : undefined}
-              className="rounded-3xl border border-border bg-surface-muted/55 p-4"
-            >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="text-sm font-black uppercase tracking-[0.08em] text-foreground">
-                    Logo del taller
-                  </p>
+              <p className="mt-1 text-sm leading-5 text-muted-foreground">
+                Mantenelo simple. La prioridad es que el taller tenga datos claros
+                y útiles, no una ficha comercial compleja.
+              </p>
+            </div>
 
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Subí un PNG, JPG o WEBP de hasta 1 MB. El sistema lo
-                    optimiza automáticamente para usarlo en la app y recibos.
-                  </p>
+            <div className="mt-5 space-y-5">
+              <div
+                aria-describedby={logoState.message ? logoFeedbackId : undefined}
+                className="rounded-3xl border border-border bg-surface-muted/55 p-4"
+              >
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-sm font-black uppercase tracking-[0.08em] text-foreground">
+                      Logo del taller
+                    </p>
+
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      Subí un PNG, JPG o WEBP de hasta 1 MB. El sistema lo
+                      optimiza automáticamente para usarlo en la app y recibos.
+                    </p>
+                  </div>
+
+                  <LogoPreview
+                    logoUrl={logoUrl}
+                    workshopName={draft.name}
+                    className="sm:ml-auto"
+                  />
                 </div>
 
-                <LogoPreview
-                  logoUrl={logoUrl}
-                  workshopName={draft.name}
-                  className="sm:ml-auto"
-                />
-              </div>
+                {canEdit ? (
+                  <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
+                    <input
+                      id={`${formId}-logo`}
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={handleLogoChange}
+                      className="block w-full text-sm font-semibold text-muted-foreground file:mr-4 file:h-10 file:rounded-xl file:border-0 file:bg-white file:px-4 file:text-sm file:font-black file:text-foreground hover:file:bg-surface-elevated"
+                    />
 
-              <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
-                <input
-                  id={`${formId}-logo`}
-                  ref={logoInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={handleLogoChange}
-                  className="block w-full text-sm font-semibold text-muted-foreground file:mr-4 file:h-10 file:rounded-xl file:border-0 file:bg-white file:px-4 file:text-sm file:font-black file:text-foreground hover:file:bg-surface-elevated"
-                />
+                    <button
+                      type="button"
+                      onClick={handleUploadLogo}
+                      disabled={isLogoLoading}
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-black text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-65"
+                    >
+                      <UploadCloud className="size-4" aria-hidden="true" />
+                      {isLogoLoading ? "Procesando..." : "Subir logo"}
+                    </button>
 
-                <button
-                  type="button"
-                  onClick={handleUploadLogo}
-                  disabled={isLogoLoading}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-black text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-65"
-                >
-                  <UploadCloud className="size-4" aria-hidden="true" />
-                  {isLogoLoading ? "Procesando..." : "Subir logo"}
-                </button>
+                    {logoUrl ? (
+                      <button
+                        type="button"
+                        onClick={handleDeleteLogo}
+                        disabled={isLogoLoading}
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-border-strong bg-white px-4 text-sm font-black text-foreground transition hover:border-primary/45 hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-65"
+                      >
+                        <Trash2 className="size-4 text-primary" aria-hidden="true" />
+                        Eliminar
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
 
-                {logoUrl ? (
-                  <button
-                    type="button"
-                    onClick={handleDeleteLogo}
-                    disabled={isLogoLoading}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-border-strong bg-white px-4 text-sm font-black text-foreground transition hover:border-primary/45 hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-65"
+                {selectedLogo ? (
+                  <p className="mt-2 text-xs font-semibold text-muted-foreground">
+                    Archivo seleccionado: {selectedLogo.name}
+                  </p>
+                ) : null}
+
+                {logoState.message ? (
+                  <p
+                    id={logoFeedbackId}
+                    role={logoState.status === "error" ? "alert" : "status"}
+                    className={
+                      logoState.status === "error"
+                        ? "mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700"
+                        : "mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700"
+                    }
                   >
-                    <Trash2 className="size-4 text-primary" aria-hidden="true" />
-                    Eliminar
-                  </button>
+                    {logoState.message}
+                  </p>
                 ) : null}
               </div>
 
-              {selectedLogo ? (
-                <p className="mt-2 text-xs font-semibold text-muted-foreground">
-                  Archivo seleccionado: {selectedLogo.name}
-                </p>
-              ) : null}
+              <TextAreaField
+                id={`${formId}-business-hours`}
+                name="businessHours"
+                label="Horarios"
+                value={draft.businessHours}
+                rows={4}
+                maxLength={FIELD_LIMITS.businessHours}
+                helper="Ejemplo: Lunes a viernes de 8:00 a 17:00."
+                onChange={handleFieldChange}
+              />
 
-              {logoState.message ? (
-                <p
-                  id={logoFeedbackId}
-                  role={logoState.status === "error" ? "alert" : "status"}
-                  className={
-                    logoState.status === "error"
-                      ? "mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700"
-                      : "mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700"
-                  }
-                >
-                  {logoState.message}
-                </p>
-              ) : null}
+              <TextAreaField
+                id={`${formId}-description`}
+                name="description"
+                label="Descripción corta"
+                value={draft.description}
+                rows={4}
+                maxLength={FIELD_LIMITS.description}
+                helper="Una frase simple sobre el taller o el tipo de servicio."
+                onChange={handleFieldChange}
+              />
             </div>
-
-            <TextAreaField
-              id={`${formId}-business-hours`}
-              name="businessHours"
-              label="Horarios"
-              value={draft.businessHours}
-              rows={4}
-              maxLength={FIELD_LIMITS.businessHours}
-              helper="Ejemplo: Lunes a viernes de 8:00 a 17:00."
-              onChange={handleFieldChange}
-            />
-
-            <TextAreaField
-              id={`${formId}-description`}
-              name="description"
-              label="Descripción corta"
-              value={draft.description}
-              rows={4}
-              maxLength={FIELD_LIMITS.description}
-              helper="Una frase simple sobre el taller o el tipo de servicio."
-              onChange={handleFieldChange}
-            />
-          </div>
-        </section>
+          </section>
+        </fieldset>
 
         {state.message ? (
           <p
@@ -488,15 +507,17 @@ export function WorkshopSettingsForm({ settings }: WorkshopSettingsFormProps) {
           </p>
         ) : null}
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-black text-white shadow-sm transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-65"
-          >
-            {isLoading ? "Guardando..." : "Guardar cambios"}
-          </button>
-        </div>
+        {canEdit ? (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-black text-white shadow-sm transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-65"
+            >
+              {isLoading ? "Guardando..." : "Guardar cambios"}
+            </button>
+          </div>
+        ) : null}
       </form>
 
       <aside
