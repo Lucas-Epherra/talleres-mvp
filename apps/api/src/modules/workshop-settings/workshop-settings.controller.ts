@@ -11,8 +11,11 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { WorkshopRole } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { AuthGuard } from '../auth/guards/auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { UpdateWorkshopSettingsDto } from './dto/update-workshop-settings.dto';
 import type { UploadedLogoFile } from './types/uploaded-logo-file.type';
@@ -26,7 +29,7 @@ const MAX_LOGO_UPLOAD_BYTES = 1024 * 1024;
  * These endpoints are tenant-scoped by the authenticated user's workshopId.
  */
 @Controller('workshop/settings')
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, RolesGuard)
 export class WorkshopSettingsController {
   constructor(
     private readonly workshopSettingsService: WorkshopSettingsService,
@@ -44,6 +47,7 @@ export class WorkshopSettingsController {
    * Updates text-based settings for the authenticated workshop.
    */
   @Patch()
+  @Roles(WorkshopRole.OWNER, WorkshopRole.ADMIN)
   updateSettings(
     @CurrentUser() user: AuthUser,
     @Body() dto: UpdateWorkshopSettingsDto,
@@ -55,6 +59,7 @@ export class WorkshopSettingsController {
    * Uploads and replaces the authenticated workshop logo.
    */
   @Post('logo')
+  @Roles(WorkshopRole.OWNER, WorkshopRole.ADMIN)
   @UseInterceptors(
     FileInterceptor('logo', {
       limits: {
@@ -77,6 +82,7 @@ export class WorkshopSettingsController {
    * Removes the authenticated workshop logo.
    */
   @Delete('logo')
+  @Roles(WorkshopRole.OWNER, WorkshopRole.ADMIN)
   deleteLogo(@CurrentUser() user: AuthUser) {
     return this.workshopSettingsService.deleteLogo(user.workshopId);
   }

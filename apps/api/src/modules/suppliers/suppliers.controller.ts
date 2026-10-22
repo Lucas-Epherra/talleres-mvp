@@ -8,8 +8,11 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { WorkshopRole } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { AuthGuard } from '../auth/guards/auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import { ArchiveSupplierDto } from './dto/archive-supplier.dto';
 import { ArchiveSupplierPartDto } from './dto/archive-supplier-part.dto';
@@ -34,7 +37,7 @@ import { SuppliersService } from './suppliers.service';
  *
  * All routes are authenticated and scoped by the authenticated user's workshop.
  */
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, RolesGuard)
 @Controller('suppliers')
 export class SuppliersController {
   constructor(private readonly suppliersService: SuppliersService) {}
@@ -43,7 +46,10 @@ export class SuppliersController {
    * Lists paginated suppliers with financial metrics for the current workshop.
    */
   @Get()
-  findAll(@CurrentUser() user: AuthUser, @Query() query: FindSuppliersQueryDto) {
+  findAll(
+    @CurrentUser() user: AuthUser,
+    @Query() query: FindSuppliersQueryDto,
+  ) {
     return this.suppliersService.findAll(user.workshopId, query);
   }
 
@@ -155,7 +161,6 @@ export class SuppliersController {
     );
   }
 
-
   /**
    * Lists payments registered for one supplier.
    */
@@ -176,6 +181,7 @@ export class SuppliersController {
    * Registers a payment made to one supplier.
    */
   @Post(':supplierId/payments')
+  @Roles(WorkshopRole.OWNER, WorkshopRole.ADMIN)
   createPayment(
     @CurrentUser() user: AuthUser,
     @Param('supplierId') supplierId: string,
@@ -193,6 +199,7 @@ export class SuppliersController {
    * Corrects an active supplier payment.
    */
   @Patch(':supplierId/payments/:paymentId')
+  @Roles(WorkshopRole.OWNER, WorkshopRole.ADMIN)
   updatePayment(
     @CurrentUser() user: AuthUser,
     @Param('supplierId') supplierId: string,
@@ -212,6 +219,7 @@ export class SuppliersController {
    * Voids a supplier payment without deleting financial history.
    */
   @Patch(':supplierId/payments/:paymentId/void')
+  @Roles(WorkshopRole.OWNER, WorkshopRole.ADMIN)
   voidPayment(
     @CurrentUser() user: AuthUser,
     @Param('supplierId') supplierId: string,
